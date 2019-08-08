@@ -60,21 +60,12 @@ func TestCreateTag(t *testing.T) {
 
 func TestStripHome(t *testing.T) {
 	home := getTemporaryHome()
-	var err error
-	var h1, h2 string
-	h1, err = stripHome(fmt.Sprintf("%s/my/path", home), home)
-	assert.NoError(t, err)
+	h1 := stripHome(fmt.Sprintf("%s/my/path", home), home)
 	assert.Equal(t, "my/path", h1)
-	h2, err = stripHome("/my/path", home)
-	assert.NoError(t, err)
+	h2 := stripHome("/my/path", home)
 	assert.Equal(t, "/my/path", h2)
-	_, err = stripHome("", "")
-	assert.Error(t, err)
-	_, err = stripHome("", home)
-	assert.Error(t, err)
-	_, err = stripHome("mypath", "")
-	assert.Error(t, err)
-
+	h3 := stripHome("", "")
+	assert.Equal(t, "", h3)
 }
 
 func TestStringInSlice(t *testing.T) {
@@ -98,7 +89,7 @@ func TestCompareIdentical(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote identical produces correct ItemDiff
-	iDiff := compare("apple", applePath, home, appleNote)
+	iDiff := compare("apple", applePath, home, appleNote, true)
 	assert.Equal(t, identical, iDiff.diff)
 	assert.Equal(t, "apple", iDiff.tagTitle)
 	assert.Equal(t, "apple", iDiff.noteTitle)
@@ -107,7 +98,7 @@ func TestCompareIdentical(t *testing.T) {
 }
 
 func TestCompareRemoteNewer(t *testing.T) {
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 	err := os.MkdirAll(home, os.ModePerm)
 	// setup
 	lemonNote := createNote("lemon", "lemon content 2")
@@ -121,7 +112,7 @@ func TestCompareRemoteNewer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote differ and remote newer produces correct ItemDiff
-	iDiff := compare("lemon", lemonPath, home, lemonNote)
+	iDiff := compare("lemon", lemonPath, home, lemonNote, true)
 	assert.Equal(t, remoteNewer, iDiff.diff)
 	assert.Equal(t, "lemon", iDiff.tagTitle)
 	assert.Equal(t, "lemon", iDiff.noteTitle)
@@ -129,7 +120,7 @@ func TestCompareRemoteNewer(t *testing.T) {
 	assert.Equal(t, lemonNote, iDiff.remote)
 }
 func TestCompareLocalNewer(t *testing.T) {
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 	err := os.MkdirAll(home, os.ModePerm)
 	// setup
 	lemonNote := createNote("lemon", "lemon content 2")
@@ -142,7 +133,7 @@ func TestCompareLocalNewer(t *testing.T) {
 	_, err = f.WriteString("lemon content")
 	assert.NoError(t, f.Close())
 	// verify local and remote differ and local newer produces correct ItemDiff
-	iDiff := compare("lemon", lemonPath, home, lemonNote)
+	iDiff := compare("lemon", lemonPath, home, lemonNote, true)
 	assert.Equal(t, localNewer, iDiff.diff)
 	assert.Equal(t, "lemon", iDiff.tagTitle)
 	assert.Equal(t, "lemon", iDiff.noteTitle)

@@ -12,7 +12,7 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
-func Add(session gosn.Session, home string, paths []string, quiet bool) (pathsAdded, pathsExisting, pathsInvalid []string, err error) {
+func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (pathsAdded, pathsExisting, pathsInvalid []string, err error) {
 	// remove any duplicate paths
 	paths = dedupe(paths)
 
@@ -29,7 +29,8 @@ func Add(session gosn.Session, home string, paths []string, quiet bool) (pathsAd
 	if err != nil {
 		return
 	}
-	err = preflight(twn)
+
+	err = preflight(twn, paths)
 	if err != nil {
 		return
 	}
@@ -43,11 +44,6 @@ func Add(session gosn.Session, home string, paths []string, quiet bool) (pathsAd
 
 	// check for directories
 	for _, path := range paths {
-		// ensure path can be read and is not unsupported symlink
-		if !checkPathValid(path) {
-			pathsInvalid = append(pathsInvalid, path)
-			continue
-		}
 		// if path is directory, then walk to generate list of additional paths
 		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 			err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
@@ -80,22 +76,18 @@ func Add(session gosn.Session, home string, paths []string, quiet bool) (pathsAd
 	for _, path := range finalPaths {
 		dir, filename := filepath.Split(path)
 		var homeRelPath string
-		homeRelPath, err = stripHome(dir+filename, home)
-		if err != nil {
-			return
-		}
+		homeRelPath = stripHome(dir+filename, home)
 		boldHomeRelPath := bold(homeRelPath)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
+			debugPrint(debug, fmt.Sprintf("add | path does not exist: %s", path))
 			missing = append(missing, fmt.Sprintf("%s | %s", boldHomeRelPath, red("does not exist")))
 			pathsInvalid = append(pathsInvalid, path)
 			continue
 		}
 		var remoteTagTitleWithoutHome, remoteTagTitle string
-		remoteTagTitleWithoutHome, err = stripHome(dir, home)
+		remoteTagTitleWithoutHome = stripHome(dir, home)
 		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
-		if err != nil {
-			return
-		}
+
 		existingCount := noteWithTagExists(remoteTagTitle, filename, twn)
 		if existingCount == 1 {
 			existing = append(existing, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("already tracked")))
@@ -137,7 +129,11 @@ func createItem(path, title string) (item gosn.Item, err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Println("failed to close file:", path)
+		}
+	}()
 	var localBytes []byte
 	localBytes, err = ioutil.ReadAll(file)
 	if err != nil {

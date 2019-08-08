@@ -34,6 +34,7 @@ func pathIsPrefixOfPaths(path string, paths []string) bool {
 }
 
 func noteInPaths(note string, paths []string) bool {
+	//fmt.Println("In noteInPaths with note:", note, "and paths:", paths)
 	if note == "" || len(paths) == 0 {
 		return false
 	}
@@ -48,66 +49,55 @@ func noteInPaths(note string, paths []string) bool {
 		if d == paths[i] {
 			return true
 		}
+		rel, err := filepath.Rel(paths[i], note)
+		if err == nil && ! strings.HasPrefix(rel, "../") {
+			return true
+		}
 	}
 	return false
 }
 
 func checkPathsExist(paths []string) error {
 	for _, p := range paths {
-		if _, err := os.Stat(p); os.IsNotExist(err) {
+		if _, err := os.Stat(p); err != nil || os.IsNotExist(err) {
 			return err
 		}
 	}
 	return nil
 }
 
-func diff(remote tagsWithNotes, home string, paths []string) (diffs []ItemDiff, err error) {
-	// fail immediately if remote or paths are empty
-	if len(remote) == 0 {
-		return nil, fmt.Errorf("tags with notes not supplied")
-	}
-	// check paths specified
-	if len(paths) > 0 {
-		if err := checkPathsExist(paths); err != nil {
-			return nil, err
-		}
-	}
-
-	var itemDiffs []ItemDiff
-	var trackedPaths []string
-	// loop through remotes, looking for match for paths
+func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, debug bool) (itemDiffs []ItemDiff, remotePaths []string, err error) {
+	// loop through remotes to generate a list of diffs for:
+	// - existing local and remotes
+	// - missing local files
+	// also get a list of remotes that should have locals
 	for _, twn := range remote {
-		// only diff if path equals translated tag
+		// only do a diff if path equals translated tag
 		tagTitle := twn.tag.Content.GetTitle()
 		var dir string
 		dir, _, err = tagTitleToFSDIR(twn.tag.Content.GetTitle(), home)
 		if err != nil {
 			return
 		}
-
-		// check the tag (dir) is equal to, or a prefix of any tag being checked
-		if len(paths) > 0 {
-			if !pathIsPrefixOfPaths(dir, paths) {
-				continue
-			}
+		debugPrint(debug, fmt.Sprintf("diff | tag title: %s is path: <home>/%s", tagTitle, stripHome(dir, home)))
+		// if paths were supplied, then check the determined dir is a prefix of one of those
+		if len(paths) > 0 && !pathIsPrefixOfPaths(dir, paths) {
+			continue
 		}
 
-		// loop through notes and compare content of any with matching file
+		// loop through notes for the tag and compare content of any with matching file
 		// log each matching path so we can later walk them to discover untracked files
 		for _, d := range twn.notes {
 			fullPath := fmt.Sprintf("%s%s", dir, d.Content.GetTitle())
-			// skip if note if exact path is not specified and does not have prefix of total path
+			// skip note if exact path is not specified and does not have prefix of total path
 			if len(paths) > 0 && !noteInPaths(dir+d.Content.GetTitle(), paths) {
 				continue
 			}
-
 			if !localExists(fullPath) {
-				trackedPaths = append(trackedPaths, fullPath)
+				// local path matching tag+note doesn't exist so set as 'local missing'
+				debugPrint(debug, fmt.Sprintf("diff | local not found: <home>/%s", stripHome(fullPath, home)))
 				var homeRelPath string
-				homeRelPath, err = stripHome(fullPath, home)
-				if err != nil {
-					return
-				}
+				homeRelPath = stripHome(fullPath, home)
 				itemDiffs = append(itemDiffs, ItemDiff{
 					tagTitle:    tagTitle,
 					homeRelPath: homeRelPath,
@@ -117,82 +107,95 @@ func diff(remote tagsWithNotes, home string, paths []string) (diffs []ItemDiff, 
 					remote:      d,
 				})
 			} else {
-				trackedPaths = append(trackedPaths, fullPath)
-				itemDiffs = append(itemDiffs, compare(tagTitle, fullPath, home, d))
+				// local does exist, so compare and store generated diff
+				debugPrint(debug, fmt.Sprintf("diff | local found: <home>/%s", stripHome(fullPath, home)))
+				remotePaths = append(remotePaths, fullPath)
+				itemDiffs = append(itemDiffs, compare(tagTitle, fullPath, home, d, debug))
 			}
 		}
 	}
-	// add diffs for untracked by comparing specified paths with those found
-	if len(paths) > 0 {
-		// if path is directory, then walk to generate list of additional paths
-		for _, path := range paths {
-			_, f := filepath.Split(path)
-			if f != "" {
-				continue
-			}
-			if stringInSlice(path, trackedPaths, true) {
-				continue
-			}
-			if stat, err := os.Stat(path); err == nil && stat.IsDir() {
-				err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
-					// don't walk tracked paths
-					if stringInSlice(p, trackedPaths, true) {
-						return nil
-					}
-					if err != nil {
-						fmt.Printf("failed to read path %q: %v\n", p, err)
-						return err
-					}
-					// ensure walked path is valid
-					if !checkPathValid(p) {
-						return nil
-					}
-					// add file as untracked
-					if stat, err := os.Stat(p); err == nil && !stat.IsDir() {
-						var homeRelPath string
-						homeRelPath, err = stripHome(p, home)
-						if err != nil {
-							return err
-						}
-						itemDiffs = append(itemDiffs, ItemDiff{
-							homeRelPath: homeRelPath,
-							path:        p,
-							diff:        untracked,
-						})
-					}
-					return nil
-				})
-			} else {
-				homeRelPath, serr := stripHome(path, home)
-				if serr != nil {
-					fmt.Println("panic here")
-					panic(serr)
-				}
-				itemDiffs = append(itemDiffs, ItemDiff{
-					homeRelPath: homeRelPath,
-					path:        path,
-					diff:        untracked,
-				})
-			}
-		}
+	return
+}
 
-		for _, p := range paths {
-			_, f := filepath.Split(p)
-			if f != "" && !stringInSlice(p, trackedPaths, true) {
-				var homeRelPath string
-				homeRelPath, err = stripHome(p, home)
-				if err != nil {
-					return
-				}
-				itemDiffs = append(itemDiffs, ItemDiff{
-					homeRelPath: homeRelPath,
-					path:        p,
-					diff:        untracked,
-				})
-			}
+func diff(remote tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, err error) {
+	debugPrint(debug, fmt.Sprintf("diff | home: %s", home))
+	debugPrint(debug, fmt.Sprintf("diff | %d paths supplied", len(paths)))
+
+	// fail immediately if remote or paths are empty
+	if len(remote) == 0 {
+		return nil, fmt.Errorf("tags with notes not supplied")
+	}
+	// if paths specified, check all of them exist before continuing
+	if len(paths) > 0 {
+		if err := checkPathsExist(paths); err != nil {
+			return nil, err
 		}
+	}
+
+	var itemDiffs []ItemDiff
+	var remotePaths []string
+	// check remotes against local filesystem
+	itemDiffs, remotePaths, err = diffRemoteWithLocalFS(remote, paths, home, debug)
+	if err != nil {
+		return
+	}
+
+	// if paths specified, then discover those that are untracked
+	// by comparing with existing remote equivalent paths
+	if len(paths) > 0 {
+		itemDiffs = append(itemDiffs, findUntracked(paths, remotePaths, home, debug)...)
 	}
 	return itemDiffs, err
+}
+
+func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, debug bool) (itemDiffs []ItemDiff) {
+	// if path is directory, then walk to generate list of additional paths
+	for _, path := range paths {
+		debugPrint(debug, fmt.Sprintf("diff | diffing path: %s", stripHome(path, home)))
+		if stringInSlice(path, existingRemoteEquivalentPaths, true) {
+			continue
+		}
+		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
+			debugPrint(debug, fmt.Sprintf("diff | walking path: %s", path))
+			err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+				// don't check tracked paths
+				if stringInSlice(p, existingRemoteEquivalentPaths, true) {
+					return nil
+				}
+				if err != nil {
+					fmt.Printf("failed to read path %q: %v\n", p, err)
+					return err
+				}
+				// ensure walked path is valid
+				if !checkPathValid(p) {
+					return nil
+				}
+				// add file as untracked
+				if stat, err := os.Stat(p); err == nil && !stat.IsDir() {
+					debugPrint(debug, fmt.Sprintf("diff | file is untracked: %s", p))
+					var homeRelPath string
+					homeRelPath = stripHome(p, home)
+					itemDiffs = append(itemDiffs, ItemDiff{
+						homeRelPath: homeRelPath,
+						path:        p,
+						diff:        untracked,
+					})
+				}
+				return nil
+			})
+		} else {
+			homeRelPath := stripHome(path, home)
+			debugPrint(debug, fmt.Sprintf("diff | file is untracked: %s", path))
+
+			itemDiffs = append(itemDiffs, ItemDiff{
+				homeRelPath: homeRelPath,
+				path:        path,
+				diff:        untracked,
+			})
+		}
+	}
+
+	return
 }
 
 type ItemDiff struct {
@@ -205,7 +208,8 @@ type ItemDiff struct {
 	local       string
 }
 
-func compare(tagTitle, path, home string, remote gosn.Item) ItemDiff {
+func compare(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff {
+	debugPrint(debug, fmt.Sprintf("compare | title: %s path: <home>/%s", tagTitle, stripHome(path, home)))
 	localStat, err := os.Stat(path)
 	if err != nil {
 		log.Fatal(err)
@@ -224,10 +228,7 @@ func compare(tagTitle, path, home string, remote gosn.Item) ItemDiff {
 		log.Fatal(err)
 	}
 	var homeRelPath string
-	homeRelPath, err = stripHome(path, home)
-	if err != nil {
-		panic(err)
-	}
+	homeRelPath = stripHome(path, home)
 	localStr := string(localBytes)
 	if localStr != remote.Content.GetText() {
 		var remoteUpdated time.Time
@@ -235,7 +236,9 @@ func compare(tagTitle, path, home string, remote gosn.Item) ItemDiff {
 		if err != nil {
 			log.Fatal(err)
 		}
+		debugPrint(debug, fmt.Sprintf("compare | remote updated UTC): %v", remoteUpdated.UTC()))
 		// if content different and local file was updated more recently
+		debugPrint(debug, fmt.Sprintf("compare | local updated UTC): %v", localStat.ModTime().UTC()))
 		if localStat.ModTime().UTC().After(remoteUpdated.UTC()) || localStat.ModTime().UTC() == remoteUpdated.UTC() {
 			return ItemDiff{
 				tagTitle:    tagTitle,

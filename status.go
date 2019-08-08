@@ -29,12 +29,13 @@ func colourDiff(diff string) string {
 	return diff
 }
 
-func Status(session gosn.Session, home string, paths []string, quiet bool) (diffs []ItemDiff, err error) {
+func Status(session gosn.Session, home string, paths []string, quiet, debug bool) (diffs []ItemDiff, err error) {
 	remote, err := get(session)
 	if err != nil {
 		return diffs, err
 	}
-	err = preflight(remote)
+	debugPrint(debug, fmt.Sprintf("status | %d remote items", len(remote)))
+	err = preflight(remote, paths)
 	if err != nil {
 		return
 	}
@@ -43,16 +44,17 @@ func Status(session gosn.Session, home string, paths []string, quiet bool) (diff
 	}
 	bold := color.New(color.Bold).SprintFunc()
 
-	diffs, err = diff(remote, home, paths)
+	diffs, err = diff(remote, home, paths, debug)
 	if err != nil {
 		return diffs, err
 	}
+	debugPrint(debug, fmt.Sprintf("status | %d diffs generated", len(diffs)))
 	var lines []string
 	if len(diffs) == 0 {
 		return diffs, err
 	}
 	for _, diff := range diffs {
-		lines = append(lines, fmt.Sprintf("%s |%s \n", bold(diff.homeRelPath), colourDiff(diff.diff)))
+		lines = append(lines, fmt.Sprintf("%s | %s \n", bold(diff.homeRelPath), colourDiff(diff.diff)))
 	}
 	if !quiet {
 		fmt.Println(columnize.SimpleFormat(lines))

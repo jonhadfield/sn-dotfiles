@@ -10,22 +10,23 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
-func Sync(session gosn.Session, home string, quiet bool) (noPushed, noPulled int, err error) {
+// TODO: add option to sync paths
+func Sync(session gosn.Session, home string, quiet, debug bool) (noPushed, noPulled int, err error) {
 	var remote tagsWithNotes
 	remote, err = get(session)
 	if err != nil {
 		return
 	}
-	err = preflight(remote)
+	err = preflight(remote, []string{})
 	if err != nil {
 		return
 	}
-	return sync(session, remote, home, quiet)
+	return sync(session, remote, home, quiet, debug)
 }
 
-func sync(session gosn.Session, twn tagsWithNotes, home string, quiet bool) (noPushed, noPulled int, err error) {
+func sync(session gosn.Session, twn tagsWithNotes, home string, quiet, debug bool) (noPushed, noPulled int, err error) {
 	var itemDiffs []ItemDiff
-	itemDiffs, err = diff(twn, home, nil)
+	itemDiffs, err = diff(twn, home, nil, debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
@@ -39,15 +40,18 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, quiet bool) (noP
 		switch itemDiff.diff {
 		case localNewer:
 			//push
+			debugPrint(debug, fmt.Sprintf("sync | local %s is newer", itemDiff.homeRelPath))
 			itemDiff.remote.Content.SetText(itemDiff.local)
 			itemsToPush = append(itemsToPush, itemDiff)
 			itemsToSync = true
 		case localMissing:
 			// pull
+			debugPrint(debug, fmt.Sprintf("sync | %s is missing", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		case remoteNewer:
 			// pull
+			debugPrint(debug, fmt.Sprintf("sync | remote %s is newer", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		}

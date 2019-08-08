@@ -13,6 +13,12 @@ import (
 	"github.com/lithammer/shortuuid"
 )
 
+func debugPrint(show bool, msg string) {
+	if show {
+		log.Println(msg)
+	}
+}
+
 func addDot(in string) string {
 	if !strings.HasPrefix(in, ".") {
 		return fmt.Sprintf(".%s", in)
@@ -35,24 +41,15 @@ func localExists(path string) bool {
 }
 
 func getTemporaryHome() string {
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 	return strings.ReplaceAll(home, "//", "/")
 }
 
-func stripHome(in, home string) (res string, err error) {
-	if in == "" {
-		return "", errors.New("path to strip required")
+func stripHome(in, home string) string {
+	if home != "" && strings.HasPrefix(in, home) {
+		return in[len(home)+1:]
 	}
-	if home == "" {
-		return "", errors.New("home value required")
-	}
-	if in == home {
-		return "", nil
-	}
-	if strings.HasPrefix(in, home) {
-		return in[len(home)+1:], nil
-	}
-	return in, nil
+	return in
 }
 
 func push(session gosn.Session, itemDiffs []ItemDiff) (pio gosn.PutItemsOutput, err error) {
@@ -376,10 +373,7 @@ func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 	if pathType == "dir" {
 		isDir = true
 	}
-	homeRelPath, err = stripHome(path, home)
-	if err != nil {
-		return
-	}
+	homeRelPath = stripHome(path, home)
 
 	remoteEquiv := homeRelPath
 

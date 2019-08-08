@@ -9,6 +9,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAddInvalidPath(t *testing.T) {
+	session, err := getSession()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, session.Token)
+	defer func() {
+		if _, err := wipe(session); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+
+	home := getTemporaryHome()
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.apple", home)
+	fwc[applePath] = "apple content"
+	duffPath := fmt.Sprintf("%s/.invalid/dodgy", home)
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	// add item
+	var added, existing, missing []string
+	added, existing, missing, err = Add(session, home, []string{applePath, duffPath}, true, true)
+	assert.Error(t, err)
+	assert.Equal(t, 0, len(added))
+	assert.Equal(t, 0, len(existing))
+	assert.Equal(t, 0, len(missing))
+}
+
 func TestAddOne(t *testing.T) {
 	session, err := getSession()
 	assert.NoError(t, err)
@@ -18,7 +44,7 @@ func TestAddOne(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 
 	fwc := make(map[string]string)
 	applePath := fmt.Sprintf("%s/.apple", home)
@@ -27,7 +53,7 @@ func TestAddOne(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, err = Add(session, home, []string{applePath}, true)
+	added, existing, missing, err = Add(session, home, []string{applePath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(added))
 	assert.Equal(t, applePath, added[0])
@@ -44,7 +70,7 @@ func TestAddTwoSameTag(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 
 	fwc := make(map[string]string)
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
@@ -57,7 +83,7 @@ func TestAddTwoSameTag(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, err = Add(session, home, []string{applePath, vwPath, bananaPath}, true)
+	added, existing, missing, err = Add(session, home, []string{applePath, vwPath, bananaPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(added))
 	assert.Contains(t, added, applePath)
@@ -81,7 +107,7 @@ func TestAddRecursive(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 
 	fwc := make(map[string]string)
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
@@ -95,7 +121,7 @@ func TestAddRecursive(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, err = Add(session, home, []string{applePath, yellowPath, premiumPath}, true)
+	added, existing, missing, err = Add(session, home, []string{applePath, yellowPath, premiumPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(added))
 	assert.Contains(t, added, applePath)

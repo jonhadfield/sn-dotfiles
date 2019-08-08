@@ -18,7 +18,7 @@ func TestRemoveItems(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -34,14 +34,14 @@ func TestRemoveItems(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	added, existing, missing, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	added, existing, missing, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true, true)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
 	assert.Len(t, missing, 0)
 	//assert.Contains(t, missing, golfPath)
 	var notesRemoved, tagsRemoved, noNotTracked int
-	notesRemoved, tagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath, applePath, yellowPath}, true)
+	notesRemoved, tagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath, applePath, yellowPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, notesRemoved)
 	assert.Equal(t, 2, tagsRemoved)
@@ -57,7 +57,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -76,13 +76,13 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing []string
-	added, existing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	added, existing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true, true)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
 	// try removing overlapping path and note in specified path
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{yellowPath, fruitPath, fruitPathDupe}, true)
+	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{yellowPath, fruitPath, fruitPathDupe}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)
@@ -98,7 +98,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -116,12 +116,12 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing []string
-	added, existing, _, err = Add(session, home, []string{gitConfigPath, greenPath, yellowPath, premiumPath}, true)
+	added, existing, _, err = Add(session, home, []string{gitConfigPath, greenPath, yellowPath, premiumPath}, true, true)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath}, true)
+	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)
@@ -137,7 +137,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -154,12 +154,12 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing []string
-	added, existing, _, err = Add(session, home, []string{gitConfigPath, greenPath, yellowPath, premiumPath}, true)
+	added, existing, _, err = Add(session, home, []string{gitConfigPath, greenPath, yellowPath, premiumPath}, true, true)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath}, true)
+	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)

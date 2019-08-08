@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,12 +64,12 @@ func TestDiff1(t *testing.T) {
 	}()
 
 	// missing remote and missing local
-	_, err = diff(tagsWithNotes{}, home, []string{"missing-file"})
+	_, err = diff(tagsWithNotes{}, home, []string{"missing-file"}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "tags with notes not supplied")
 
 	// existing remote and missing local
-	_, err = diff(twn, home, []string{"missing-file"})
+	_, err = diff(twn, home, []string{"missing-file"}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no such file")
 
@@ -76,7 +77,7 @@ func TestDiff1(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)
 	lemonPath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)
 	allPaths := []string{applePath, lemonPath}
-	diffs, err = diff(twn, home, allPaths)
+	diffs, err = diff(twn, home, allPaths, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 2)
 	assert.NotEmpty(t, diffs)
@@ -107,6 +108,40 @@ func TestDiff1(t *testing.T) {
 	assert.Equal(t, 2, foundCount)
 }
 
+//func checkPathsExist(paths []string) error {
+//	for _, p := range paths {
+//		if _, err := os.Stat(p); err != nil || os.IsNotExist(err) {
+//			return err
+//		}
+//	}
+//	return nil
+//}
+
+func TestCheckPathExists(t *testing.T) {
+	tmpDir := os.TempDir()
+	p := fmt.Sprintf("%s/hello.txt", tmpDir)
+	b := []byte("hello world")
+	_ = ioutil.WriteFile(p, b, 0644)
+	// check existing file
+	assert.NoError(t,checkPathsExist([]string{p}))
+	// check one bad returns error
+	assert.Error(t, checkPathsExist([]string{"invalid"}))
+	// check one good and one bad returns error
+	assert.Error(t, checkPathsExist([]string{p, "invalid"}))
+	// check nested empty directory is valid
+	newPath := tmpDir+"test0/test1/test2"
+	err := os.MkdirAll(newPath, os.ModePerm)
+	assert.NoError(t, err)
+	assert.NoError(t, checkPathsExist([]string{newPath}))
+	// check new file a few dirs down is valid
+	newFilePath := tmpDir+"test0/test1/test2/test.txt"
+	_ = ioutil.WriteFile(newFilePath, b, 0644)
+	assert.NoError(t, checkPathsExist([]string{newPath, newFilePath}))
+	// check path with additional trailing slashes is NOT valid
+	newFilePathWithSlashes := newFilePath + "/"
+	assert.Error(t, checkPathsExist([]string{newFilePathWithSlashes, newFilePath}))
+}
+
 // func testDiffSetup1and2(home string) (twn tagsWithNotes, fwc map[string]string) {
 //	fruitTag := createTag("dotfiles.sn-dotfiles-test-fruit")
 //	appleNote := createNote("apple", "apple content")
@@ -121,6 +156,47 @@ func TestDiff1(t *testing.T) {
 //	return
 //
 //}
+//func TestDiffFindUntracked(t *testing.T) {
+//	home := getTemporaryHome()
+//	fruitTag := createTag("dotfiles")
+//	appleNote := createNote(".apple", "apple content")
+//	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
+//	twn := tagsWithNotes{fruitTagWithNotes}
+//
+//	fwc := make(map[string]string)
+//	fwc[fmt.Sprintf("%s/.apple", home)] = "apple content"
+//
+//	var diffs []ItemDiff
+//	err := createTemporaryFiles(fwc)
+//	assert.NoError(t, err)
+//	defer func() {
+//		if err := deleteTemporaryFiles(home); err != nil {
+//			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
+//		}
+//	}()
+//
+//	// valid local, valid remote, grape not diff'd as not specified in path
+//	paths := []string{fmt.Sprintf("%s/.apple", home)}
+//	//diffs, err = diff(twn, home, paths, true)
+//	findUntracked(paths, )
+//	assert.NoError(t, err)
+//	assert.Len(t, diffs, 1)
+//	assert.Equal(t, identical, diffs[0].diff)
+//	assert.NotEmpty(t, diffs)
+//
+//	var foundCount int
+//	for _, diff := range diffs {
+//		if diff.noteTitle == ".apple" {
+//			foundCount++
+//			assert.Equal(t, diff.diff, identical)
+//			assert.Equal(t, "apple content", diff.remote.Content.GetText())
+//			assert.Equal(t, "apple content", diff.local)
+//
+//		}
+//	}
+//}
+
+
 func TestDiff2(t *testing.T) {
 	home := getTemporaryHome()
 	twn, filesWithContent := testDiffSetup1and2(home)
@@ -135,7 +211,7 @@ func TestDiff2(t *testing.T) {
 
 	// valid local, valid remote, grape not diff'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.sn-dotfiles-test-fruit/", home)}
-	diffs, err = diff(twn, home, paths)
+	diffs, err = diff(twn, home, paths, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.NotEmpty(t, diffs)
@@ -185,10 +261,52 @@ func TestDiff3(t *testing.T) {
 
 	// valid local, valid remote, grape not diff'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.apple", home)}
-	diffs, err = diff(twn, home, paths)
+	diffs, err = diff(twn, home, paths, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, identical, diffs[0].diff)
+	assert.NotEmpty(t, diffs)
+
+	var foundCount int
+	for _, diff := range diffs {
+		if diff.noteTitle == ".apple" {
+			foundCount++
+			assert.Equal(t, diff.diff, identical)
+			assert.Equal(t, "apple content", diff.remote.Content.GetText())
+			assert.Equal(t, "apple content", diff.local)
+
+		}
+	}
+}
+
+func TestDiff4(t *testing.T) {
+	home := getTemporaryHome()
+	fruitTag := createTag("dotfiles")
+	appleNote := createNote(".apple", "apple content")
+
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
+	twn := tagsWithNotes{fruitTagWithNotes}
+
+	fwc := make(map[string]string)
+	fwc[fmt.Sprintf("%s/.apple", home)] = "apple content"
+	fwc[fmt.Sprintf("%s/.banana", home)] = "banana content"
+	fwc[fmt.Sprintf("%s/.cars/audi/a3", home)] = "audi a3 content"
+
+	var diffs []ItemDiff
+	err := createTemporaryFiles(fwc)
+	assert.NoError(t, err)
+	defer func() {
+		if err := deleteTemporaryFiles(home); err != nil {
+			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
+		}
+	}()
+
+	paths := []string{fmt.Sprintf("%s/.apple", home), fmt.Sprintf("%s/.banana", home), fmt.Sprintf("%s/.cars", home)}
+	diffs, err = diff(twn, home, paths, true)
+	assert.NoError(t, err)
+	assert.Len(t, diffs, 3)
+	assert.Equal(t, identical, diffs[0].diff)
+	assert.Equal(t, untracked, diffs[2].diff)
 	assert.NotEmpty(t, diffs)
 
 	var foundCount int

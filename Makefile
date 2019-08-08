@@ -5,13 +5,14 @@ TEST_OPTIONS?=-race -v
 setup:
 	go get -u github.com/alecthomas/gometalinter
 	go get -u golang.org/x/tools/cmd/cover
+	go get -u github.com/dave/courtney
 	gometalinter --install --update
 
 test:
-	echo 'mode: atomic' > coverage.txt && go list ./... | xargs -n1 -I{} sh -c 'go test -v -failfast -timeout=600s -covermode=atomic -coverprofile=coverage.tmp {} && tail -n +2 coverage.tmp >> coverage.txt' && rm coverage.tmp
+	echo 'mode: atomic' > coverage.txt && go list ./... | grep -v testing.go | xargs -n1 -I{} sh -c 'go test -v -failfast -timeout=600s -covermode=atomic -coverprofile=coverage.tmp {} && tail -n +2 coverage.tmp >> coverage.txt' && rm coverage.tmp
 
 cover: test
-	go tool cover -html=coverage.txt
+	go tool cover -html=coverage.txt -o coverage.html
 
 fmt:
 	goimports -w .

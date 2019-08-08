@@ -10,7 +10,7 @@ import (
 )
 
 // Remove stops tracking local paths by removing the related notes from SN
-func Remove(session gosn.Session, home string, paths []string, quiet bool) (notesremoved, tagsRemoved, notTracked int, err error) {
+func Remove(session gosn.Session, home string, paths []string, quiet, debug bool) (notesremoved, tagsRemoved, notTracked int, err error) {
 	// remove any duplicate paths
 	paths = dedupe(paths)
 
@@ -26,7 +26,7 @@ func Remove(session gosn.Session, home string, paths []string, quiet bool) (note
 	if err != nil {
 		return
 	}
-	err = preflight(tagsWithNotes)
+	err = preflight(tagsWithNotes, paths)
 	if err != nil {
 		return
 	}

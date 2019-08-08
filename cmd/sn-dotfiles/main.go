@@ -96,7 +96,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, err = dotfilesSN.Status(session, home, c.Args(), c.Bool("quiet"))
+				_, err = dotfilesSN.Status(session, home, c.Args(), c.Bool("quiet"), c.GlobalBool("debug"))
 				return err
 			},
 		},
@@ -123,7 +123,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, err = dotfilesSN.Sync(session, home, c.Bool("quiet"))
+				_, _, err = dotfilesSN.Sync(session, home, c.Bool("quiet"), c.GlobalBool("debug"))
 				if err != nil {
 					return err
 				}
@@ -163,7 +163,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.Bool("quiet"))
+				_, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.Bool("quiet"), c.GlobalBool("debug"))
 
 				if err != nil {
 					return err
@@ -204,7 +204,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.Bool("quiet"))
+				_, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.Bool("quiet"), c.GlobalBool("debug"))
 				if err != nil {
 					return err
 				}

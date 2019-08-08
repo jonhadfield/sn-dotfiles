@@ -4,16 +4,17 @@ go:
   - 1.12.x
 
 os:
-  - linux
   - osx
 
 sudo: false
-
-install: true
-
+install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get -u github.com/mattn/goveralls
+  - go get -t -v ./...
 env:
   - GO111MODULE=on
-
 script:
-  - go build
-  - go test -v -p 1 -parallel 1 -failfast ./...
+  - go test -v -p 1 -parallel 1 -failfast -coverprofile=coverage.txt -covermode=atomic ./...
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+  - goveralls -coverprofile=coverage.out -service=travis-ci
