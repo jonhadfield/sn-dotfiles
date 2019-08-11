@@ -41,7 +41,7 @@ func localExists(path string) bool {
 }
 
 func getTemporaryHome() string {
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
 	return strings.ReplaceAll(home, "//", "/")
 }
 

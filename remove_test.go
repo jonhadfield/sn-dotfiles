@@ -2,10 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
-	"github.com/lithammer/shortuuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +16,7 @@ func TestRemoveItems(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -57,7 +55,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -98,7 +96,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -137,7 +135,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)

@@ -2,10 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
-	"github.com/lithammer/shortuuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +42,7 @@ func TestAddOne(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	applePath := fmt.Sprintf("%s/.apple", home)
@@ -70,7 +68,7 @@ func TestAddTwoSameTag(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
@@ -107,7 +105,7 @@ func TestAddRecursive(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)

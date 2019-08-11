@@ -2,12 +2,10 @@ package sndotfiles
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jonhadfield/gosn"
-	"github.com/lithammer/shortuuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +13,7 @@ func TestSyncNoItems(t *testing.T) {
 	session, err := getSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 	// add item
 	var noPushed, noPulled int
 	noPushed, noPulled, err = Sync(session, home, true, true)

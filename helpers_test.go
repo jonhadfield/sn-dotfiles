@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lithammer/shortuuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -98,7 +97,7 @@ func TestCompareIdentical(t *testing.T) {
 }
 
 func TestCompareRemoteNewer(t *testing.T) {
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 	err := os.MkdirAll(home, os.ModePerm)
 	// setup
 	lemonNote := createNote("lemon", "lemon content 2")
@@ -120,7 +119,7 @@ func TestCompareRemoteNewer(t *testing.T) {
 	assert.Equal(t, lemonNote, iDiff.remote)
 }
 func TestCompareLocalNewer(t *testing.T) {
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 	err := os.MkdirAll(home, os.ModePerm)
 	// setup
 	lemonNote := createNote("lemon", "lemon content 2")

@@ -2,10 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
-	"github.com/lithammer/shortuuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +16,7 @@ func TestStatus(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -80,7 +78,7 @@ func TestStatus1(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -115,7 +113,7 @@ func TestStatus2(t *testing.T) {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	home := fmt.Sprintf("%s%s", os.TempDir(), shortuuid.New())
+	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
