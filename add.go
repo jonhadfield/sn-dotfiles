@@ -12,6 +12,7 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
+// Add tracks local paths by pushing the local dir as a tag representation and the filename as a note title
 func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (pathsAdded, pathsExisting, pathsInvalid []string, err error) {
 	// remove any duplicate paths
 	paths = dedupe(paths)

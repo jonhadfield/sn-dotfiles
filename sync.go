@@ -10,7 +10,9 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
-// TODO: add option to sync paths
+// Sync compares local and remote items and then:
+// - pulls remotes if locals are older or missing
+// - pushes locals if remotes are newer
 func Sync(session gosn.Session, home string, quiet, debug bool) (noPushed, noPulled int, err error) {
 	var remote tagsWithNotes
 	remote, err = get(session)

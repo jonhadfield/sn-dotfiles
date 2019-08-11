@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// CLiSignIn takes the server URL and credentials and sends them to the API to get a response including
+// an authentication token plus the keys required to encrypt and decrypt SN items
 func CliSignIn(email, password, apiServer string) (session gosn.Session, err error) {
 	sInput := gosn.SignInInput{
 		Email:     email,
@@ -45,6 +47,7 @@ func CliSignIn(email, password, apiServer string) (session gosn.Session, err err
 	return session, err
 }
 
+// GetCredentials is used to obtain the SN credentials via the CLI if not specified using envvars
 func GetCredentials(inServer string) (email, password, apiServer, errMsg string) {
 	switch {
 	case viper.GetString("email") != "":

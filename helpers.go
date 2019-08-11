@@ -73,6 +73,7 @@ func push(session gosn.Session, itemDiffs []ItemDiff) (pio gosn.PutItemsOutput, 
 	return pio, err
 }
 
+// GetTagConfig defines the input for getting tags from SN
 type GetTagConfig struct {
 	Session gosn.Session
 	Filters gosn.ItemFilters

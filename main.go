@@ -8,7 +8,9 @@ import (
 )
 
 const (
+	// SNServerURL defines the default URL for making calls to sync with SN
 	SNServerURL = "https://sync.standardnotes.org"
+	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
 	DotFilesTag = "dotfiles"
 )
 
@@ -77,6 +79,7 @@ type tagWithNotes struct {
 
 type tagsWithNotes []tagWithNotes
 
+// GetNoteConfig defines the input for getting notes from SN
 type GetNoteConfig struct {
 	Session    gosn.Session
 	Filters    gosn.ItemFilters
