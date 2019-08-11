@@ -119,6 +119,9 @@ func TestDiff1(t *testing.T) {
 
 func TestCheckPathExists(t *testing.T) {
 	tmpDir := os.TempDir()
+	if ! strings.HasSuffix(tmpDir, "/") {
+		tmpDir += "/"
+	}
 	p := fmt.Sprintf("%s/hello.txt", tmpDir)
 	b := []byte("hello world")
 	_ = ioutil.WriteFile(p, b, 0644)
