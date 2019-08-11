@@ -131,6 +131,7 @@ func TestCompareLocalNewer(t *testing.T) {
 	f, err = os.Create(lemonPath)
 	assert.NoError(t, err)
 	_, err = f.WriteString("lemon content")
+	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote differ and local newer produces correct ItemDiff
 	iDiff := compare("lemon", lemonPath, home, lemonNote, true)

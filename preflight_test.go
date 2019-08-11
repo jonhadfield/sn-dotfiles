@@ -2,9 +2,10 @@ package sndotfiles
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestPreflightInvalidPaths(t *testing.T) {
@@ -21,7 +22,7 @@ func TestPreflightOverlaps(t *testing.T) {
 	// with overlap
 	noteOne := createNote("noteOne", "hello world")
 	twn := tagsWithNotes{tagWithNotes{
-		tag:   createTag("something.else.noteOne"),
+		tag: createTag("something.else.noteOne"),
 	},
 		tagWithNotes{createTag("something.else"),
 			gosn.Items{noteOne}},
@@ -34,7 +35,7 @@ func TestPreflightOverlaps1(t *testing.T) {
 	// without overlap
 	noteOne := createNote("noteTwo", "hello world")
 	twn := tagsWithNotes{tagWithNotes{
-		tag:   createTag("something.else.noteOne"),
+		tag: createTag("something.else.noteOne"),
 	},
 		tagWithNotes{createTag("something.else"),
 			gosn.Items{noteOne}},

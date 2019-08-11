@@ -50,7 +50,7 @@ func noteInPaths(note string, paths []string) bool {
 			return true
 		}
 		rel, err := filepath.Rel(paths[i], note)
-		if err == nil && ! strings.HasPrefix(rel, "../") {
+		if err == nil && !strings.HasPrefix(rel, "../") {
 			return true
 		}
 	}
@@ -96,8 +96,7 @@ func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, de
 			if !localExists(fullPath) {
 				// local path matching tag+note doesn't exist so set as 'local missing'
 				debugPrint(debug, fmt.Sprintf("diff | local not found: <home>/%s", stripHome(fullPath, home)))
-				var homeRelPath string
-				homeRelPath = stripHome(fullPath, home)
+				homeRelPath := stripHome(fullPath, home)
 				itemDiffs = append(itemDiffs, ItemDiff{
 					tagTitle:    tagTitle,
 					homeRelPath: homeRelPath,
@@ -114,7 +113,7 @@ func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, de
 			}
 		}
 	}
-	return
+	return itemDiffs, remotePaths, err
 }
 
 func diff(remote tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, err error) {
@@ -173,8 +172,7 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 				// add file as untracked
 				if stat, err := os.Stat(p); err == nil && !stat.IsDir() {
 					debugPrint(debug, fmt.Sprintf("diff | file is untracked: %s", p))
-					var homeRelPath string
-					homeRelPath = stripHome(p, home)
+					homeRelPath := stripHome(p, home)
 					itemDiffs = append(itemDiffs, ItemDiff{
 						homeRelPath: homeRelPath,
 						path:        p,
@@ -195,7 +193,7 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 		}
 	}
 
-	return
+	return itemDiffs
 }
 
 type ItemDiff struct {
@@ -227,8 +225,7 @@ func compare(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff
 	if err != nil {
 		log.Fatal(err)
 	}
-	var homeRelPath string
-	homeRelPath = stripHome(path, home)
+	homeRelPath := stripHome(path, home)
 	localStr := string(localBytes)
 	if localStr != remote.Content.GetText() {
 		var remoteUpdated time.Time

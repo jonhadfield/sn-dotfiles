@@ -101,12 +101,9 @@ func TestStatus1(t *testing.T) {
 	diffs, err = Status(session, home, []string{gitConfigPath}, true, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
-	var pDiff int
-
 	assert.Equal(t, ".gitconfig", diffs[0].noteTitle)
 	assert.Equal(t, gitConfigPath, diffs[0].path)
 	assert.Equal(t, identical, diffs[0].diff)
-	pDiff++
 }
 
 func TestStatus2(t *testing.T) {

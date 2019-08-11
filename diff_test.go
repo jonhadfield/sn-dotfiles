@@ -123,18 +123,18 @@ func TestCheckPathExists(t *testing.T) {
 	b := []byte("hello world")
 	_ = ioutil.WriteFile(p, b, 0644)
 	// check existing file
-	assert.NoError(t,checkPathsExist([]string{p}))
+	assert.NoError(t, checkPathsExist([]string{p}))
 	// check one bad returns error
 	assert.Error(t, checkPathsExist([]string{"invalid"}))
 	// check one good and one bad returns error
 	assert.Error(t, checkPathsExist([]string{p, "invalid"}))
 	// check nested empty directory is valid
-	newPath := tmpDir+"test0/test1/test2"
+	newPath := tmpDir + "test0/test1/test2"
 	err := os.MkdirAll(newPath, os.ModePerm)
 	assert.NoError(t, err)
 	assert.NoError(t, checkPathsExist([]string{newPath}))
 	// check new file a few dirs down is valid
-	newFilePath := tmpDir+"test0/test1/test2/test.txt"
+	newFilePath := tmpDir + "test0/test1/test2/test.txt"
 	_ = ioutil.WriteFile(newFilePath, b, 0644)
 	assert.NoError(t, checkPathsExist([]string{newPath, newFilePath}))
 	// check path with additional trailing slashes is NOT valid
@@ -195,7 +195,6 @@ func TestCheckPathExists(t *testing.T) {
 //		}
 //	}
 //}
-
 
 func TestDiff2(t *testing.T) {
 	home := getTemporaryHome()

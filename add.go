@@ -75,8 +75,7 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 
 	for _, path := range finalPaths {
 		dir, filename := filepath.Split(path)
-		var homeRelPath string
-		homeRelPath = stripHome(dir+filename, home)
+		homeRelPath := stripHome(dir+filename, home)
 		boldHomeRelPath := bold(homeRelPath)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			debugPrint(debug, fmt.Sprintf("add | path does not exist: %s", path))

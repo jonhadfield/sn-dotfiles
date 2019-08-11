@@ -10,7 +10,7 @@ import (
 func preflight(twn tagsWithNotes, paths []string) error {
 	// check all provided paths are valid
 	for i := range paths {
-		if ! checkPathValid(paths[i]) {
+		if !checkPathValid(paths[i]) {
 			return fmt.Errorf("path \"%s\" does not exist", paths[i])
 		}
 	}
@@ -43,7 +43,6 @@ func preflight(twn tagsWithNotes, paths []string) error {
 	}
 	if inter.IsEmpty() {
 		return nil
-	} else {
-		return fmt.Errorf("the following notes and tags are overlapping:\n%s", strings.Join(overlaps, "\n"))
 	}
+	return fmt.Errorf("the following notes and tags are overlapping:\n%s", strings.Join(overlaps, "\n"))
 }
