@@ -1,6 +1,6 @@
 # SN-Dotfiles
 
-[![codecov](https://codecov.io/gh/jonhadfield/sn-dotfiles/branch/master/graph/badge.svg)](https://codecov.io/gh/jonhadfield/sn-dotfiles) [![Go Report Card][go-report-card-image]][go-report-card-url] 
+[![circleci][circleci-image]][circleci-url] [![codecov](https://codecov.io/gh/jonhadfield/sn-dotfiles/branch/master/graph/badge.svg)](https://codecov.io/gh/jonhadfield/sn-dotfiles) [![Go Report Card][go-report-card-image]][go-report-card-url] 
 
 ## about
 
