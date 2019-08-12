@@ -2,10 +2,29 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestRemoveNoItems(t *testing.T) {
+	err := remove(gosn.Session{}, gosn.Items{})
+	assert.Error(t, err)
+}
+
+func TestRemoveItemsInvalidSession(t *testing.T) {
+	tag := gosn.NewTag()
+	tagContent := gosn.NewTagContent()
+	tagContent.SetTitle("newTag")
+	err := remove(gosn.Session{
+		Token:  "invalid",
+		Mk:     "invalid",
+		Ak:     "invalid",
+		Server: "invalid",
+	}, gosn.Items{*tag})
+	assert.Error(t, err)
+}
 
 func TestRemoveItems(t *testing.T) {
 	session, err := getSession()

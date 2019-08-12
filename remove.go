@@ -90,11 +90,11 @@ func remove(session gosn.Session, items gosn.Items) (err error) {
 	}
 	var encItemsToRemove gosn.EncryptedItems
 	if itemsToRemove == nil {
-		return
+		return fmt.Errorf("no items to remove")
 	}
 	encItemsToRemove, err = itemsToRemove.Encrypt(session.Mk, session.Ak)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to encrypt items to remove: %v", err)
 	}
 	pii := gosn.PutItemsInput{
 		Items:   encItemsToRemove,
