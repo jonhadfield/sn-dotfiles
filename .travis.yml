@@ -5,6 +5,7 @@ go:
 
 os:
   - osx
+  - linux
 
 sudo: false
 install:
