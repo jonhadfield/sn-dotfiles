@@ -40,17 +40,22 @@ func Status(session gosn.Session, home string, paths []string, quiet, debug bool
 	if err != nil {
 		return diffs, err
 	}
-	debugPrint(debug, fmt.Sprintf("status | %d remote items", len(remote)))
-	err = preflight(remote, paths)
+
+	return status(remote, home, paths, quiet, debug)
+}
+
+func status(twn tagsWithNotes, home string, paths []string, quiet, debug bool) (diffs []ItemDiff, err error) {
+	debugPrint(debug, fmt.Sprintf("status | %d remote items", len(twn)))
+	err = preflight(twn, paths)
 	if err != nil {
 		return
 	}
-	if len(remote) == 0 {
+	if len(twn) == 0 {
 		return diffs, errors.New("no dotfiles being tracked")
 	}
 	bold := color.New(color.Bold).SprintFunc()
 
-	diffs, err = diff(remote, home, paths, debug)
+	diffs, err = diff(twn, home, paths, debug)
 	if err != nil {
 		return diffs, err
 	}
