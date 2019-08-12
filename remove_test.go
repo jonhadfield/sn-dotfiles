@@ -146,6 +146,8 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	fwc[yellowPath] = "yellow content"
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
+	lokiPath := fmt.Sprintf("%s/.dogs/labrador/loki", home)
+	fwc[lokiPath] = "chicken please content"
 	// path to recursively remove
 	fruitPath := fmt.Sprintf("%s/.fruit/", home)
 
@@ -157,9 +159,9 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath}, true, true)
+	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath, lokiPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
+	assert.Equal(t, 1, noNotTracked)
 }

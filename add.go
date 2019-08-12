@@ -50,7 +50,7 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 			err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					pathsInvalid = append(pathsInvalid, path)
-					return fmt.Errorf("failed to read path %q: %v\n", path, err)
+					return fmt.Errorf("failed to read path %q: %v", path, err)
 				}
 				// ensure walked path is valid
 				if !checkPathValid(path) {
