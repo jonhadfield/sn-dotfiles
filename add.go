@@ -22,7 +22,7 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 	}
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
+	//red := color.New(color.FgRed).SprintFunc()
 	bold := color.New(color.Bold).SprintFunc()
 
 	var twn tagsWithNotes
