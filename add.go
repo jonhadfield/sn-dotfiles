@@ -77,12 +77,13 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 		dir, filename := filepath.Split(path)
 		homeRelPath := stripHome(dir+filename, home)
 		boldHomeRelPath := bold(homeRelPath)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			debugPrint(debug, fmt.Sprintf("add | path does not exist: %s", path))
-			missing = append(missing, fmt.Sprintf("%s | %s", boldHomeRelPath, red("does not exist")))
-			pathsInvalid = append(pathsInvalid, path)
-			continue
-		}
+		// TODO: Remove following as finalPaths must exist
+		//if _, err := os.Stat(path); os.IsNotExist(err) {
+		//	debugPrint(debug, fmt.Sprintf("add | path does not exist: %s", path))
+		//	missing = append(missing, fmt.Sprintf("%s | %s", boldHomeRelPath, red("does not exist")))
+		//	pathsInvalid = append(pathsInvalid, path)
+		//	continue
+		//}
 		var remoteTagTitleWithoutHome, remoteTagTitle string
 		remoteTagTitleWithoutHome = stripHome(dir, home)
 		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
