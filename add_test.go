@@ -114,12 +114,12 @@ func TestAddRecursive(t *testing.T) {
 	fwc[yellowPath] = "yellow content"
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
-	//golfPath := fmt.Sprintf("%s/.cars/vw/golf.txt", home)
-
+	fruitPath := fmt.Sprintf("%s/.fruit", home)
+	carsPath := fmt.Sprintf("%s/.cars", home)
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, err = Add(session, home, []string{applePath, yellowPath, premiumPath}, true, true)
+	added, existing, missing, err = Add(session, home, []string{fruitPath, carsPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(added))
 	assert.Contains(t, added, applePath)
