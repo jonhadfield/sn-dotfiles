@@ -108,18 +108,9 @@ func TestDiff1(t *testing.T) {
 	assert.Equal(t, 2, foundCount)
 }
 
-//func checkPathsExist(paths []string) error {
-//	for _, p := range paths {
-//		if _, err := os.Stat(p); err != nil || os.IsNotExist(err) {
-//			return err
-//		}
-//	}
-//	return nil
-//}
-
 func TestCheckPathExists(t *testing.T) {
 	tmpDir := os.TempDir()
-	if ! strings.HasSuffix(tmpDir, "/") {
+	if !strings.HasSuffix(tmpDir, "/") {
 		tmpDir += "/"
 	}
 	p := fmt.Sprintf("%s/hello.txt", tmpDir)
