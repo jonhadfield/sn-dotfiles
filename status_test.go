@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,6 +68,22 @@ func TestStatus(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 4, pDiff)
+}
+
+
+// TODO: use 'small' status and pass pre-gen twn **********
+func testStatusSetup(home string) (twn tagsWithNotes, fwc map[string]string) {
+	fruitTag := createTag("dotfiles.sn-dotfiles-test-fruit")
+	appleNote := createNote("apple", "apple content")
+	lemonNote := createNote("lemon", "lemon content")
+	grapeNote := createNote("grape", "grape content")
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote, lemonNote, grapeNote}}
+	twn = tagsWithNotes{fruitTagWithNotes}
+
+	fwc = make(map[string]string)
+	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)] = "apple content"
+	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)] = "lemon content"
+	return
 }
 
 func TestStatus1(t *testing.T) {
