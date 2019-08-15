@@ -10,7 +10,6 @@ import (
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
 	"github.com/jonhadfield/gosn"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 )
@@ -247,7 +246,7 @@ func stripHome(in, home string) string {
 }
 
 func getHome() string {
-	home, err := homedir.Dir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println("failed to get home directory")
 		panic(err)
