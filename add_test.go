@@ -170,18 +170,8 @@ func wipe(session gosn.Session) (int, error) {
 			itemsToDel = append(itemsToDel, item)
 		}
 	}
-	// delete items
-	var eItemsToDel gosn.EncryptedItems
-	eItemsToDel, err = itemsToDel.Encrypt(session.Mk, session.Ak)
-	if err != nil {
-		return 0, err
-	}
-	putItemsInput := gosn.PutItemsInput{
-		Session:   session,
-		Items:     eItemsToDel,
-		SyncToken: output.SyncToken,
-	}
-	_, err = gosn.PutItems(putItemsInput)
+
+	_, err = putItems(session, itemsToDel)
 	if err != nil {
 		return 0, err
 	}

@@ -61,16 +61,8 @@ func push(session gosn.Session, itemDiffs []ItemDiff) (pio gosn.PutItemsOutput, 
 		err = errors.New("no items to push")
 		return
 	}
-	eItems, err := dItems.Encrypt(session.Mk, session.Ak)
-	if err != nil {
-		return
-	}
-	pii := gosn.PutItemsInput{
-		Session: session,
-		Items:   eItems,
-	}
-	pio, err = gosn.PutItems(pii)
-	return pio, err
+
+	return putItems(session, dItems)
 }
 
 // GetTagConfig defines the input for getting tags from SN
@@ -135,17 +127,9 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newT
 			itemsToPush = append(itemsToPush, createTag(f))
 		}
 	}
-	var encItemsToPush gosn.EncryptedItems
-	encItemsToPush, err = itemsToPush.Encrypt(session.Mk, session.Ak)
-	if err != nil {
-		return
-	}
-	pii := gosn.PutItemsInput{
-		Session: session,
-		Items:   encItemsToPush,
-	}
+
 	var pio gosn.PutItemsOutput
-	pio, err = gosn.PutItems(pii)
+	pio, err = putItems(session, itemsToPush)
 	if err != nil {
 		return
 	}
@@ -203,16 +187,8 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 			}
 		}
 	}
-	var encItemsToPush gosn.EncryptedItems
-	encItemsToPush, err = itemsToPush.Encrypt(session.Mk, session.Ak)
-	if err != nil {
-		return err
-	}
-	pii := gosn.PutItemsInput{
-		Session: session,
-		Items:   encItemsToPush,
-	}
-	_, err = gosn.PutItems(pii)
+
+	_, err = putItems(session, itemsToPush)
 	return err
 }
 
@@ -505,4 +481,17 @@ func stringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 		}
 	}
 	return false
+}
+
+func putItems(session gosn.Session, items gosn.Items) (pio gosn.PutItemsOutput, err error) {
+	var encItemsToPut gosn.EncryptedItems
+	encItemsToPut, err = items.Encrypt(session.Mk, session.Ak)
+	if err != nil {
+		return pio, fmt.Errorf("failed to encrypt items to put: %v", err)
+	}
+	pii := gosn.PutItemsInput{
+		Items:   encItemsToPut,
+		Session: session,
+	}
+	return gosn.PutItems(pii)
 }

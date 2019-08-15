@@ -88,18 +88,9 @@ func remove(session gosn.Session, items gosn.Items) (err error) {
 		item.Deleted = true
 		itemsToRemove = append(itemsToRemove, item)
 	}
-	var encItemsToRemove gosn.EncryptedItems
 	if itemsToRemove == nil {
 		return fmt.Errorf("no items to remove")
 	}
-	encItemsToRemove, err = itemsToRemove.Encrypt(session.Mk, session.Ak)
-	if err != nil {
-		return fmt.Errorf("failed to encrypt items to remove: %v", err)
-	}
-	pii := gosn.PutItemsInput{
-		Items:   encItemsToRemove,
-		Session: session,
-	}
-	_, err = gosn.PutItems(pii)
+	_, err = putItems(session, items)
 	return err
 }

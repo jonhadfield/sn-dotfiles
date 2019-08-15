@@ -139,12 +139,26 @@ func diff(remote tagsWithNotes, home string, paths []string, debug bool) (diffs 
 		return
 	}
 
+	// add 'dotfiles' tag if missing then create
+	if !tagExists("dotfiles", remote) {
+
+	}
+
 	// if paths specified, then discover those that are untracked
 	// by comparing with existing remote equivalent paths
 	if len(paths) > 0 {
 		itemDiffs = append(itemDiffs, findUntracked(paths, remotePaths, home, debug)...)
 	}
 	return itemDiffs, err
+}
+
+func tagExists(title string, twn tagsWithNotes) bool {
+	for _, twn := range twn {
+		if twn.tag.Content.GetTitle() == title {
+			return true
+		}
+	}
+	return false
 }
 
 func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, debug bool) (itemDiffs []ItemDiff) {
