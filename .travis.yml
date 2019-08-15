@@ -18,4 +18,4 @@ script:
   - go test -v -p 1 -parallel 1 -failfast -coverprofile=coverage.txt -covermode=atomic ./...
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - goveralls -coverprofile=coverage.out -service=travis-ci
+  - goveralls -coverprofile=coverage.txt -service=travis-ci
