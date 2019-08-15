@@ -2,8 +2,9 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn"
 	"testing"
+
+	"github.com/jonhadfield/gosn"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -2,8 +2,9 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn"
 	"testing"
+
+	"github.com/jonhadfield/gosn"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -69,7 +70,6 @@ func TestStatus(t *testing.T) {
 	}
 	assert.Equal(t, 4, pDiff)
 }
-
 
 // TODO: use 'small' status and pass pre-gen twn **********
 func testStatusSetup(home string) (twn tagsWithNotes, fwc map[string]string) {
