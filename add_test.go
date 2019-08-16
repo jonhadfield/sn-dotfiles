@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -129,6 +130,23 @@ func TestAddRecursive(t *testing.T) {
 	assert.Equal(t, 0, len(missing))
 }
 
+func TestCheckPathValid(t *testing.T) {
+	home := getTemporaryHome()
+	d1 := []byte("test file")
+	filePath := home + "test"
+	symLinkPath := home + "test_sym"
+	assert.NoError(t, ioutil.WriteFile(filePath, d1, 0644))
+	fmt.Println(1)
+	assert.True(t, checkPathValid(filePath))
+	fmt.Println(2)
+	assert.NoError(t, os.Symlink(filePath, symLinkPath))
+	fmt.Println(3)
+	assert.False(t, checkPathValid(symLinkPath))
+	fmt.Println(4)
+	assert.False(t, false)
+	fmt.Println(5)
+}
+
 func getSession() (gosn.Session, error) {
 	email := os.Getenv("SN_EMAIL")
 	password := os.Getenv("SN_PASSWORD")
@@ -177,3 +195,5 @@ func wipe(session gosn.Session) (int, error) {
 	}
 	return len(itemsToDel), err
 }
+
+
