@@ -225,7 +225,7 @@ func getSession(server string) (gosn.Session, string, error) {
 		fmt.Printf("\nerror: %s\n\n", errMsg)
 		return sess, email, err
 	}
-	sess, err = dotfilesSN.CliSignIn(email, password, apiServer)
+	sess, err = gosn.CliSignIn(email, password, apiServer)
 	if err != nil {
 		return sess, email, err
 	}

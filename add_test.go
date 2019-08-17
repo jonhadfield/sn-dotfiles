@@ -151,7 +151,7 @@ func getSession() (gosn.Session, error) {
 	email := os.Getenv("SN_EMAIL")
 	password := os.Getenv("SN_PASSWORD")
 	apiServer := os.Getenv("SN_SERVER")
-	return CliSignIn(email, password, apiServer)
+	return gosn.CliSignIn(email, password, apiServer)
 }
 
 func wipe(session gosn.Session) (int, error) {
