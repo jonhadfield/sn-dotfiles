@@ -28,7 +28,7 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 }
 
 func TestRemoveItems(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -67,7 +67,7 @@ func TestRemoveItems(t *testing.T) {
 }
 
 func TestRemoveItemsRecursive(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -108,7 +108,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveTwo(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -147,7 +147,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveThree(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {

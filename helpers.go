@@ -11,6 +11,7 @@ import (
 
 	"github.com/jonhadfield/gosn"
 	"github.com/lithammer/shortuuid"
+	keyring "github.com/zalando/go-keyring"
 )
 
 func debugPrint(show bool, msg string) {
@@ -471,7 +472,54 @@ func pathToTag(homeRelPath string) string {
 	}
 	return r
 }
+func GetSession(loadSession bool, server string) (session gosn.Session, email string, err error) {
+	if loadSession {
+		service := "StandardNotesCLI"
+		var rawSess string
+		rawSess, err = keyring.Get(service, "session")
+		email, session = parseSessionString(rawSess)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		session, email, err = GetSessionFromUser(server)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func GetSessionFromUser(server string) (gosn.Session, string, error) {
+	var sess gosn.Session
+	var email string
+	var err error
+	var password, apiServer, errMsg string
+	email, password, apiServer, errMsg = GetCredentials(server)
+	if errMsg != "" {
+		fmt.Println("fooked here")
+		fmt.Printf("\nerror: %s\n\n", errMsg)
+		return sess, email, err
+	}
+	sess, err = gosn.CliSignIn(email, password, apiServer)
+	if err != nil {
+		fmt.Println("pants")
+		return sess, email, err
 
+	}
+	return sess, email, err
+}
+
+func parseSessionString(in string) (email string, session gosn.Session) {
+	parts := strings.Split(in, ";")
+	email = parts[0]
+	session = gosn.Session{
+		Token:  parts[2],
+		Mk:     parts[4],
+		Ak:     parts[3],
+		Server: parts[1],
+	}
+	return
+}
 func stringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 	for i := range inSlice {
 		if matchCase && inStr == inSlice[i] {

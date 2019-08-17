@@ -10,7 +10,7 @@ import (
 )
 
 func TestStatus(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -87,7 +87,7 @@ func testStatusSetup(home string) (twn tagsWithNotes, fwc map[string]string) {
 }
 
 func TestStatus1(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -122,7 +122,7 @@ func TestStatus1(t *testing.T) {
 }
 
 func TestStatus2(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {

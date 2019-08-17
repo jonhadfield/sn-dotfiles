@@ -10,8 +10,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//func GetSessionFromUser(server string) (gosn.Session, string, error) {
+//	var sess gosn.Session
+//	var email string
+//	var err error
+//	var password, apiServer, errMsg string
+//	email, password, apiServer, errMsg = GetCredentials(server)
+//	if errMsg != "" {
+//		fmt.Printf("\nerror: %s\n\n", errMsg)
+//		return sess, email, err
+//	}
+//	sess, err = gosn.CliSignIn(email, password, apiServer)
+//	if err != nil {
+//		return sess, email, err
+//
+//	}
+//	return sess, email, err
+//}
+
+//func parseSessionString(in string) (email string, session gosn.Session) {
+//	parts := strings.Split(in, ";")
+//	email = parts[0]
+//	session = gosn.Session{
+//		Token:  parts[2],
+//		Mk:     parts[4],
+//		Ak:     parts[3],
+//		Server: parts[1],
+//	}
+//	return
+//}
+
 func TestAddInvalidPath(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -37,7 +67,7 @@ func TestAddInvalidPath(t *testing.T) {
 }
 
 func TestAddOne(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -63,7 +93,7 @@ func TestAddOne(t *testing.T) {
 }
 
 func TestAddTwoSameTag(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -100,7 +130,7 @@ func TestAddTwoSameTag(t *testing.T) {
 }
 
 func TestAddRecursive(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
@@ -147,7 +177,7 @@ func TestCheckPathValid(t *testing.T) {
 	fmt.Println(5)
 }
 
-func getSession() (gosn.Session, error) {
+func GetTestSession() (gosn.Session, error) {
 	email := os.Getenv("SN_EMAIL")
 	password := os.Getenv("SN_PASSWORD")
 	apiServer := os.Getenv("SN_SERVER")
@@ -195,5 +225,3 @@ func wipe(session gosn.Session) (int, error) {
 	}
 	return len(itemsToDel), err
 }
-
-

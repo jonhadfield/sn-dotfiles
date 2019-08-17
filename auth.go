@@ -10,8 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-
-
 // GetCredentials is used to obtain the SN credentials via the CLI if not specified using envvars
 func GetCredentials(inServer string) (email, password, apiServer, errMsg string) {
 	switch {

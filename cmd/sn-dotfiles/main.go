@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -9,6 +10,8 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
+	keyring "github.com/zalando/go-keyring"
+
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
@@ -70,6 +73,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.BoolFlag{Name: "debug"},
 		cli.StringFlag{Name: "server"},
 		cli.StringFlag{Name: "home-dir"},
+		cli.BoolFlag{Name: "load-session"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
 		_, _ = fmt.Fprintf(c.App.Writer, "\ninvalid command: \"%s\" \n\n", command)
@@ -86,8 +90,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				var session gosn.Session
-				session, _, err = getSession(c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -113,8 +116,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				var session gosn.Session
-				session, _, err = getSession(c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -153,8 +155,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if invalidPaths {
 					return nil
 				}
-				var session gosn.Session
-				session, _, err = getSession(c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -194,8 +195,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if invalidPaths {
 					return nil
 				}
-				var session gosn.Session
-				session, _, err = getSession(c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -210,28 +210,49 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				return err
 			},
 		},
+		{
+			Name:   "store-session",
+			Usage:  "store the session credentials",
+			Hidden: false,
+			Action: func(c *cli.Context) error {
+				var session gosn.Session
+				var email string
+				session, email, err = dotfilesSN.GetSessionFromUser(c.GlobalString("server"))
+				if err != nil {
+					return err
+				}
+				service := "StandardNotesCLI"
+				err = keyring.Set(service, "session", makeSessionString(email, session))
+				if err != nil {
+					log.Fatal(err)
+				}
+				return err
+			},
+		},
 	}
 	sort.Sort(cli.FlagsByName(app.Flags))
 	return msg, display, app.Run(args)
 }
 
-func getSession(server string) (gosn.Session, string, error) {
-	var sess gosn.Session
-	var email string
-	var err error
-	var password, apiServer, errMsg string
-	email, password, apiServer, errMsg = dotfilesSN.GetCredentials(server)
-	if errMsg != "" {
-		fmt.Printf("\nerror: %s\n\n", errMsg)
-		return sess, email, err
-	}
-	sess, err = gosn.CliSignIn(email, password, apiServer)
-	if err != nil {
-		return sess, email, err
-	}
-	return sess, email, err
+//func GetSession(server string) (gosn.Session, string, error) {
+//	var sess gosn.Session
+//	var email string
+//	var err error
+//	var password, apiServer, errMsg string
+//	email, password, apiServer, errMsg = dotfilesSN.GetCredentials(server)
+//	if errMsg != "" {
+//		fmt.Printf("\nerror: %s\n\n", errMsg)
+//		return sess, email, err
+//	}
+//	sess, err = gosn.CliSignIn(email, password, apiServer)
+//	if err != nil {
+//		return sess, email, err
+//	}
+//	return sess, email, err
+//}
+func makeSessionString(email string, session gosn.Session) string {
+	return fmt.Sprintf("%s;%s;%s;%s;%s", email, session.Server, session.Token, session.Ak, session.Mk)
 }
-
 func stripHome(in, home string) string {
 	if home == "" {
 		panic("home required")

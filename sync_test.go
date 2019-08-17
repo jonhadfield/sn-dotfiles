@@ -10,7 +10,7 @@ import (
 )
 
 func TestSyncNoItems(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	home := getTemporaryHome()
@@ -24,7 +24,7 @@ func TestSyncNoItems(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
-	session, err := getSession()
+	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
