@@ -217,3 +217,41 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	twn, _ := get(session)
 	assert.Len(t, twn, 0)
 }
+
+func TestRemoveAndCheckRemovedOne(t *testing.T) {
+	session, err := GetTestSession()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, session.Token)
+	defer func() {
+		if _, err := wipe(session); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
+	fwc[gitConfigPath] = "git configuration"
+	awsConfigPath := fmt.Sprintf("%s/.aws/config", home)
+	fwc[awsConfigPath] = "aws config"
+	acmeConfigPath := fmt.Sprintf("%s/.acme/config", home)
+	fwc[acmeConfigPath] = "acme config"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	// add items
+	var added, existing []string
+	// TODO: return notes/files added AND tags added?
+	added, existing, _, err = Add(session, home, []string{gitConfigPath, awsConfigPath, acmeConfigPath}, true, true)
+	assert.NoError(t, err)
+	// dotfiles tag, .gitconfig, and acmeConfig should exist
+	assert.Len(t, added, 3)
+	assert.Len(t, existing, 0)
+	var noRemoved, noTagsRemoved, noNotTracked int
+	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath, acmeConfigPath}, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, noRemoved)
+	assert.Equal(t, 1, noTagsRemoved)
+	assert.Equal(t, 0, noNotTracked)
+	twn, _ := get(session)
+	// dotfiles tag and .gitconfig note should exist
+	assert.Len(t, twn, 2)
+}
