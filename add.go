@@ -77,13 +77,7 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 		dir, filename := filepath.Split(path)
 		homeRelPath := stripHome(dir+filename, home)
 		boldHomeRelPath := bold(homeRelPath)
-		// TODO: Remove following as finalPaths must exist
-		//if _, err := os.Stat(path); os.IsNotExist(err) {
-		//	debugPrint(debug, fmt.Sprintf("add | path does not exist: %s", path))
-		//	missing = append(missing, fmt.Sprintf("%s | %s", boldHomeRelPath, red("does not exist")))
-		//	pathsInvalid = append(pathsInvalid, path)
-		//	continue
-		//}
+
 		var remoteTagTitleWithoutHome, remoteTagTitle string
 		remoteTagTitleWithoutHome = stripHome(dir, home)
 		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
@@ -111,11 +105,20 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 	}
 	lines := append(missing, existing...)
 
-	if err = pushAndTag(session, tagToItemMap, twn); err != nil {
+	// add DotFilesTag tag if missing
+	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
+	if !tagExists("dotfiles", twn) && ! dotFilesTagInTagToItemMap {
+		debugPrint(debug, "Add | adding missing dotfiles tag")
+		tagToItemMap[DotFilesTag] = gosn.Items{}
+	}
+
+	// push and tag items
+	_, err = pushAndTag(session, tagToItemMap, twn)
+	if err != nil {
 		fmt.Println(columnize.SimpleFormat(lines))
 		return pathsAdded, pathsExisting, pathsInvalid, err
-
 	}
+
 	lines = append(lines, added...)
 	if !quiet {
 		fmt.Println(columnize.SimpleFormat(lines))

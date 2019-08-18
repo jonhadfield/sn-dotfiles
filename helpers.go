@@ -139,13 +139,13 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newT
 	return created.DecryptAndParse(session.Mk, session.Ak)
 }
 
-func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes) error {
+func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes) (tagsPushed int, err error) {
 	// create missing tags first to create a new tim
-	var err error
 	itemsToPush := gosn.Items{}
 	for potentialTag, notes := range tim {
 		existingTag, found := getTagIfExists(potentialTag, twn)
 		if found {
+			// if tag exists then just add references to the note
 			var newReferences gosn.ItemReferences
 			for _, note := range notes {
 				itemsToPush = append(itemsToPush, note)
@@ -157,10 +157,12 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 			existingTag.Content.UpsertReferences(newReferences)
 			itemsToPush = append(itemsToPush, existingTag)
 		} else {
+			// need to create tag
 			var newTags gosn.Items
 			newTags, err = createMissingTags(session, potentialTag, twn)
+			tagsPushed += len(newTags)
 			if err != nil {
-				return err
+				return
 			}
 			// create a new item reference for each note to be tagged
 			var newReferences gosn.ItemReferences
@@ -190,7 +192,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 	}
 
 	_, err = putItems(session, itemsToPush)
-	return err
+	return
 }
 
 func createTag(name string) (tag gosn.Item) {

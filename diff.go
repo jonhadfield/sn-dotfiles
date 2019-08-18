@@ -139,11 +139,6 @@ func diff(remote tagsWithNotes, home string, paths []string, debug bool) (diffs 
 		return
 	}
 
-	// add 'dotfiles' tag if missing then create
-	if !tagExists("dotfiles", remote) {
-
-	}
-
 	// if paths specified, then discover those that are untracked
 	// by comparing with existing remote equivalent paths
 	if len(paths) > 0 {
