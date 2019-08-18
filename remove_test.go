@@ -10,7 +10,7 @@ import (
 )
 
 func TestRemoveNoItems(t *testing.T) {
-	err := remove(gosn.Session{}, gosn.Items{})
+	err := remove(gosn.Session{}, gosn.Items{}, true)
 	assert.Error(t, err)
 }
 
@@ -23,7 +23,7 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	}, gosn.Items{*tag})
+	}, gosn.Items{*tag}, true)
 	assert.Error(t, err)
 }
 
@@ -184,4 +184,39 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)
 	assert.Equal(t, 1, noNotTracked)
+}
+
+func TestRemoveAndCheckRemoved(t *testing.T) {
+	session, err := GetTestSession()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, session.Token)
+	defer func() {
+		if _, err := wipe(session); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
+	fwc[gitConfigPath] = "git configuration"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	// add items
+	var added, existing []string
+	added, existing, _, err = Add(session, home, []string{gitConfigPath}, true, true)
+	assert.NoError(t, err)
+	assert.Len(t, added, 1)
+	assert.Len(t, existing, 0)
+	var noRemoved, noTagsRemoved, noNotTracked int
+	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath}, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, noRemoved)
+	assert.Equal(t, 0, noTagsRemoved)
+	assert.Equal(t, 0, noNotTracked)
+	twn, _ := get(session)
+	assert.Len(t, twn, 1)
+	// TODO: this shouldn't exist when we delete dotfiles tag if it's the last
+	assert.Equal(t, twn[0].tag.Content.GetTitle(), "dotfiles")
+
 }

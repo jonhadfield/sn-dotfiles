@@ -496,13 +496,11 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 	var password, apiServer, errMsg string
 	email, password, apiServer, errMsg = GetCredentials(server)
 	if errMsg != "" {
-		fmt.Println("fooked here")
 		fmt.Printf("\nerror: %s\n\n", errMsg)
 		return sess, email, err
 	}
 	sess, err = gosn.CliSignIn(email, password, apiServer)
 	if err != nil {
-		fmt.Println("pants")
 		return sess, email, err
 
 	}
