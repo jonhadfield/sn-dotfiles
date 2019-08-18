@@ -212,11 +212,8 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath}, true, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, noRemoved)
-	assert.Equal(t, 0, noTagsRemoved)
+	assert.Equal(t, 1, noTagsRemoved)
 	assert.Equal(t, 0, noNotTracked)
 	twn, _ := get(session)
-	assert.Len(t, twn, 1)
-	// TODO: this shouldn't exist when we delete dotfiles tag if it's the last
-	assert.Equal(t, twn[0].tag.Content.GetTitle(), "dotfiles")
-
+	assert.Len(t, twn, 0)
 }

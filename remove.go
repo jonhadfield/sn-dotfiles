@@ -26,17 +26,19 @@ func Remove(session gosn.Session, home string, paths []string, quiet, debug bool
 	if err != nil {
 		return
 	}
+
 	err = preflight(tagsWithNotes, paths)
 	if err != nil {
 		return
 	}
+
 	var results []string
 	var notesToRemove gosn.Items
 	for _, path := range paths {
 
 		homeRelPath, matchingItems := getItemsToRemove(path, home, tagsWithNotes)
 		boldHomeRelPath := bold(stripTrailingSlash(homeRelPath))
-		debugPrint(debug, fmt.Sprintf("Remove | items matching path: %d", len(matchingItems)))
+		debugPrint(debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
 		switch {
 		case len(matchingItems) == 0:
 			results = append(results, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("not tracked")))
@@ -57,7 +59,7 @@ func Remove(session gosn.Session, home string, paths []string, quiet, debug bool
 	}
 
 	// find any empty tags to delete
-	emptyTags := findEmptyTags(tagsWithNotes, notesToRemove)
+	emptyTags := findEmptyTags(tagsWithNotes, notesToRemove, debug)
 
 	// dedupe any tags to remove
 	if emptyTags != nil {
@@ -66,10 +68,9 @@ func Remove(session gosn.Session, home string, paths []string, quiet, debug bool
 
 	// add empty tags to list of items to remove
 	itemsToRemove := append(notesToRemove, emptyTags...)
+
 	debugPrint(debug, fmt.Sprintf("Remove | items to remove: %d", len(itemsToRemove)))
-	for _, i := range itemsToRemove {
-		fmt.Println(i.Content.GetTitle())
-	}
+
 	if err = remove(session, itemsToRemove, debug); err != nil {
 		return
 	}

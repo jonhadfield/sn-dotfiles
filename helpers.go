@@ -11,7 +11,7 @@ import (
 
 	"github.com/jonhadfield/gosn"
 	"github.com/lithammer/shortuuid"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 )
 
 func debugPrint(show bool, msg string) {
@@ -280,16 +280,19 @@ func removeStringFromSlice(item string, slice []string) (updatedSlice []string) 
 	return
 }
 
-func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items) gosn.Items {
+func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.Items {
 	allTagsWithoutNotes := getAllTagsWithoutNotes(twn, deletedNotes)
 
 	// generate a map of tag child counts
 	allTagsChildMap := make(map[string][]string)
 
 	var tagsToRemove []string
-
+	var allDotfileChildTags []string
 	// for each tag, the last item is the child
 	for _, atwn := range twn {
+		if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") {
+			allDotfileChildTags = append(allDotfileChildTags, atwn.tag.Content.GetTitle())
+		}
 		tagTitle := atwn.tag.Content.GetTitle()
 		splitTag := strings.Split(tagTitle, ".")
 		if strings.Contains(tagTitle, ".") {
@@ -330,6 +333,12 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items) gosn.Items {
 
 	tagsToRemove = dedupe(tagsToRemove)
 
+	// now remove dotfiles tag if it has no children
+	if len(tagsToRemove) == len(allDotfileChildTags) {
+		tagsToRemove = append(tagsToRemove, DotFilesTag)
+		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", DotFilesTag))
+	}
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | total to remove: %d", len(tagsToRemove)))
 	return tagTitlesToTags(tagsToRemove, twn)
 }
 
