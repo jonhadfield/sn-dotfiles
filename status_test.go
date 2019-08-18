@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -160,6 +161,8 @@ func TestStatus2(t *testing.T) {
 
 	// update yellow content
 	d1 := []byte("new yellow content")
+	// pause so that local updated time newer
+	time.Sleep(1 * time.Second)
 	assert.NoError(t, ioutil.WriteFile(yellowPath, d1, 0644))
 
 	// create untracked file
