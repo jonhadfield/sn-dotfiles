@@ -2,11 +2,10 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn"
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/jonhadfield/gosn"
 
 	"github.com/stretchr/testify/assert"
 )

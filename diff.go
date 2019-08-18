@@ -249,7 +249,7 @@ func compare(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff
 		}
 		debugPrint(debug, fmt.Sprintf("compare | remote updated UTC): %v", remoteUpdated.UTC()))
 		// if content different and local file was updated more recently
-		debugPrint(debug, fmt.Sprintf("compare | local updated UTC): %v", localStat.ModTime().UTC()))
+		debugPrint(debug, fmt.Sprintf("compare | local updated UTC): %v", localStat.ModTime().UTC().Format("2006-01-02T15:04:05.000Z")))
 		if localStat.ModTime().UTC().After(remoteUpdated.UTC()) || localStat.ModTime().UTC() == remoteUpdated.UTC() {
 			return ItemDiff{
 				tagTitle:    tagTitle,
