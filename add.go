@@ -12,6 +12,48 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
+func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string, tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
+	tagToItemMap = make(map[string]gosn.Items)
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	//red := color.New(color.FgRed).SprintFunc()
+	bold := color.New(color.Bold).SprintFunc()
+	var added, existing, missing []string
+	for _, path := range fsPaths {
+		dir, filename := filepath.Split(path)
+		homeRelPath := stripHome(dir+filename, home)
+		boldHomeRelPath := bold(homeRelPath)
+
+		var remoteTagTitleWithoutHome, remoteTagTitle string
+		remoteTagTitleWithoutHome = stripHome(dir, home)
+		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
+
+		existingCount := noteWithTagExists(remoteTagTitle, filename, twn)
+		if existingCount == 1 {
+			existing = append(existing, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("already tracked")))
+			pathsExisting = append(pathsExisting, path)
+			continue
+		} else if existingCount > 1 {
+			err = fmt.Errorf("duplicate items found with name '%s' and tag '%s'", filename, remoteTagTitle)
+			return
+		}
+		// now add
+		pathsAdded = append(pathsAdded, path)
+
+		var itemToAdd gosn.Item
+		itemToAdd, err = createItem(path, filename)
+		if err != nil {
+			return
+		}
+		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
+		added = append(added, fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked")))
+	}
+	statusLines = append(missing, existing...)
+	statusLines = append(statusLines, added...)
+
+	return
+}
+
 // Add tracks local paths by pushing the local dir as a tag representation and the filename as a note title
 func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (pathsAdded, pathsExisting, pathsInvalid []string, err error) {
 	// remove any duplicate paths
@@ -20,10 +62,6 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 	if err = checkPathsExist(paths); err != nil {
 		return
 	}
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	//red := color.New(color.FgRed).SprintFunc()
-	bold := color.New(color.Bold).SprintFunc()
 
 	var twn tagsWithNotes
 	twn, err = get(session)
@@ -31,18 +69,46 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 		return
 	}
 
+	// run pre-checks
 	err = preflight(twn, paths)
 	if err != nil {
 		return
 	}
 
-	var missing []string
-	var existing []string
-	var added []string
-	tagToItemMap := make(map[string]gosn.Items)
+	var tagToItemMap map[string]gosn.Items
+	var fsPathsToAdd []string
 
-	var finalPaths []string
+	// generate list of paths to add
+	fsPathsToAdd, pathsInvalid = getLocalFSPathsToAdd(paths)
+	if len(fsPathsToAdd) == 0 {
+		return
+	}
 
+	var statusLines []string
+	statusLines, tagToItemMap, pathsAdded, pathsExisting, err = generateTagItemMap(fsPathsToAdd, home, twn)
+	if err != nil {
+		return
+	}
+
+	// add DotFilesTag tag if missing
+	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
+	if !tagExists("dotfiles", twn) && !dotFilesTagInTagToItemMap {
+		debugPrint(debug, "Add | adding missing dotfiles tag")
+		tagToItemMap[DotFilesTag] = gosn.Items{}
+	}
+
+	// push and tag items
+	_, err = pushAndTag(session, tagToItemMap, twn)
+	if err != nil {
+		return
+	}
+	if !quiet {
+		fmt.Println(columnize.SimpleFormat(statusLines))
+	}
+	return pathsAdded, pathsExisting, pathsInvalid, err
+}
+
+func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {
 	// check for directories
 	for _, path := range paths {
 		// if path is directory, then walk to generate list of additional paths
@@ -67,65 +133,10 @@ func Add(session gosn.Session, home string, paths []string, quiet, debug bool) (
 			finalPaths = append(finalPaths, path)
 		}
 	}
-	if len(finalPaths) == 0 {
-		return
-	}
 	// dedupe
 	finalPaths = dedupe(finalPaths)
-
-	for _, path := range finalPaths {
-		dir, filename := filepath.Split(path)
-		homeRelPath := stripHome(dir+filename, home)
-		boldHomeRelPath := bold(homeRelPath)
-
-		var remoteTagTitleWithoutHome, remoteTagTitle string
-		remoteTagTitleWithoutHome = stripHome(dir, home)
-		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
-
-		existingCount := noteWithTagExists(remoteTagTitle, filename, twn)
-		if existingCount == 1 {
-			existing = append(existing, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("already tracked")))
-			pathsExisting = append(pathsExisting, path)
-			continue
-		} else if existingCount > 1 {
-			return pathsAdded, pathsExisting, pathsInvalid,
-				fmt.Errorf("duplicate items found with name '%s' and tag '%s'", filename, remoteTagTitle)
-		}
-
-		// now add
-		pathsAdded = append(pathsAdded, path)
-
-		var itemToAdd gosn.Item
-		itemToAdd, err = createItem(path, filename)
-		if err != nil {
-			return pathsAdded, pathsExisting, pathsInvalid, err
-		}
-		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
-		added = append(added, fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked")))
-	}
-	lines := append(missing, existing...)
-
-	// add DotFilesTag tag if missing
-	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
-	if !tagExists("dotfiles", twn) && ! dotFilesTagInTagToItemMap {
-		debugPrint(debug, "Add | adding missing dotfiles tag")
-		tagToItemMap[DotFilesTag] = gosn.Items{}
-	}
-
-	// push and tag items
-	_, err = pushAndTag(session, tagToItemMap, twn)
-	if err != nil {
-		fmt.Println(columnize.SimpleFormat(lines))
-		return pathsAdded, pathsExisting, pathsInvalid, err
-	}
-
-	lines = append(lines, added...)
-	if !quiet {
-		fmt.Println(columnize.SimpleFormat(lines))
-	}
-	return pathsAdded, pathsExisting, pathsInvalid, err
+	return
 }
-
 func createItem(path, title string) (item gosn.Item, err error) {
 	// read file content
 	file, err := os.Open(path)

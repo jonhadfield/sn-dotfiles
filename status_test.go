@@ -2,11 +2,12 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/jonhadfield/gosn"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -153,7 +154,6 @@ func TestStatus2(t *testing.T) {
 	assert.Len(t, existing, 0)
 	assert.Len(t, missing, 0)
 	var diffs []ItemDiff
-
 
 	// delete apple so that a local item is missing
 	err = os.Remove(applePath)

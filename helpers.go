@@ -11,7 +11,7 @@ import (
 
 	"github.com/jonhadfield/gosn"
 	"github.com/lithammer/shortuuid"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 )
 
 func debugPrint(show bool, msg string) {
