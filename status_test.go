@@ -2,6 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/jonhadfield/gosn"
@@ -152,9 +154,23 @@ func TestStatus2(t *testing.T) {
 	assert.Len(t, missing, 0)
 	var diffs []ItemDiff
 
+
+	// delete apple so that a local item is missing
+	err = os.Remove(applePath)
+	assert.NoError(t, err)
+
+	// update yellow content
+	d1 := []byte("new yellow content")
+	assert.NoError(t, ioutil.WriteFile(yellowPath, d1, 0644))
+
+	// create untracked file
+	d1 = []byte("green content")
+	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
+	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
+
 	diffs, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home)}, true, true)
 	assert.NoError(t, err)
-	assert.Len(t, diffs, 2)
+	assert.Len(t, diffs, 3)
 	var pDiff int
 	for _, d := range diffs {
 		switch d.path {
@@ -166,12 +182,16 @@ func TestStatus2(t *testing.T) {
 		case applePath:
 			assert.Equal(t, "apple", d.noteTitle)
 			assert.Equal(t, applePath, d.path)
-			assert.Equal(t, identical, d.diff)
+			assert.Equal(t, localMissing, d.diff)
 			pDiff++
 		case yellowPath:
 			assert.Equal(t, "yellow", d.noteTitle)
 			assert.Equal(t, yellowPath, d.path)
-			assert.Equal(t, identical, d.diff)
+			assert.Equal(t, localNewer, d.diff)
+			pDiff++
+		case greenPath:
+			assert.Equal(t, greenPath, d.path)
+			assert.Equal(t, untracked, d.diff)
 			pDiff++
 		case premiumPath:
 			assert.Equal(t, "premium", d.noteTitle)
@@ -180,5 +200,5 @@ func TestStatus2(t *testing.T) {
 			pDiff++
 		}
 	}
-	assert.Equal(t, 2, pDiff)
+	assert.Equal(t, 3, pDiff)
 }
