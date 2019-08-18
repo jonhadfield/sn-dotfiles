@@ -39,7 +39,7 @@ build-all:
 	GOOS=freebsd CGO_ENABLED=0 GOARCH=amd64 go build -ldflags '-s -w -X "main.version=[$(BUILD_TAG)-$(BUILD_SHA)] $(BUILD_DATE) UTC"' -o ".local_dist/sn-dotfiles_freebsd_amd64" cmd/sn-dotfiles/main.go
 
 build-linux:
-	GOOS=linux CGO_ENABLED=0 GOARCH=amd64 go build -ldflags '-s -w -X "main.version=[$(BUILD_TAG)-$(BUILD_SHA)] $(BUILD_DATE) UTC"' -o ".local_dist/sn_dotfiles_linux_amd64" cmd/sn-dotfiles/main.go
+	GOOS=linux CGO_ENABLED=0 GOARCH=amd64 go build -ldflags '-s -w -X "main.version=[$(BUILD_TAG)-$(BUILD_SHA)] $(BUILD_DATE) UTC"' -o ".local_dist/sn-dotfiles_linux_amd64" cmd/sn-dotfiles/main.go
 
 mac-install: build
 	install .local_dist/sn-dotfiles_darwin_amd64 /usr/local/bin/sn-dotfiles
