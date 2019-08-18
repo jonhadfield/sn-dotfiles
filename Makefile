@@ -45,7 +45,7 @@ mac-install: build
 	install .local_dist/sn-dotfiles_darwin_amd64 /usr/local/bin/sn-dotfiles
 
 linux-install: build-linux
-	install .local_dist/sn-dotfiles_linux_amd64 /usr/local/bin/sn-dotfiles
+	sudo install .local_dist/sn-dotfiles_linux_amd64 /usr/local/bin/sn-dotfiles
 
 critic:
 	gocritic check-project .
