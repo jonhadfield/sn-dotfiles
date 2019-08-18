@@ -1,7 +1,6 @@
 package sndotfiles
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/ryanuber/columnize"
@@ -51,7 +50,8 @@ func status(twn tagsWithNotes, home string, paths []string, quiet, debug bool) (
 		return
 	}
 	if len(twn) == 0 {
-		return diffs, errors.New("no dotfiles being tracked")
+		fmt.Println("no dotfiles being tracked")
+		return
 	}
 	bold := color.New(color.Bold).SprintFunc()
 
