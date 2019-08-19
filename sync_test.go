@@ -16,7 +16,7 @@ func TestSyncNoItems(t *testing.T) {
 	home := getTemporaryHome()
 	// add item
 	var noPushed, noPulled int
-	noPushed, noPulled, err = Sync(session, home, true, true)
+	noPushed, noPulled, _, err = Sync(session, home, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no remote dotfiles found")
 	assert.Equal(t, 0, noPushed)
@@ -66,7 +66,7 @@ func TestSync(t *testing.T) {
 	// Sync with changes to pull based on missing local
 	var noPushed, noPulled int
 	debugPrint(true, "test | sync with changes to pull based on missing local")
-	noPushed, noPulled, err = sync(session, twn, home, true, true)
+	noPushed, noPulled, _, err = sync(session, twn, home, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 1, noPulled)
@@ -78,7 +78,7 @@ func TestSync(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	fwc[applePath] = "new apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	noPushed, noPulled, err = sync(session, twn, home, true, true)
+	noPushed, noPulled, _, err = sync(session, twn, home, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, noPushed)
 	assert.Equal(t, 0, noPulled)
@@ -104,14 +104,14 @@ func TestSync(t *testing.T) {
 		uTwn = append(uTwn, x)
 	}
 	assert.NoError(t, err)
-	noPushed, noPulled, err = sync(session, uTwn, home, true, true)
+	noPushed, noPulled, _, err = sync(session, uTwn, home, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 1, noPulled)
 
 	// Sync with nothing to do
 	debugPrint(true, "test | sync with nothing to do")
-	noPushed, noPulled, err = sync(session, uTwn, home, true, true)
+	noPushed, noPulled, _, err = sync(session, uTwn, home, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 0, noPulled)

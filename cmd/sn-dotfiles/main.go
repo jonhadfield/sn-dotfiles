@@ -136,12 +136,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		{
 			Name:  "add",
 			Usage: "start tracking file(s)",
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "quiet",
-					Usage: "suppress all output",
-				},
-			},
 			Action: func(c *cli.Context) error {
 				if len(c.Args()) == 0 {
 					_ = cli.ShowCommandHelp(c, "add")
@@ -165,12 +159,16 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.Bool("quiet"), c.GlobalBool("debug"))
+				_, _, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.GlobalBool("debug"))
 
 				if err != nil {
 					return err
 				}
+				if !c.GlobalBool("quiet") {
+					display = true
+				}
 				return err
+
 			},
 		},
 		{
