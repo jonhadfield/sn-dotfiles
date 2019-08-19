@@ -3,7 +3,6 @@ package sndotfiles
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -141,7 +140,7 @@ func createItem(path, title string) (item gosn.Item, err error) {
 	// read file content
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	defer func() {
 		if err := file.Close(); err != nil {

@@ -177,6 +177,11 @@ func TestCheckPathValid(t *testing.T) {
 	fmt.Println(5)
 }
 
+func TestCreateItemInvalidPath(t *testing.T) {
+	_, err := createItem("invalid", "title")
+	assert.Error(t, err)
+}
+
 func GetTestSession() (gosn.Session, error) {
 	email := os.Getenv("SN_EMAIL")
 	password := os.Getenv("SN_PASSWORD")
