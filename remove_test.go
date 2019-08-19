@@ -59,7 +59,7 @@ func TestRemoveItems(t *testing.T) {
 	assert.Len(t, missing, 0)
 	//assert.Contains(t, missing, golfPath)
 	var notesRemoved, tagsRemoved, noNotTracked int
-	notesRemoved, tagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath, applePath, yellowPath}, true, true)
+	notesRemoved, tagsRemoved, noNotTracked, _, err = Remove(session, home, []string{gitConfigPath, applePath, yellowPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, notesRemoved)
 	assert.Equal(t, 2, tagsRemoved)
@@ -100,7 +100,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
 	// try removing overlapping path and note in specified path
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{yellowPath, fruitPath, fruitPathDupe}, true, true)
+	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{yellowPath, fruitPath, fruitPathDupe}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)
@@ -139,7 +139,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath}, true, true)
+	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{fruitPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)
@@ -179,7 +179,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{fruitPath, lokiPath}, true, true)
+	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{fruitPath, lokiPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 2, noTagsRemoved)
@@ -209,7 +209,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.Len(t, added, 1)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath}, true, true)
+	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{gitConfigPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, noRemoved)
 	assert.Equal(t, 1, noTagsRemoved)
@@ -246,7 +246,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.Len(t, added, 3)
 	assert.Len(t, existing, 0)
 	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, err = Remove(session, home, []string{gitConfigPath, acmeConfigPath}, true, true)
+	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{gitConfigPath, acmeConfigPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, noRemoved)
 	assert.Equal(t, 1, noTagsRemoved)

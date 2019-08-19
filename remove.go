@@ -10,7 +10,7 @@ import (
 )
 
 // Remove stops tracking local paths by removing the related notes from SN
-func Remove(session gosn.Session, home string, paths []string, quiet, debug bool) (notesremoved, tagsRemoved, notTracked int, err error) {
+func Remove(session gosn.Session, home string, paths []string, debug bool) (notesremoved, tagsRemoved, notTracked int, msg string, err error) {
 	// remove any duplicate paths
 	paths = dedupe(paths)
 
@@ -74,10 +74,8 @@ func Remove(session gosn.Session, home string, paths []string, quiet, debug bool
 	if err = remove(session, itemsToRemove, debug); err != nil {
 		return
 	}
-	if !quiet {
-		fmt.Println(columnize.SimpleFormat(results))
-	}
-	return len(notesToRemove), len(emptyTags), notTracked, err
+	msg = fmt.Sprint(columnize.SimpleFormat(results))
+	return len(notesToRemove), len(emptyTags), notTracked, msg, err
 }
 
 func stripTrailingSlash(in string) string {
@@ -98,6 +96,9 @@ func remove(session gosn.Session, items gosn.Items, debug bool) (err error) {
 	}
 	var pio gosn.PutItemsOutput
 	pio, err = putItems(session, itemsToRemove)
+	if err != nil {
+		return
+	}
 	debugPrint(debug, fmt.Sprintf("remove | items put: %d", len(pio.ResponseBody.SavedItems)))
 	return err
 }

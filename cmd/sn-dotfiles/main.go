@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -98,6 +98,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if !c.GlobalBool("quiet") {
 					display = true
 				}
+				fmt.Println("returning error:", err)
 				return err
 			},
 		},
@@ -174,12 +175,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		{
 			Name:  "remove",
 			Usage: "stop tracking file(s)",
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "quiet",
-					Usage: "suppress all output",
-				},
-			},
 			Action: func(c *cli.Context) error {
 				if len(c.Args()) == 0 {
 					_ = cli.ShowCommandHelp(c, "remove")
@@ -203,16 +198,19 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.Bool("quiet"), c.GlobalBool("debug"))
+				_, _, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.GlobalBool("debug"))
 				if err != nil {
 					return err
+				}
+				if !c.GlobalBool("quiet") {
+					display = true
 				}
 				return err
 			},
 		},
 		{
-			Name:   "store-session",
-			Usage:  "store the session credentials",
+			Name:   "save-session",
+			Usage:  "save the session credentials",
 			Hidden: false,
 			Action: func(c *cli.Context) error {
 				var session gosn.Session
@@ -234,22 +232,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 	return msg, display, app.Run(args)
 }
 
-//func GetSession(server string) (gosn.Session, string, error) {
-//	var sess gosn.Session
-//	var email string
-//	var err error
-//	var password, apiServer, errMsg string
-//	email, password, apiServer, errMsg = dotfilesSN.GetCredentials(server)
-//	if errMsg != "" {
-//		fmt.Printf("\nerror: %s\n\n", errMsg)
-//		return sess, email, err
-//	}
-//	sess, err = gosn.CliSignIn(email, password, apiServer)
-//	if err != nil {
-//		return sess, email, err
-//	}
-//	return sess, email, err
-//}
 func makeSessionString(email string, session gosn.Session) string {
 	return fmt.Sprintf("%s;%s;%s;%s;%s", email, session.Server, session.Token, session.Ak, session.Mk)
 }
