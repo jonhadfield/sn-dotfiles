@@ -43,7 +43,7 @@ func TestStatus(t *testing.T) {
 	assert.Len(t, missing, 0)
 	var diffs []ItemDiff
 
-	diffs, err = Status(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true, true)
+	diffs, _, err = Status(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
 	var pDiff int
@@ -116,7 +116,7 @@ func TestStatus1(t *testing.T) {
 	assert.Len(t, missing, 0)
 	var diffs []ItemDiff
 
-	diffs, err = Status(session, home, []string{gitConfigPath}, true, true)
+	diffs, _, err = Status(session, home, []string{gitConfigPath}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, ".gitconfig", diffs[0].noteTitle)
@@ -170,7 +170,7 @@ func TestStatus2(t *testing.T) {
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
 	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
 
-	diffs, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home)}, true, true)
+	diffs, _, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home)}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	var pDiff int

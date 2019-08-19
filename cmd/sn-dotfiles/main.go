@@ -74,6 +74,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.StringFlag{Name: "server"},
 		cli.StringFlag{Name: "home-dir"},
 		cli.BoolFlag{Name: "load-session"},
+		cli.BoolFlag{Name: "quiet"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
 		_, _ = fmt.Fprintf(c.App.Writer, "\ninvalid command: \"%s\" \n\n", command)
@@ -83,12 +84,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		{
 			Name:  "status",
 			Usage: "compare local and remote",
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "quiet",
-					Usage: "suppress all output",
-				},
-			},
+
 			Action: func(c *cli.Context) error {
 				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
 				if err != nil {
@@ -98,7 +94,10 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, err = dotfilesSN.Status(session, home, c.Args(), c.Bool("quiet"), c.GlobalBool("debug"))
+				_, msg, err = dotfilesSN.Status(session, home, c.Args(), c.GlobalBool("debug"))
+				if !c.GlobalBool("quiet") {
+					display = true
+				}
 				return err
 			},
 		},
@@ -127,6 +126,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				_, _, err = dotfilesSN.Sync(session, home, c.Bool("quiet"), c.GlobalBool("debug"))
 				if err != nil {
 					return err
+				}
+				if !c.GlobalBool("quiet") {
+					display = true
 				}
 				return err
 			},

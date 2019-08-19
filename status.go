@@ -34,41 +34,38 @@ func colourDiff(diff string) string {
 // - remote items that are newer
 // - local items that are untracked (if paths specified)
 // - identical local and remote items
-func Status(session gosn.Session, home string, paths []string, quiet, debug bool) (diffs []ItemDiff, err error) {
+func Status(session gosn.Session, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	remote, err := get(session)
 	if err != nil {
-		return diffs, err
+		return diffs, msg, err
 	}
-
-	return status(remote, home, paths, quiet, debug)
+	return status(remote, home, paths, debug)
 }
 
-func status(twn tagsWithNotes, home string, paths []string, quiet, debug bool) (diffs []ItemDiff, err error) {
+func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("status | %d remote items", len(twn)))
 	err = preflight(twn, paths)
 	if err != nil {
 		return
 	}
 	if len(twn) == 0 {
-		fmt.Println("no dotfiles being tracked")
+		msg = "no dotfiles being tracked"
 		return
 	}
 	bold := color.New(color.Bold).SprintFunc()
 
 	diffs, err = diff(twn, home, paths, debug)
 	if err != nil {
-		return diffs, err
+		return diffs, msg, err
 	}
 	debugPrint(debug, fmt.Sprintf("status | %d diffs generated", len(diffs)))
 	var lines []string
 	if len(diffs) == 0 {
-		return diffs, err
+		return diffs, msg, err
 	}
 	for _, diff := range diffs {
 		lines = append(lines, fmt.Sprintf("%s | %s \n", bold(diff.homeRelPath), colourDiff(diff.diff)))
 	}
-	if !quiet {
-		fmt.Println(columnize.SimpleFormat(lines))
-	}
-	return diffs, err
+	msg = columnize.SimpleFormat(lines)
+	return diffs, msg, err
 }
