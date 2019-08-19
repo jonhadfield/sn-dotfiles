@@ -13,7 +13,7 @@ import (
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
-func Sync(session gosn.Session, home string, quiet, debug bool) (noPushed, noPulled int, err error) {
+func Sync(session gosn.Session, home string, debug bool) (noPushed, noPulled int, msg string, err error) {
 	var remote tagsWithNotes
 	remote, err = get(session)
 	if err != nil {
@@ -23,10 +23,10 @@ func Sync(session gosn.Session, home string, quiet, debug bool) (noPushed, noPul
 	if err != nil {
 		return
 	}
-	return sync(session, remote, home, quiet, debug)
+	return sync(session, remote, home, debug)
 }
 
-func sync(session gosn.Session, twn tagsWithNotes, home string, quiet, debug bool) (noPushed, noPulled int, err error) {
+func sync(session gosn.Session, twn tagsWithNotes, home string, debug bool) (noPushed, noPulled int, msg string, err error) {
 	var itemDiffs []ItemDiff
 	itemDiffs, err = diff(twn, home, nil, debug)
 	if err != nil {
@@ -62,9 +62,7 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, quiet, debug boo
 
 	// check items to sync
 	if !itemsToSync {
-		if !quiet {
-			fmt.Println(bold("nothing to do"))
-		}
+		msg = fmt.Sprintf(bold("nothing to do"))
 		return
 	}
 
@@ -97,8 +95,7 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, quiet, debug boo
 		line := fmt.Sprintf("%s | %s\n", bold(addDot(pullItem.homeRelPath)), strPulled)
 		res = append(res, line)
 	}
-	if !quiet {
-		fmt.Println(columnize.SimpleFormat(res))
-	}
-	return noPushed, noPulled, err
+	msg = fmt.Sprint(columnize.SimpleFormat(res))
+
+	return noPushed, noPulled, msg, err
 }

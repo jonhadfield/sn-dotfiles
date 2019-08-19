@@ -123,7 +123,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, err = dotfilesSN.Sync(session, home, c.Bool("quiet"), c.GlobalBool("debug"))
+				_, _, msg, err = dotfilesSN.Sync(session, home, c.GlobalBool("debug"))
 				if err != nil {
 					return err
 				}
