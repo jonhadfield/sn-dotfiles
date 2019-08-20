@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -19,6 +19,10 @@ import (
 
 // overwritten at build time
 var version, versionOutput, tag, sha, buildDate string
+
+const (
+	service = "StandardNotesCLI"
+)
 
 func main() {
 	msg, display, err := startCLI(os.Args)
@@ -73,7 +77,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.BoolFlag{Name: "debug"},
 		cli.StringFlag{Name: "server"},
 		cli.StringFlag{Name: "home-dir"},
-		cli.BoolFlag{Name: "load-session"},
+		cli.BoolFlag{Name: "use-session"},
 		cli.BoolFlag{Name: "quiet"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
@@ -86,7 +90,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			Usage: "compare local and remote",
 
 			Action: func(c *cli.Context) error {
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -98,7 +102,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if !c.GlobalBool("quiet") {
 					display = true
 				}
-				fmt.Println("returning error:", err)
 				return err
 			},
 		},
@@ -106,17 +109,14 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			Name:  "sync",
 			Usage: "sync dotfiles",
 			Flags: []cli.Flag{
+				// TODO: not implemented
 				cli.BoolFlag{
 					Name:  "delete",
 					Usage: "remove remotes that don't exist locally",
 				},
-				cli.BoolFlag{
-					Name:  "quiet",
-					Usage: "suppress all output",
-				},
 			},
 			Action: func(c *cli.Context) error {
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -152,7 +152,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if invalidPaths {
 					return nil
 				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -190,7 +190,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if invalidPaths {
 					return nil
 				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("load-session"), c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -209,20 +209,56 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			},
 		},
 		{
-			Name:   "save-session",
-			Usage:  "save the session credentials",
+			Name:  "session",
+			Usage: "manage session credentials",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "add",
+					Usage: "add session to keychain",
+				},
+				cli.BoolFlag{
+					Name:  "remove",
+					Usage: "remove session from keychain",
+				},
+				cli.BoolFlag{
+					Name:  "status",
+					Usage: "get session details",
+				},
+			},
 			Hidden: false,
 			Action: func(c *cli.Context) error {
-				var session gosn.Session
-				var email string
-				session, email, err = dotfilesSN.GetSessionFromUser(c.GlobalString("server"))
-				if err != nil {
-					return err
+				if !c.GlobalBool("quiet") {
+					display = true
 				}
-				service := "StandardNotesCLI"
-				err = keyring.Set(service, "session", makeSessionString(email, session))
-				if err != nil {
-					log.Fatal(err)
+				sAdd := c.Bool("add")
+				sRemove := c.Bool("remove")
+				sStatus := c.Bool("status")
+				nTrue := numTrue(sAdd, sRemove, sStatus)
+				if nTrue == 0 || nTrue > 1 {
+					_ = cli.ShowCommandHelp(c, "session")
+				}
+
+				if sAdd {
+					msg = addSession(c.GlobalString("server"))
+					return nil
+				}
+				if sRemove {
+					msg = removeSession()
+					return nil
+				}
+				if sStatus {
+					s, errMsg := getSession()
+					if errMsg != "" {
+						msg = errMsg
+						return nil
+					}
+					var sessionParts []string
+					sessionParts, err = parseSessionString(s)
+					if err != nil {
+						msg = fmt.Sprint("failed to parse session: ", err)
+						return nil
+					}
+					msg = fmt.Sprint("session found: ", sessionParts[0])
 				}
 				return err
 			},
@@ -232,8 +268,68 @@ func startCLI(args []string) (msg string, display bool, err error) {
 	return msg, display, app.Run(args)
 }
 
+func numTrue(in ...bool) (total int) {
+	for _, i := range in {
+		if i {
+			total++
+		}
+	}
+	return
+}
+
+func addSession(snServer string) string {
+	s, _ := getSession()
+	if s != "" {
+		fmt.Print("replace existing session (y|n): ")
+		var resp string
+		_, err := fmt.Scanln(&resp)
+		if err != nil || strings.ToLower(resp) != "y" {
+			return ""
+		}
+	}
+	var session gosn.Session
+	var email string
+	var err error
+	session, email, err = dotfilesSN.GetSessionFromUser(snServer)
+	if err != nil {
+		return fmt.Sprint("failed to get session: ", err)
+	}
+	err = keyring.Set(service, "session", makeSessionString(email, session))
+	if err != nil {
+		return fmt.Sprint("failed to set session: ", err)
+	} else {
+		return "session added successfully"
+	}
+}
+
+func removeSession() (msg string) {
+	err := keyring.Delete(service, "session")
+	if err != nil {
+		return fmt.Sprint("failed to remove session: ", err)
+	}
+	msg = "session removed successfully"
+	return
+}
+
+func getSession() (s string, errMsg string) {
+	var err error
+	s, err = keyring.Get(service, "session")
+	if err != nil {
+		errMsg = fmt.Sprint("failed to get session: ", err)
+		return
+	}
+	return
+}
+
 func makeSessionString(email string, session gosn.Session) string {
 	return fmt.Sprintf("%s;%s;%s;%s;%s", email, session.Server, session.Token, session.Ak, session.Mk)
+}
+func parseSessionString(in string) (res []string, err error) {
+	res = strings.Split(in, ";")
+	if len(res) != 5 {
+		err = errors.New("invalid session")
+	}
+	return
 }
 func stripHome(in, home string) string {
 	if home == "" {

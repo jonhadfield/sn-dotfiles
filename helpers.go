@@ -488,9 +488,12 @@ func GetSession(loadSession bool, server string) (session gosn.Session, email st
 		service := "StandardNotesCLI"
 		var rawSess string
 		rawSess, err = keyring.Get(service, "session")
-		email, session = parseSessionString(rawSess)
 		if err != nil {
-			log.Fatal(err)
+			return
+		}
+		email, session, err = parseSessionString(rawSess)
+		if err != nil {
+			return
 		}
 	} else {
 		session, email, err = GetSessionFromUser(server)
@@ -518,8 +521,12 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 	return sess, email, err
 }
 
-func parseSessionString(in string) (email string, session gosn.Session) {
+func parseSessionString(in string) (email string, session gosn.Session, err error) {
 	parts := strings.Split(in, ";")
+	if len(parts) != 5 {
+		err = errors.New("invalid session found")
+		return
+	}
 	email = parts[0]
 	session = gosn.Session{
 		Token:  parts[2],
