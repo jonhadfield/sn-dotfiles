@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4 // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
-	github.com/coreos/etcd v3.3.13+incompatible // indirect
+	github.com/coreos/etcd v3.3.15+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/danieljoos/wincred v1.0.2 // indirect
@@ -23,7 +23,7 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.9.6 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
-	github.com/jonhadfield/gosn v0.0.0-20190817101552-ae3eeae52255
+	github.com/jonhadfield/gosn v0.0.0-20190823202601-2b8e7721b5e9
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pty v1.1.8 // indirect
@@ -50,11 +50,13 @@ require (
 	github.com/urfave/cli v1.21.0
 	github.com/zalando/go-keyring v0.0.0-20190715212148-76787ff3b3bd
 	go.etcd.io/bbolt v1.3.3 // indirect
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
-	golang.org/x/mobile v0.0.0-20190814143026-e8b3e6111d02 // indirect
+	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
+	golang.org/x/image v0.0.0-20190823064033-3a9bac650e44 // indirect
+	golang.org/x/mobile v0.0.0-20190823173732-30c70e3810e9 // indirect
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
-	golang.org/x/tools v0.0.0-20190816200558-6889da9d5479 // indirect
-	google.golang.org/genproto v0.0.0-20190817000702-55e96fffbd48 // indirect
+	golang.org/x/tools v0.0.0-20190823170909-c4a336ef6a2f // indirect
+	google.golang.org/api v0.9.0 // indirect
+	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55 // indirect
 	google.golang.org/grpc v1.23.0 // indirect
 	honnef.co/go/tools v0.0.1-2019.2.2 // indirect
 )
