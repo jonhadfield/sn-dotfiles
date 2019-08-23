@@ -96,6 +96,8 @@ github.com/jonhadfield/gosn v0.0.0-20190817101552-ae3eeae52255 h1:hgtMQkUCLHmOvy
 github.com/jonhadfield/gosn v0.0.0-20190817101552-ae3eeae52255/go.mod h1:lxCoo9xRUR/dPFx7e/SjcLeIsy4A1wUaE0j95UuX5Ao=
 github.com/jonhadfield/gosn v0.0.0-20190823202601-2b8e7721b5e9 h1:tDmdjCAOYJ62PyveO94rO5/Rvy4756fcIOn0D8dlmzE=
 github.com/jonhadfield/gosn v0.0.0-20190823202601-2b8e7721b5e9/go.mod h1:lxCoo9xRUR/dPFx7e/SjcLeIsy4A1wUaE0j95UuX5Ao=
+github.com/jonhadfield/gosn v0.0.0-20190823212208-950f661ad646 h1:BDAiYrcBjQSbLXhTelfqID4TM+ZxKHHqnzm34MFm7AA=
+github.com/jonhadfield/gosn v0.0.0-20190823212208-950f661ad646/go.mod h1:4ylR+BtTGcjOG8VRU6suAsn/P1ro9X1ZknXF0+bPEZ4=
 github.com/json-iterator/go v1.1.6/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/json-iterator/go v1.1.7/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=

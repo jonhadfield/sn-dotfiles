@@ -23,7 +23,7 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.9.6 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
-	github.com/jonhadfield/gosn v0.0.0-20190823202601-2b8e7721b5e9
+	github.com/jonhadfield/gosn v0.0.0-20190823212208-950f661ad646
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pty v1.1.8 // indirect
