@@ -236,6 +236,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				nTrue := numTrue(sAdd, sRemove, sStatus)
 				if nTrue == 0 || nTrue > 1 {
 					_ = cli.ShowCommandHelp(c, "session")
+					os.Exit(1)
 				}
 
 				if sAdd {
