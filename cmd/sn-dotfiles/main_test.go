@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCLIInvalidCommand(t *testing.T) {
