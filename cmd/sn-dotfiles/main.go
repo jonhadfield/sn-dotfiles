@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -298,9 +298,8 @@ func addSession(snServer string) string {
 	err = keyring.Set(service, "session", makeSessionString(email, session))
 	if err != nil {
 		return fmt.Sprint("failed to set session: ", err)
-	} else {
-		return "session added successfully"
 	}
+	return "session added successfully"
 }
 
 func removeSession() (msg string) {
