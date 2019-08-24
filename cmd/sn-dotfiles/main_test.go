@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn"
-	"github.com/zalando/go-keyring"
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/jonhadfield/gosn"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -82,4 +83,25 @@ func TestParseSessionString(t *testing.T) {
 	assert.Equal(t, testSessionToken, ss[2])
 	assert.Equal(t, testSessionAk, ss[3])
 	assert.Equal(t, testSessionMk, ss[4])
+}
+
+func TestStripHome(t *testing.T) {
+	res, err := stripHome("/home/bob/something/else.txt", "/home/bob")
+	assert.NoError(t, err)
+	assert.Equal(t, "something/else.txt", res)
+	res, err = stripHome("/home/bob/something/else.txt", "")
+	assert.Error(t, err)
+	assert.Empty(t, res)
+	res, err = stripHome("", "/home/bob")
+	assert.Error(t, err)
+	assert.Empty(t, res)
+}
+
+func TestIsValidDotfilePath(t *testing.T) {
+	home := getHome()
+	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test", home)))
+	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test/file.txt", home)))
+	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test/test2/file.txt", home)))
+	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test/test2/file.txt", home)))
+	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test", home)))
 }

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -332,17 +332,22 @@ func parseSessionString(in string) (res []string, err error) {
 	}
 	return
 }
-func stripHome(in, home string) string {
+func stripHome(in, home string) (res string, err error) {
 	if home == "" {
-		panic("home required")
+		err = errors.New("home required")
+		return
+	}
+	if in == "" {
+		err = errors.New("path required")
+		return
 	}
 	if in == home {
-		return ""
+		return
 	}
 	if strings.HasPrefix(in, home) {
-		return in[len(home)+1:]
+		return in[len(home)+1:], nil
 	}
-	return in
+	return
 }
 
 func getHome() string {
@@ -357,6 +362,9 @@ func getHome() string {
 func isValidDotfilePath(path string) bool {
 	home := getHome()
 	dir, filename := filepath.Split(path)
-	homeRelPath := stripHome(dir+filename, home)
+	homeRelPath, err := stripHome(dir+filename, home)
+	if err != nil {
+		return false
+	}
 	return strings.HasPrefix(homeRelPath, ".")
 }

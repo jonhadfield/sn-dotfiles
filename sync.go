@@ -62,7 +62,7 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, debug bool) (noP
 
 	// check items to sync
 	if !itemsToSync {
-		msg = fmt.Sprintf(bold("nothing to do"))
+		msg = fmt.Sprint(bold("nothing to do"))
 		return
 	}
 
