@@ -21,7 +21,9 @@ import (
 var version, versionOutput, tag, sha, buildDate string
 
 const (
-	service = "StandardNotesCLI"
+	service                  = "StandardNotesCLI"
+	msgSessionRemovalSuccess = "session removed successfully"
+	msgSessionRemovalFailure = "failed to remove session"
 )
 
 func main() {
@@ -302,13 +304,12 @@ func addSession(snServer string) string {
 	return "session added successfully"
 }
 
-func removeSession() (msg string) {
+func removeSession() string {
 	err := keyring.Delete(service, "session")
 	if err != nil {
-		return fmt.Sprint("failed to remove session: ", err)
+		return fmt.Sprintf("%s: %s", msgSessionRemovalFailure, err.Error())
 	}
-	msg = "session removed successfully"
-	return
+	return msgSessionRemovalSuccess
 }
 
 func getSession() (s string, errMsg string) {
