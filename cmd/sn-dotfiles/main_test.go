@@ -137,6 +137,14 @@ func TestAdd(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAddInvalidPath(t *testing.T) {
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", "/invalid"})
+	assert.NotEmpty(t, msg)
+	assert.True(t, disp)
+	assert.Contains(t, msg, "invalid")
+	assert.NoError(t, err)
+}
+
 func TestRemove(t *testing.T) {
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
