@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -162,11 +162,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.GlobalBool("debug"))
+				var tagsAdded, notesAdded int
+				tagsAdded, notesAdded, _, _, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.GlobalBool("debug"))
 
 				if err != nil {
 					return err
 				}
+				msg = fmt.Sprintf("added %d tags and %d files", tagsAdded, notesAdded)
 				if !c.GlobalBool("quiet") {
 					display = true
 				}

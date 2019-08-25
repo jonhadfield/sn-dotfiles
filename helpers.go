@@ -139,7 +139,7 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newT
 	return created.DecryptAndParse(session.Mk, session.Ak)
 }
 
-func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes) (tagsPushed int, err error) {
+func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes) (tagsPushed, notesPushed int, err error) {
 	// create missing tags first to create a new tim
 	itemsToPush := gosn.Items{}
 	for potentialTag, notes := range tim {
@@ -160,7 +160,6 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 			// need to create tag
 			var newTags gosn.Items
 			newTags, err = createMissingTags(session, potentialTag, twn)
-			tagsPushed += len(newTags)
 			if err != nil {
 				return
 			}
@@ -192,6 +191,19 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 	}
 
 	_, err = putItems(session, itemsToPush)
+	tagsPushed, notesPushed = getItemCounts(itemsToPush)
+	return
+}
+
+func getItemCounts(items gosn.Items) (tags, notes int) {
+	for _, item := range items {
+		if item.ContentType == "Note" {
+			notes++
+		}
+		if item.ContentType == "Tag" {
+			tags++
+		}
+	}
 	return
 }
 

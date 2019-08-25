@@ -9,7 +9,7 @@ import (
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/spf13/viper"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 
@@ -110,6 +110,35 @@ func TestIsValidDotfilePath(t *testing.T) {
 	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test", home)))
 }
 
+func TestAdd(t *testing.T) {
+	viper.SetEnvPrefix("sn")
+	assert.NoError(t, viper.BindEnv("email"))
+	assert.NoError(t, viper.BindEnv("password"))
+	assert.NoError(t, viper.BindEnv("server"))
+	serverURL := os.Getenv("SN_SERVER")
+	if serverURL == "" {
+		serverURL = sndotfiles.SNServerURL
+	}
+	session, _, err := sndotfiles.GetSession(false, serverURL)
+	defer func() {
+		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	home := getHome()
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", applePath})
+	assert.NotEmpty(t, msg)
+	assert.True(t, disp)
+	assert.Contains(t, msg, "2 tags")
+	assert.Contains(t, msg, "1 files")
+	assert.NoError(t, err)
+
+}
+
 func TestWipe(t *testing.T) {
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -127,7 +156,7 @@ func TestWipe(t *testing.T) {
 	}
 	session, _, err := sndotfiles.GetSession(false, serverURL)
 	assert.NoError(t, err)
-	_, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, msg)
@@ -146,6 +175,11 @@ func TestAddSession(t *testing.T) {
 	}
 	res := addSession(serverURL)
 	assert.Contains(t, res, "successfully")
+}
+
+func TestNumTrue(t *testing.T) {
+	assert.Equal(t, 3, numTrue(true, false, true, true))
+	assert.Equal(t, 0, numTrue())
 }
 
 func createPathWithContent(path, content string) error {

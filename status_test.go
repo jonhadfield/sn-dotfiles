@@ -36,7 +36,7 @@ func TestStatus(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	_, _, added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
@@ -109,7 +109,7 @@ func TestStatus1(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, awsConfig}, true)
+	_, _, added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, awsConfig}, true)
 	assert.NoError(t, err)
 	assert.Len(t, added, 2)
 	assert.Len(t, existing, 0)
@@ -148,7 +148,7 @@ func TestStatus2(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	_, _, added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)

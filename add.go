@@ -54,7 +54,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 }
 
 // Add tracks local paths by pushing the local dir as a tag representation and the filename as a note title
-func Add(session gosn.Session, home string, paths []string, debug bool) (pathsAdded, pathsExisting, pathsInvalid []string, msg string, err error) {
+func Add(session gosn.Session, home string, paths []string, debug bool) (tagsPushed, notesPushed int, pathsAdded, pathsExisting, pathsInvalid []string, msg string, err error) {
 	// remove any duplicate paths
 	paths = dedupe(paths)
 
@@ -97,13 +97,13 @@ func Add(session gosn.Session, home string, paths []string, debug bool) (pathsAd
 	}
 
 	// push and tag items
-	_, err = pushAndTag(session, tagToItemMap, twn)
+	tagsPushed, notesPushed, err = pushAndTag(session, tagToItemMap, twn)
 	if err != nil {
 		return
 	}
 	msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
-	return pathsAdded, pathsExisting, pathsInvalid, msg, err
+	return tagsPushed, notesPushed, pathsAdded, pathsExisting, pathsInvalid, msg, err
 }
 
 func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {

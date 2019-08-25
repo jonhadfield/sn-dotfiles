@@ -29,7 +29,7 @@ func TestAddInvalidPath(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, _, err = Add(session, home, []string{applePath, duffPath}, true)
+	_, _, added, existing, missing, _, err = Add(session, home, []string{applePath, duffPath}, true)
 	assert.Error(t, err)
 	assert.Equal(t, 0, len(added))
 	assert.Equal(t, 0, len(existing))
@@ -54,7 +54,7 @@ func TestAddOne(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, _, err = Add(session, home, []string{applePath}, true)
+	_, _, added, existing, missing, _, err = Add(session, home, []string{applePath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(added))
 	assert.Equal(t, applePath, added[0])
@@ -84,7 +84,7 @@ func TestAddTwoSameTag(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, _, err = Add(session, home, []string{applePath, vwPath, bananaPath}, true)
+	_, _, added, existing, missing, _, err = Add(session, home, []string{applePath, vwPath, bananaPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(added))
 	assert.Contains(t, added, applePath)
@@ -122,7 +122,7 @@ func TestAddRecursive(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	added, existing, missing, _, err = Add(session, home, []string{fruitPath, carsPath}, true)
+	_, _, added, existing, missing, _, err = Add(session, home, []string{fruitPath, carsPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(added))
 	assert.Contains(t, added, applePath)
