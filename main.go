@@ -54,7 +54,7 @@ func get(session gosn.Session) (t tagsWithNotes, err error) {
 			tag: dotfileTag,
 		}
 		for _, note := range notes {
-			if stringInSlice(note.UUID, getItemNoteRefIds(dotfileTag.Content.References()), false) {
+			if StringInSlice(note.UUID, getItemNoteRefIds(dotfileTag.Content.References()), false) {
 				twn.notes = append(twn.notes, note)
 			}
 		}

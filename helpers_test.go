@@ -68,10 +68,10 @@ func TestStripHome(t *testing.T) {
 }
 
 func TestStringInSlice(t *testing.T) {
-	assert.True(t, stringInSlice("JAne", []string{"Rod", "JAne", "Freddy"}, true))
-	assert.True(t, stringInSlice("FrEddy", []string{"Rod", "Jane", "Freddy"}, false))
-	assert.False(t, stringInSlice("Rod", []string{}, false))
-	assert.True(t, stringInSlice("", []string{"hello", "", "world"}, true))
+	assert.True(t, StringInSlice("JAne", []string{"Rod", "JAne", "Freddy"}, true))
+	assert.True(t, StringInSlice("FrEddy", []string{"Rod", "Jane", "Freddy"}, false))
+	assert.False(t, StringInSlice("Rod", []string{}, false))
+	assert.True(t, StringInSlice("", []string{"hello", "", "world"}, true))
 }
 
 func TestCompareIdentical(t *testing.T) {

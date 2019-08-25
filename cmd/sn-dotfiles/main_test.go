@@ -9,7 +9,7 @@ import (
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/spf13/viper"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 
@@ -126,6 +126,7 @@ func TestWipe(t *testing.T) {
 		serverURL = sndotfiles.SNServerURL
 	}
 	session, _, err := sndotfiles.GetSession(false, serverURL)
+	assert.NoError(t, err)
 	_, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)

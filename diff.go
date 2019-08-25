@@ -159,14 +159,14 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 	// if path is directory, then walk to generate list of additional paths
 	for _, path := range paths {
 		debugPrint(debug, fmt.Sprintf("diff | diffing path: %s", stripHome(path, home)))
-		if stringInSlice(path, existingRemoteEquivalentPaths, true) {
+		if StringInSlice(path, existingRemoteEquivalentPaths, true) {
 			continue
 		}
 		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 			debugPrint(debug, fmt.Sprintf("diff | walking path: %s", path))
 			err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 				// don't check tracked paths
-				if stringInSlice(p, existingRemoteEquivalentPaths, true) {
+				if StringInSlice(p, existingRemoteEquivalentPaths, true) {
 					return nil
 				}
 				if err != nil {

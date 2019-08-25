@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -292,7 +292,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					fmt.Printf("wipe all dotfiles for account %s? ", email)
 					var input string
 					_, err = fmt.Scanln(&input)
-					if err == nil && stringInSlice(input, []string{"y", "yes"}, false) {
+					if err == nil && dotfilesSN.StringInSlice(input, []string{"y", "yes"}, false) {
 						proceed = true
 					}
 				}
@@ -410,15 +410,4 @@ func isValidDotfilePath(path string) bool {
 		return false
 	}
 	return strings.HasPrefix(homeRelPath, ".")
-}
-
-func stringInSlice(inStr string, inSlice []string, matchCase bool) bool {
-	for i := range inSlice {
-		if matchCase && inStr == inSlice[i] {
-			return true
-		} else if strings.ToLower(inStr) == strings.ToLower(inSlice[i]) {
-			return true
-		}
-	}
-	return false
 }

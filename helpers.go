@@ -311,7 +311,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 			for _, i := range v {
 				completeTag := k + "." + i
 				// check if noteless tag exists
-				if stringInSlice(completeTag, allTagsWithoutNotes, true) {
+				if StringInSlice(completeTag, allTagsWithoutNotes, true) {
 					// check if tag still has children
 					if len(allTagsChildMap[completeTag]) == 0 {
 						allTagsChildMap[k] = removeStringFromSlice(i, v)
@@ -346,7 +346,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 
 func tagTitlesToTags(tagTitles []string, twn tagsWithNotes) (res gosn.Items) {
 	for _, t := range twn {
-		if stringInSlice(t.tag.Content.GetTitle(), tagTitles, true) {
+		if StringInSlice(t.tag.Content.GetTitle(), tagTitles, true) {
 			res = append(res, t.tag)
 		}
 	}
@@ -536,7 +536,7 @@ func parseSessionString(in string) (email string, session gosn.Session, err erro
 	}
 	return
 }
-func stringInSlice(inStr string, inSlice []string, matchCase bool) bool {
+func StringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 	for i := range inSlice {
 		if matchCase && inStr == inSlice[i] {
 			return true
