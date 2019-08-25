@@ -1,7 +1,7 @@
 package sndotfiles
 
 import (
-	"errors"
+	"fmt"
 	"log"
 
 	"github.com/jonhadfield/gosn"
@@ -9,7 +9,6 @@ import (
 
 func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
 	gosn.SetErrorLogger(log.Println)
-
 	twns, err := get(session)
 	if err != nil {
 		return 0, err
@@ -28,7 +27,7 @@ func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
 	// delete items
 	var eItemsToDel gosn.EncryptedItems
 	if len(itemsToRemove) == 0 {
-		return 0, errors.New("nothing to remove")
+			return 0, nil
 	}
 	eItemsToDel, err = itemsToRemove.Encrypt(session.Mk, session.Ak)
 	if err != nil {

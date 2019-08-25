@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -280,7 +280,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if !c.GlobalBool("quiet") {
 					display = true
 				}
-				session, email, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
+				session, email, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+						c.GlobalString("server"))
 				if err != nil {
 					return err
 				}

@@ -34,7 +34,6 @@ func pathIsPrefixOfPaths(path string, paths []string) bool {
 }
 
 func noteInPaths(note string, paths []string) bool {
-	//fmt.Println("In noteInPaths with note:", note, "and paths:", paths)
 	if note == "" || len(paths) == 0 {
 		return false
 	}
