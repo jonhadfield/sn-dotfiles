@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -92,6 +92,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			Usage: "compare local and remote",
 
 			Action: func(c *cli.Context) error {
+				if !c.GlobalBool("quiet") {
+					display = true
+				}
 				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
 				if err != nil {
 					return err
@@ -101,9 +104,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					home = getHome()
 				}
 				_, msg, err = dotfilesSN.Status(session, home, c.Args(), c.GlobalBool("debug"))
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
 				return err
 			},
 		},
@@ -189,6 +189,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					_ = cli.ShowCommandHelp(c, "remove")
 					return nil
 				}
+				if !c.GlobalBool("quiet") {
+					display = true
+				}
 				var invalidPaths bool
 				for _, path := range c.Args() {
 					if !isValidDotfilePath(path) {
@@ -216,10 +219,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					msg = fmt.Sprintf("%d files removed", notesRemoved)
 				} else {
 					msg = fmt.Sprintf("nothing to do")
-				}
-
-				if !c.GlobalBool("quiet") {
-					display = true
 				}
 				return err
 			},
