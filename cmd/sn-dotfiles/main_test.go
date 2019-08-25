@@ -134,6 +134,19 @@ func TestWipe(t *testing.T) {
 	assert.True(t, disp)
 }
 
+func TestAddSession(t *testing.T) {
+	viper.SetEnvPrefix("sn")
+	assert.NoError(t, viper.BindEnv("email"))
+	assert.NoError(t, viper.BindEnv("password"))
+	assert.NoError(t, viper.BindEnv("server"))
+	serverURL := os.Getenv("SN_SERVER")
+	if serverURL == "" {
+		serverURL = sndotfiles.SNServerURL
+	}
+	res := addSession(serverURL)
+	assert.Contains(t, res, "successfully")
+}
+
 func createPathWithContent(path, content string) error {
 	dir, _ := filepath.Split(path)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
