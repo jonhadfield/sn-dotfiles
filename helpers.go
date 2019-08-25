@@ -513,46 +513,12 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 		fmt.Printf("\nerror: %s\n\n", errMsg)
 		return sess, email, err
 	}
-	sess, err = CliSignIn(email, password, apiServer)
+	sess, err = gosn.CliSignIn(email, password, apiServer)
 	if err != nil {
 		return sess, email, err
 
 	}
 	return sess, email, err
-}
-
-
-func CliSignIn(email, password, apiServer string) (session gosn.Session, err error) {
-	sInput := gosn.SignInInput{
-		Email:     email,
-		Password:  password,
-		APIServer: apiServer,
-	}
-	sOutput, signInErr := gosn.SignIn(sInput)
-	if signInErr != nil {
-		if signInErr.Error() == "requestMFA" {
-			var tokenValue string
-			fmt.Print("token: ")
-			_, err = fmt.Scanln(&tokenValue)
-			if err != nil {
-				return
-			}
-			// TODO: handle missing TokenName and Session
-			sInput.TokenName = sOutput.TokenName
-			sInput.TokenVal = strings.TrimSpace(tokenValue)
-			sOutput, signInErr = gosn.SignIn(sInput)
-
-			session = sOutput.Session
-			if signInErr != nil {
-				err = signInErr
-				return
-			}
-		} else {
-			log.Fatal(signInErr.Error())
-		}
-	}
-	session = sOutput.Session
-	return session, err
 }
 
 func parseSessionString(in string) (email string, session gosn.Session, err error) {
