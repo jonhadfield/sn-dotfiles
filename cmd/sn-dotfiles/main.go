@@ -266,6 +266,48 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				return err
 			},
 		},
+		{
+			Name:  "wipe",
+			Usage: "manage session credentials",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "force",
+					Usage: "assume user confirmation",
+				},
+			},
+			Hidden: true,
+			Action: func(c *cli.Context) error {
+				if !c.GlobalBool("quiet") {
+					display = true
+				}
+				session, email, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
+				if err != nil {
+					return err
+				}
+				var proceed bool
+				if c.Bool("force") {
+					proceed = true
+				} else {
+					fmt.Printf("wipe all dotfiles for account %s? ", email)
+					var input string
+					_, err = fmt.Scanln(&input)
+					if err == nil && stringInSlice(input, []string{"y", "yes"}, false) {
+						proceed = true
+					}
+				}
+				if proceed {
+					var num int
+					num, err = dotfilesSN.WipeDotfileTagsAndNotes(session, c.GlobalBool("quiet"))
+					if err != nil {
+						return err
+					}
+					msg = fmt.Sprintf("%d removed", num)
+				} else {
+					return nil
+				}
+				return err
+			},
+		},
 	}
 	sort.Sort(cli.FlagsByName(app.Flags))
 	return msg, display, app.Run(args)
@@ -367,4 +409,15 @@ func isValidDotfilePath(path string) bool {
 		return false
 	}
 	return strings.HasPrefix(homeRelPath, ".")
+}
+
+func stringInSlice(inStr string, inSlice []string, matchCase bool) bool {
+	for i := range inSlice {
+		if matchCase && inStr == inSlice[i] {
+			return true
+		} else if strings.ToLower(inStr) == strings.ToLower(inSlice[i]) {
+			return true
+		}
+	}
+	return false
 }

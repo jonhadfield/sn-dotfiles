@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
-	"github.com/jonhadfield/gosn"
+	sndotfiles "github.com/jonhadfield/dotfiles-sn"
+	"github.com/spf13/viper"
 	keyring "github.com/zalando/go-keyring"
+
+	"github.com/jonhadfield/gosn"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -104,4 +108,48 @@ func TestIsValidDotfilePath(t *testing.T) {
 	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test/test2/file.txt", home)))
 	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test/test2/file.txt", home)))
 	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test", home)))
+}
+
+func TestWipe(t *testing.T) {
+	viper.SetEnvPrefix("sn")
+	assert.NoError(t, viper.BindEnv("email"))
+	assert.NoError(t, viper.BindEnv("password"))
+	assert.NoError(t, viper.BindEnv("server"))
+
+	home := getHome()
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	session, _, err := sndotfiles.GetSession(false, sndotfiles.SNServerURL)
+	_, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, msg)
+	assert.Contains(t, msg, "3 ")
+	assert.True(t, disp)
+}
+
+func createPathWithContent(path, content string) error {
+	dir, _ := filepath.Split(path)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(content)
+	if err != nil {
+		return err
+	}
+	return f.Close()
+}
+func createTemporaryFiles(fwc map[string]string) error {
+	for f, c := range fwc {
+		if err := createPathWithContent(f, c); err != nil {
+			return err
+		}
+	}
+	return nil
 }

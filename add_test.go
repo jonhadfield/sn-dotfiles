@@ -10,42 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//func GetSessionFromUser(server string) (gosn.Session, string, error) {
-//	var sess gosn.Session
-//	var email string
-//	var err error
-//	var password, apiServer, errMsg string
-//	email, password, apiServer, errMsg = GetCredentials(server)
-//	if errMsg != "" {
-//		fmt.Printf("\nerror: %s\n\n", errMsg)
-//		return sess, email, err
-//	}
-//	sess, err = gosn.CliSignIn(email, password, apiServer)
-//	if err != nil {
-//		return sess, email, err
-//
-//	}
-//	return sess, email, err
-//}
-
-//func parseSessionString(in string) (email string, session gosn.Session) {
-//	parts := strings.Split(in, ";")
-//	email = parts[0]
-//	session = gosn.Session{
-//		Token:  parts[2],
-//		Mk:     parts[4],
-//		Ak:     parts[3],
-//		Server: parts[1],
-//	}
-//	return
-//}
-
 func TestAddInvalidPath(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
+		if _, err := WipeTheLot(session); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -71,7 +41,7 @@ func TestAddOne(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
+		if _, err := WipeTheLot(session); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -97,8 +67,8 @@ func TestAddTwoSameTag(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeTheLot(session); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -134,8 +104,8 @@ func TestAddRecursive(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeTheLot(session); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -189,7 +159,7 @@ func GetTestSession() (gosn.Session, error) {
 	return gosn.CliSignIn(email, password, apiServer)
 }
 
-func wipe(session gosn.Session) (int, error) {
+func WipeTheLot(session gosn.Session) (int, error) {
 	getItemsInput := gosn.GetItemsInput{
 		Session: session,
 	}

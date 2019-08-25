@@ -32,8 +32,8 @@ func TestRemoveItems(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -71,8 +71,8 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -112,8 +112,8 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -151,8 +151,8 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -191,8 +191,8 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -223,8 +223,8 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()

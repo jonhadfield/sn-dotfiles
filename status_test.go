@@ -17,8 +17,8 @@ func TestStatus(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -94,8 +94,8 @@ func TestStatus1(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -129,8 +129,8 @@ func TestStatus2(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := wipe(session); err != nil {
-			fmt.Println("failed to wipe")
+		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
