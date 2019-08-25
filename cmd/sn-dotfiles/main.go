@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -162,13 +162,17 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				var tagsAdded, notesAdded int
-				tagsAdded, notesAdded, _, _, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.GlobalBool("debug"))
+				var notesAdded int
+				_, notesAdded, _, _, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.GlobalBool("debug"))
 
 				if err != nil {
 					return err
 				}
-				msg = fmt.Sprintf("added %d tags and %d files", tagsAdded, notesAdded)
+				if notesAdded > 0 {
+					msg = fmt.Sprintf("%d files added", notesAdded)
+				} else {
+					msg = "nothing to do"
+				}
 				if !c.GlobalBool("quiet") {
 					display = true
 				}
@@ -202,10 +206,17 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.GlobalBool("debug"))
+				var notesRemoved int
+				notesRemoved, _, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.GlobalBool("debug"))
 				if err != nil {
 					return err
 				}
+				if notesRemoved > 0 {
+					msg = fmt.Sprintf("%d files removed", notesRemoved)
+				} else {
+					msg = fmt.Sprintf("nothing to do")
+				}
+
 				if !c.GlobalBool("quiet") {
 					display = true
 				}

@@ -133,10 +133,33 @@ func TestAdd(t *testing.T) {
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", applePath})
 	assert.NotEmpty(t, msg)
 	assert.True(t, disp)
-	assert.Contains(t, msg, "2 tags")
-	assert.Contains(t, msg, "1 files")
+	assert.Contains(t, msg, "1")
 	assert.NoError(t, err)
+}
 
+func TestRemove(t *testing.T) {
+	viper.SetEnvPrefix("sn")
+	assert.NoError(t, viper.BindEnv("email"))
+	assert.NoError(t, viper.BindEnv("password"))
+	assert.NoError(t, viper.BindEnv("server"))
+
+	home := getHome()
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	serverURL := os.Getenv("SN_SERVER")
+	if serverURL == "" {
+		serverURL = sndotfiles.SNServerURL
+	}
+	session, _, err := sndotfiles.GetSession(false, serverURL)
+	assert.NoError(t, err)
+	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "remove", applePath})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, msg)
+	assert.Contains(t, msg, "1 ")
+	assert.True(t, disp)
 }
 
 func TestWipe(t *testing.T) {
