@@ -24,8 +24,9 @@ func colourDiff(diff string) string {
 		return yellow(diff)
 	case remoteNewer:
 		return yellow(diff)
+	default:
+		return diff
 	}
-	return diff
 }
 
 // Status compares and then outputs status of all items (or a subset defined by paths param):

@@ -27,6 +27,30 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestRemoveInvalidSession(t *testing.T) {
+	home := getTemporaryHome()
+	fwc := make(map[string]string)
+	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
+	fwc[gitConfigPath] = "git config content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	_, _, _, _, err := Remove(gosn.Session{
+		Token:  "invalid",
+		Mk:     "invalid",
+		Ak:     "invalid",
+		Server: "invalid",
+	}, home, []string{gitConfigPath}, true)
+	assert.Error(t, err)
+	fmt.Println(err)
+}
+
+func TestRemoveInvalidPath(t *testing.T) {
+	session, err := GetTestSession()
+	assert.NoError(t, err)
+	_, _, _, _, err = Remove(session, getTemporaryHome(), []string{"/invalid"}, true)
+	assert.Error(t, err)
+}
+
 func TestRemoveItems(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
@@ -47,7 +71,6 @@ func TestRemoveItems(t *testing.T) {
 	fwc[yellowPath] = "yellow content"
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
-	//golfPath := fmt.Sprintf("%s/.cars/vw/golf.txt", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items

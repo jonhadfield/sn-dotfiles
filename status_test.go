@@ -170,9 +170,12 @@ func TestStatus2(t *testing.T) {
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
 	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
 
-	diffs, _, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home)}, true)
+	// update premium remote to trigger remote newer condition
+	assert.NoError(t, updateRemoteNote(session, "premium", "new content"))
+
+	diffs, _, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, true)
 	assert.NoError(t, err)
-	assert.Len(t, diffs, 3)
+	assert.Len(t, diffs, 4)
 	var pDiff int
 	for _, d := range diffs {
 		switch d.path {
@@ -198,9 +201,35 @@ func TestStatus2(t *testing.T) {
 		case premiumPath:
 			assert.Equal(t, "premium", d.noteTitle)
 			assert.Equal(t, premiumPath, d.path)
-			assert.Equal(t, identical, d.diff)
+			assert.Equal(t, remoteNewer, d.diff)
 			pDiff++
 		}
 	}
-	assert.Equal(t, 3, pDiff)
+	assert.Equal(t, 4, pDiff)
+}
+
+func updateRemoteNote(session gosn.Session, noteTitle, newContent string) error {
+	gii := gosn.GetItemsInput{Session:session}
+	gio, err := gosn.GetItems(gii)
+	if err != nil {
+		return err
+	}
+	eItems := gio.Items
+	eItems.DeDupe()
+	var items gosn.Items
+	items, err = eItems.DecryptAndParse(session.Mk, session.Ak)
+	var uItem gosn.Item
+	for i := range items {
+		if items[i].ContentType == "Note" && items[i].Content.GetTitle() == noteTitle {
+			items[i].Content.SetText(newContent)
+			uItem = items[i]
+			break
+		}
+	}
+	nItems := gosn.Items{uItem}
+	var eNItems gosn.EncryptedItems
+	eNItems, err = nItems.Encrypt(session.Mk, session.Ak)
+	pii := gosn.PutItemsInput{Session:session, Items:eNItems}
+	_, err = gosn.PutItems(pii)
+	return err
 }
