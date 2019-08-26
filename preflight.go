@@ -8,7 +8,7 @@ import (
 )
 
 func preflight(twn tagsWithNotes, paths []string) error {
-	// check all provided paths are valid
+	// check all provided Paths are valid
 	for i := range paths {
 		if !checkPathValid(paths[i]) {
 			return fmt.Errorf("path \"%s\" does not exist", paths[i])

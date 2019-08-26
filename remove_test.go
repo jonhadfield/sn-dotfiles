@@ -74,7 +74,8 @@ func TestRemoveItems(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
@@ -116,7 +117,8 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing []string
-	_, _, added, existing, _, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
+	_, _, added, existing, _, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
@@ -150,13 +152,14 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
 	// path to recursively remove
-	//removebananaPath := fmt.Sprintf("%s/.fruit/banana/", home)
+	//removebananaPath := fmt.Sprintf("%s/.fruit/banana/", Home)
 	fruitPath := fmt.Sprintf("%s/.fruit", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing []string
-	_, _, added, existing, _, _, err = Add(session, home, []string{gitConfigPath, greenPath, yellowPath, premiumPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}, Debug: true}
+	_, _, added, existing, _, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
@@ -196,7 +199,8 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing []string
-	_, _, added, existing, _, _, err = Add(session, home, []string{gitConfigPath, greenPath, yellowPath, premiumPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}, Debug: true}
+	_, _, added, existing, _, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
@@ -226,7 +230,8 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing []string
-	_, _, added, existing, _, _, err = Add(session, home, []string{gitConfigPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath}, Debug: true}
+	_, _, added, existing, _, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 1)
 	assert.Len(t, existing, 0)
@@ -262,7 +267,9 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	// add items
 	var added, existing []string
 	// TODO: return notes/files added AND tags added?
-	_, _, added, existing, _, _, err = Add(session, home, []string{gitConfigPath, awsConfigPath, acmeConfigPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, awsConfigPath, acmeConfigPath}, Debug: true}
+
+	_, _, added, existing, _, _, err = Add(ai)
 	assert.NoError(t, err)
 	// dotfiles tag, .gitconfig, and acmeConfig should exist
 	assert.Len(t, added, 3)

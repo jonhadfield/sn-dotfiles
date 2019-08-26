@@ -46,7 +46,8 @@ func TestStatus(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)
@@ -119,7 +120,8 @@ func TestStatus1(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, awsConfig}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, awsConfig}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 2)
 	assert.Len(t, existing, 0)
@@ -158,7 +160,8 @@ func TestStatus2(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, added, 4)
 	assert.Len(t, existing, 0)

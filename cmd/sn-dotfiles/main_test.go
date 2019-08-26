@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	sndotfiles "github.com/jonhadfield/dotfiles-sn"
-	"github.com/spf13/viper"
-	"github.com/zalando/go-keyring"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	sndotfiles "github.com/jonhadfield/dotfiles-sn"
+	"github.com/spf13/viper"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 
@@ -166,7 +167,8 @@ func TestRemove(t *testing.T) {
 		}
 	}()
 	assert.NoError(t, err)
-	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, _, _, _, _, _, err = sndotfiles.Add(ai)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "remove", applePath})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, msg)
@@ -196,7 +198,9 @@ func TestWipe(t *testing.T) {
 		}
 	}()
 	assert.NoError(t, err)
-	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+
+	_, _, _, _, _, _, err = sndotfiles.Add(ai)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "3 ")
@@ -225,7 +229,8 @@ func TestStatus(t *testing.T) {
 		}
 	}()
 	assert.NoError(t, err)
-	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, _, _, _, _, _, err = sndotfiles.Add(ai)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "status", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, ".fruit/apple  identical")
@@ -254,7 +259,8 @@ func TestSync(t *testing.T) {
 		}
 	}()
 	assert.NoError(t, err)
-	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, _, _, _, _, _, err = sndotfiles.Add(ai)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "nothing to do")

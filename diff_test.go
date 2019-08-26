@@ -21,12 +21,12 @@ func TestPathIsPrefixOfPaths(t *testing.T) {
 	assert.False(t, pathIsPrefixOfPaths("/tmp/Apple/", []string{"/tmp/lemon/test.txt", "/tmp/apple/test.txt"}))
 	// missing path
 	assert.False(t, pathIsPrefixOfPaths("", []string{"/tmp/lemon/test.txt", "/tmp/apple/test.txt"}))
-	// missing paths
+	// missing Paths
 	assert.False(t, pathIsPrefixOfPaths("/tmp/apple/", []string{}))
 }
 
 func TestNoteInPaths(t *testing.T) {
-	// note but no paths
+	// note but no Paths
 	assert.False(t, noteInPaths("/tmp/myNote.txt", []string{}))
 	// note but empty path
 	assert.False(t, noteInPaths("/tmp/myNote.txt", []string{""}))
@@ -100,7 +100,7 @@ func TestDiff1(t *testing.T) {
 			assert.Equal(t, "lemon content", diff.local)
 		}
 
-		// would not expect to find grape as we supplied specific paths to check
+		// would not expect to find grape as we supplied specific Paths to check
 		if diff.noteTitle == "grape" {
 			foundCount++
 		}
@@ -136,7 +136,7 @@ func TestCheckPathExists(t *testing.T) {
 	assert.Error(t, checkPathsExist([]string{newFilePathWithSlashes, newFilePath}))
 }
 
-// func testDiffSetup1and2(home string) (twn tagsWithNotes, fwc map[string]string) {
+// func testDiffSetup1and2(Home string) (twn tagsWithNotes, fwc map[string]string) {
 //	fruitTag := createTag("dotfiles.sn-dotfiles-test-fruit")
 //	appleNote := createNote("apple", "apple content")
 //	lemonNote := createNote("lemon", "lemon content")
@@ -145,34 +145,34 @@ func TestCheckPathExists(t *testing.T) {
 //	twn = tagsWithNotes{fruitTagWithNotes}
 //
 //	fwc = make(map[string]string)
-//	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)] = "apple content"
-//	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)] = "lemon content"
+//	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", Home)] = "apple content"
+//	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", Home)] = "lemon content"
 //	return
 //
 //}
 //func TestDiffFindUntracked(t *testing.T) {
-//	home := getTemporaryHome()
+//	Home := getTemporaryHome()
 //	fruitTag := createTag("dotfiles")
 //	appleNote := createNote(".apple", "apple content")
 //	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
 //	twn := tagsWithNotes{fruitTagWithNotes}
 //
 //	fwc := make(map[string]string)
-//	fwc[fmt.Sprintf("%s/.apple", home)] = "apple content"
+//	fwc[fmt.Sprintf("%s/.apple", Home)] = "apple content"
 //
 //	var diffs []ItemDiff
 //	err := createTemporaryFiles(fwc)
 //	assert.NoError(t, err)
 //	defer func() {
-//		if err := deleteTemporaryFiles(home); err != nil {
-//			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
+//		if err := deleteTemporaryFiles(Home); err != nil {
+//			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", Home, err)
 //		}
 //	}()
 //
 //	// valid local, valid remote, grape not diff'd as not specified in path
-//	paths := []string{fmt.Sprintf("%s/.apple", home)}
-//	//diffs, err = diff(twn, home, paths, true)
-//	findUntracked(paths, )
+//	Paths := []string{fmt.Sprintf("%s/.apple", Home)}
+//	//diffs, err = diff(twn, Home, Paths, true)
+//	findUntracked(Paths, )
 //	assert.NoError(t, err)
 //	assert.Len(t, diffs, 1)
 //	assert.Equal(t, identical, diffs[0].diff)

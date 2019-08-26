@@ -167,7 +167,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					home = getHome()
 				}
 				var notesAdded int
-				_, notesAdded, _, _, _, _, err = dotfilesSN.Add(session, home, c.Args(), c.GlobalBool("debug"))
+				ai := dotfilesSN.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
+				_, notesAdded, _, _, _, _, err = dotfilesSN.Add(ai)
 
 				if err != nil {
 					return err

@@ -1,9 +1,10 @@
 package sndotfiles
 
 import (
+	"testing"
+
 	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGet(t *testing.T) {

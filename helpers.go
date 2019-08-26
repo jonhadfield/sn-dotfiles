@@ -470,7 +470,7 @@ func tagTitleToFSDIR(title, home string) (path string, isHome bool, err error) {
 		return
 	}
 	if home == "" {
-		err = errors.New("home directory required")
+		err = errors.New("Home directory required")
 		return
 	}
 	if !strings.HasPrefix(title, DotFilesTag) {
@@ -499,7 +499,7 @@ func GetSession(loadSession bool, server string) (session gosn.Session, email st
 	if loadSession {
 		service := "StandardNotesCLI"
 		var rawSess string
-		rawSess, err = keyring.Get(service, "session")
+		rawSess, err = keyring.Get(service, "Session")
 		if err != nil {
 			return
 		}
@@ -536,7 +536,7 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 func parseSessionString(in string) (email string, session gosn.Session, err error) {
 	parts := strings.Split(in, ";")
 	if len(parts) != 5 {
-		err = errors.New("invalid session found")
+		err = errors.New("invalid Session found")
 		return
 	}
 	email = parts[0]

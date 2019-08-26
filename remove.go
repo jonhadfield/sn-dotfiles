@@ -9,12 +9,12 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
-// Remove stops tracking local paths by removing the related notes from SN
+// Remove stops tracking local Paths by removing the related notes from SN
 func Remove(session gosn.Session, home string, paths []string, debug bool) (notesremoved, tagsRemoved, notTracked int, msg string, err error) {
-	// remove any duplicate paths
+	// remove any duplicate Paths
 	paths = dedupe(paths)
 
-	// verify paths before delete
+	// verify Paths before delete
 	if err = checkPathsExist(paths); err != nil {
 		return
 	}

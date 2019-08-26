@@ -78,8 +78,8 @@ func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, de
 		if err != nil {
 			return
 		}
-		debugPrint(debug, fmt.Sprintf("diff | tag title: %s is path: <home>/%s", tagTitle, stripHome(dir, home)))
-		// if paths were supplied, then check the determined dir is a prefix of one of those
+		debugPrint(debug, fmt.Sprintf("diff | tag title: %s is path: <Home>/%s", tagTitle, stripHome(dir, home)))
+		// if Paths were supplied, then check the determined dir is a prefix of one of those
 		if len(paths) > 0 && !pathIsPrefixOfPaths(dir, paths) {
 			continue
 		}
@@ -94,7 +94,7 @@ func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, de
 			}
 			if !localExists(fullPath) {
 				// local path matching tag+note doesn't exist so set as 'local missing'
-				debugPrint(debug, fmt.Sprintf("diff | local not found: <home>/%s", stripHome(fullPath, home)))
+				debugPrint(debug, fmt.Sprintf("diff | local not found: <Home>/%s", stripHome(fullPath, home)))
 				homeRelPath := stripHome(fullPath, home)
 				itemDiffs = append(itemDiffs, ItemDiff{
 					tagTitle:    tagTitle,
@@ -106,7 +106,7 @@ func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, de
 				})
 			} else {
 				// local does exist, so compare and store generated diff
-				debugPrint(debug, fmt.Sprintf("diff | local found: <home>/%s", stripHome(fullPath, home)))
+				debugPrint(debug, fmt.Sprintf("diff | local found: <Home>/%s", stripHome(fullPath, home)))
 				remotePaths = append(remotePaths, fullPath)
 				itemDiffs = append(itemDiffs, compare(tagTitle, fullPath, home, d, debug))
 			}
@@ -116,14 +116,14 @@ func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, de
 }
 
 func diff(remote tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, err error) {
-	debugPrint(debug, fmt.Sprintf("diff | home: %s", home))
-	debugPrint(debug, fmt.Sprintf("diff | %d paths supplied", len(paths)))
+	debugPrint(debug, fmt.Sprintf("diff | Home: %s", home))
+	debugPrint(debug, fmt.Sprintf("diff | %d Paths supplied", len(paths)))
 
-	// fail immediately if remote or paths are empty
+	// fail immediately if remote or Paths are empty
 	if len(remote) == 0 {
 		return nil, fmt.Errorf("tags with notes not supplied")
 	}
-	// if paths specified, check all of them exist before continuing
+	// if Paths specified, check all of them exist before continuing
 	if len(paths) > 0 {
 		if err := checkPathsExist(paths); err != nil {
 			return nil, err
@@ -138,8 +138,8 @@ func diff(remote tagsWithNotes, home string, paths []string, debug bool) (diffs 
 		return
 	}
 
-	// if paths specified, then discover those that are untracked
-	// by comparing with existing remote equivalent paths
+	// if Paths specified, then discover those that are untracked
+	// by comparing with existing remote equivalent Paths
 	if len(paths) > 0 {
 		itemDiffs = append(itemDiffs, findUntracked(paths, remotePaths, home, debug)...)
 	}
@@ -156,7 +156,7 @@ func tagExists(title string, twn tagsWithNotes) bool {
 }
 
 func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, debug bool) (itemDiffs []ItemDiff) {
-	// if path is directory, then walk to generate list of additional paths
+	// if path is directory, then walk to generate list of additional Paths
 	for _, path := range paths {
 		debugPrint(debug, fmt.Sprintf("diff | diffing path: %s", stripHome(path, home)))
 		if StringInSlice(path, existingRemoteEquivalentPaths, true) {
@@ -165,7 +165,7 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 			debugPrint(debug, fmt.Sprintf("diff | walking path: %s", path))
 			err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
-				// don't check tracked paths
+				// don't check tracked Paths
 				if StringInSlice(p, existingRemoteEquivalentPaths, true) {
 					return nil
 				}
@@ -215,7 +215,7 @@ type ItemDiff struct {
 }
 
 func compare(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff {
-	debugPrint(debug, fmt.Sprintf("compare | title: %s path: <home>/%s", tagTitle, stripHome(path, home)))
+	debugPrint(debug, fmt.Sprintf("compare | title: %s path: <Home>/%s", tagTitle, stripHome(path, home)))
 	localStat, err := os.Stat(path)
 	if err != nil {
 		log.Fatal(err)

@@ -17,12 +17,13 @@ func TestAddInvalidSession(t *testing.T) {
 	fwc[gitConfigPath] = "git config content"
 
 	assert.NoError(t, createTemporaryFiles(fwc))
-	_, _, _, _, _, _, err := Add(gosn.Session{
+	ai := AddInput{Session: gosn.Session{
 		Token:  "invalid",
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	}, home, []string{gitConfigPath}, true)
+	}, Home: home, Paths: []string{gitConfigPath}, Debug: true}
+	_, _, _, _, _, _, err := Add(ai)
 	assert.Error(t, err)
 }
 
@@ -45,7 +46,8 @@ func TestAddInvalidPath(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{applePath, duffPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, duffPath}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.Error(t, err)
 	assert.Equal(t, 0, len(added))
 	assert.Equal(t, 0, len(existing))
@@ -70,7 +72,8 @@ func TestAddOne(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{applePath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(added))
 	assert.Equal(t, applePath, added[0])
@@ -100,7 +103,8 @@ func TestAddTwoSameTag(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{applePath, vwPath, bananaPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, vwPath, bananaPath}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(added))
 	assert.Contains(t, added, applePath)
@@ -138,7 +142,8 @@ func TestAddRecursive(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	var added, existing, missing []string
-	_, _, added, existing, missing, _, err = Add(session, home, []string{fruitPath, carsPath}, true)
+	ai := AddInput{Session: session, Home: home, Paths: []string{fruitPath, carsPath}, Debug: true}
+	_, _, added, existing, missing, _, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(added))
 	assert.Contains(t, added, applePath)

@@ -11,14 +11,14 @@ import (
 
 func TestTagTitleToFSDIR(t *testing.T) {
 	home := getTemporaryHome()
-	// missing home should return err
+	// missing Home should return err
 	p, isHome, err := tagTitleToFSDIR(fmt.Sprintf("%s.fruit.lemon", DotFilesTag), "")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "home directory required")
+	assert.Contains(t, err.Error(), "Home directory required")
 	assert.False(t, isHome)
 	assert.Empty(t, p)
 
-	// check result for supplied title and home
+	// check result for supplied title and Home
 	p1, isHome1, err := tagTitleToFSDIR(DotFilesTag, home)
 	assert.NoError(t, err)
 	assert.True(t, isHome1)

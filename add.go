@@ -53,23 +53,37 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	return
 }
 
-// Add tracks local paths by pushing the local dir as a tag representation and the filename as a note title
-func Add(session gosn.Session, home string, paths []string, debug bool) (tagsPushed, notesPushed int, pathsAdded, pathsExisting, pathsInvalid []string, msg string, err error) {
-	// remove any duplicate paths
-	paths = dedupe(paths)
+type AddInput struct {
+	Session gosn.Session
+	Home    string
+	Paths   []string
+	Debug   bool
+}
 
-	if err = checkPathsExist(paths); err != nil {
+type AddOutput struct {
+	TagsPushed, NotesPushed                 int
+	PathsAdded, PathsExisting, PathsInvalid []string
+	Msg                                     string
+	Err                                     error
+}
+
+// Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
+func Add(ai AddInput) (tagsPushed, notesPushed int, pathsAdded, pathsExisting, pathsInvalid []string, msg string, err error) {
+	// remove any duplicate Paths
+	ai.Paths = dedupe(ai.Paths)
+
+	if err = checkPathsExist(ai.Paths); err != nil {
 		return
 	}
 
 	var twn tagsWithNotes
-	twn, err = get(session)
+	twn, err = get(ai.Session)
 	if err != nil {
 		return
 	}
 
 	// run pre-checks
-	err = preflight(twn, paths)
+	err = preflight(twn, ai.Paths)
 	if err != nil {
 		return
 	}
@@ -77,14 +91,14 @@ func Add(session gosn.Session, home string, paths []string, debug bool) (tagsPus
 	var tagToItemMap map[string]gosn.Items
 	var fsPathsToAdd []string
 
-	// generate list of paths to add
-	fsPathsToAdd, pathsInvalid = getLocalFSPathsToAdd(paths)
+	// generate list of Paths to add
+	fsPathsToAdd, pathsInvalid = getLocalFSPathsToAdd(ai.Paths)
 	if len(fsPathsToAdd) == 0 {
 		return
 	}
 
 	var statusLines []string
-	statusLines, tagToItemMap, pathsAdded, pathsExisting, err = generateTagItemMap(fsPathsToAdd, home, twn)
+	statusLines, tagToItemMap, pathsAdded, pathsExisting, err = generateTagItemMap(fsPathsToAdd, ai.Home, twn)
 	if err != nil {
 		return
 	}
@@ -92,12 +106,12 @@ func Add(session gosn.Session, home string, paths []string, debug bool) (tagsPus
 	// add DotFilesTag tag if missing
 	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
 	if !tagExists("dotfiles", twn) && !dotFilesTagInTagToItemMap {
-		debugPrint(debug, "Add | adding missing dotfiles tag")
+		debugPrint(ai.Debug, "Add | adding missing dotfiles tag")
 		tagToItemMap[DotFilesTag] = gosn.Items{}
 	}
 
 	// push and tag items
-	tagsPushed, notesPushed, err = pushAndTag(session, tagToItemMap, twn)
+	tagsPushed, notesPushed, err = pushAndTag(ai.Session, tagToItemMap, twn)
 	if err != nil {
 		return
 	}
@@ -109,7 +123,7 @@ func Add(session gosn.Session, home string, paths []string, debug bool) (tagsPus
 func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {
 	// check for directories
 	for _, path := range paths {
-		// if path is directory, then walk to generate list of additional paths
+		// if path is directory, then walk to generate list of additional Paths
 		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 			err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 				if err != nil {

@@ -29,11 +29,11 @@ func colourDiff(diff string) string {
 	}
 }
 
-// Status compares and then outputs status of all items (or a subset defined by paths param):
+// Status compares and then outputs status of all items (or a subset defined by Paths param):
 // - local items that missing
 // - local items that are newer
 // - remote items that are newer
-// - local items that are untracked (if paths specified)
+// - local items that are untracked (if Paths specified)
 // - identical local and remote items
 func Status(session gosn.Session, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	remote, err := get(session)
