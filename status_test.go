@@ -45,13 +45,13 @@ func TestStatus(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
-	_, _, added, existing, missing, _, err = Add(ai)
+	var ao AddOutput
+	ao, err = Add(ai)
 	assert.NoError(t, err)
-	assert.Len(t, added, 4)
-	assert.Len(t, existing, 0)
-	assert.Len(t, missing, 0)
+	assert.Len(t, ao.PathsAdded, 4)
+	assert.Len(t, ao.PathsExisting, 0)
+	assert.Len(t, ao.PathsInvalid, 0)
 	var diffs []ItemDiff
 
 	diffs, _, err = Status(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
@@ -119,13 +119,13 @@ func TestStatus1(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, awsConfig}, Debug: true}
-	_, _, added, existing, missing, _, err = Add(ai)
+	var ao AddOutput
+	ao, err = Add(ai)
 	assert.NoError(t, err)
-	assert.Len(t, added, 2)
-	assert.Len(t, existing, 0)
-	assert.Len(t, missing, 0)
+	assert.Len(t, ao.PathsAdded, 2)
+	assert.Len(t, ao.PathsExisting, 0)
+	assert.Len(t, ao.PathsInvalid, 0)
 	var diffs []ItemDiff
 
 	diffs, _, err = Status(session, home, []string{gitConfigPath}, true)
@@ -159,13 +159,13 @@ func TestStatus2(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
-	_, _, added, existing, missing, _, err = Add(ai)
+	var ao AddOutput
+	ao, err = Add(ai)
 	assert.NoError(t, err)
-	assert.Len(t, added, 4)
-	assert.Len(t, existing, 0)
-	assert.Len(t, missing, 0)
+	assert.Len(t, ao.PathsAdded, 4)
+	assert.Len(t, ao.PathsExisting, 0)
+	assert.Len(t, ao.PathsInvalid, 0)
 	var diffs []ItemDiff
 
 	// delete apple so that a local item is missing

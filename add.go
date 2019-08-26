@@ -64,11 +64,10 @@ type AddOutput struct {
 	TagsPushed, NotesPushed                 int
 	PathsAdded, PathsExisting, PathsInvalid []string
 	Msg                                     string
-	Err                                     error
 }
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
-func Add(ai AddInput) (tagsPushed, notesPushed int, pathsAdded, pathsExisting, pathsInvalid []string, msg string, err error) {
+func Add(ai AddInput) (ao AddOutput, err error) {
 	// remove any duplicate Paths
 	ai.Paths = dedupe(ai.Paths)
 
@@ -92,13 +91,13 @@ func Add(ai AddInput) (tagsPushed, notesPushed int, pathsAdded, pathsExisting, p
 	var fsPathsToAdd []string
 
 	// generate list of Paths to add
-	fsPathsToAdd, pathsInvalid = getLocalFSPathsToAdd(ai.Paths)
+	fsPathsToAdd, ao.PathsInvalid = getLocalFSPathsToAdd(ai.Paths)
 	if len(fsPathsToAdd) == 0 {
 		return
 	}
 
 	var statusLines []string
-	statusLines, tagToItemMap, pathsAdded, pathsExisting, err = generateTagItemMap(fsPathsToAdd, ai.Home, twn)
+	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, err = generateTagItemMap(fsPathsToAdd, ai.Home, twn)
 	if err != nil {
 		return
 	}
@@ -111,13 +110,13 @@ func Add(ai AddInput) (tagsPushed, notesPushed int, pathsAdded, pathsExisting, p
 	}
 
 	// push and tag items
-	tagsPushed, notesPushed, err = pushAndTag(ai.Session, tagToItemMap, twn)
+	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, twn)
 	if err != nil {
 		return
 	}
-	msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
+	ao.Msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
-	return tagsPushed, notesPushed, pathsAdded, pathsExisting, pathsInvalid, msg, err
+	return ao, err
 }
 
 func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {

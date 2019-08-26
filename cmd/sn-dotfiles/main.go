@@ -166,15 +166,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				var notesAdded int
 				ai := dotfilesSN.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
-				_, notesAdded, _, _, _, _, err = dotfilesSN.Add(ai)
+				var ao dotfilesSN.AddOutput
+				ao, err = dotfilesSN.Add(ai)
 
 				if err != nil {
 					return err
 				}
-				if notesAdded > 0 {
-					msg = fmt.Sprintf("%d files added", notesAdded)
+				if ao.NotesPushed > 0 {
+					msg = fmt.Sprintf("%d files added", ao.NotesPushed)
 				} else {
 					msg = "nothing to do"
 				}

@@ -23,7 +23,7 @@ func TestAddInvalidSession(t *testing.T) {
 		Ak:     "invalid",
 		Server: "invalid",
 	}, Home: home, Paths: []string{gitConfigPath}, Debug: true}
-	_, _, _, _, _, _, err := Add(ai)
+	_, err := Add(ai)
 	assert.Error(t, err)
 }
 
@@ -45,13 +45,14 @@ func TestAddInvalidPath(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	var added, existing, missing []string
+	//var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, duffPath}, Debug: true}
-	_, _, added, existing, missing, _, err = Add(ai)
+	var ao AddOutput
+	ao, err = Add(ai)
 	assert.Error(t, err)
-	assert.Equal(t, 0, len(added))
-	assert.Equal(t, 0, len(existing))
-	assert.Equal(t, 0, len(missing))
+	assert.Equal(t, 0, len(ao.PathsAdded))
+	assert.Equal(t, 0, len(ao.PathsExisting))
+	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
 
 func TestAddOne(t *testing.T) {
@@ -71,14 +72,14 @@ func TestAddOne(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, _, added, existing, missing, _, err = Add(ai)
+	var ao AddOutput
+	ao, err = Add(ai)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(added))
-	assert.Equal(t, applePath, added[0])
-	assert.Equal(t, 0, len(existing))
-	assert.Equal(t, 0, len(missing))
+	assert.Equal(t, 1, len(ao.PathsAdded))
+	assert.Equal(t, applePath, ao.PathsAdded[0])
+	assert.Equal(t, 0, len(ao.PathsExisting))
+	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
 
 func TestAddTwoSameTag(t *testing.T) {
@@ -102,15 +103,15 @@ func TestAddTwoSameTag(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, vwPath, bananaPath}, Debug: true}
-	_, _, added, existing, missing, _, err = Add(ai)
+	var ao AddOutput
+	ao, err = Add(ai)
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(added))
-	assert.Contains(t, added, applePath)
-	assert.Contains(t, added, bananaPath)
-	assert.Equal(t, 0, len(existing))
-	assert.Equal(t, 0, len(missing))
+	assert.Equal(t, 3, len(ao.PathsAdded))
+	assert.Contains(t, ao.PathsAdded, applePath)
+	assert.Contains(t, ao.PathsAdded, bananaPath)
+	assert.Equal(t, 0, len(ao.PathsExisting))
+	assert.Equal(t, 0, len(ao.PathsInvalid))
 
 	var twn tagsWithNotes
 	twn, err = get(session)
@@ -141,14 +142,14 @@ func TestAddRecursive(t *testing.T) {
 	carsPath := fmt.Sprintf("%s/.cars", home)
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{fruitPath, carsPath}, Debug: true}
-	_, _, added, existing, missing, _, err = Add(ai)
+	var ao AddOutput
+	ao, err = Add(ai)
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(added))
-	assert.Contains(t, added, applePath)
-	assert.Equal(t, 0, len(existing))
-	assert.Equal(t, 0, len(missing))
+	assert.Equal(t, 3, len(ao.PathsAdded))
+	assert.Contains(t, ao.PathsAdded, applePath)
+	assert.Equal(t, 0, len(ao.PathsExisting))
+	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
 
 func TestCheckPathValid(t *testing.T) {

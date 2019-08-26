@@ -168,7 +168,8 @@ func TestRemove(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, _, _, _, _, _, err = sndotfiles.Add(ai)
+	_, err = sndotfiles.Add(ai)
+	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "remove", applePath})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, msg)
@@ -199,8 +200,8 @@ func TestWipe(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-
-	_, _, _, _, _, _, err = sndotfiles.Add(ai)
+	_, err = sndotfiles.Add(ai)
+	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "3 ")
@@ -230,7 +231,8 @@ func TestStatus(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, _, _, _, _, _, err = sndotfiles.Add(ai)
+	_, err = sndotfiles.Add(ai)
+	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "status", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, ".fruit/apple  identical")
@@ -260,7 +262,8 @@ func TestSync(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, _, _, _, _, _, err = sndotfiles.Add(ai)
+	_, err = sndotfiles.Add(ai)
+	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "nothing to do")
