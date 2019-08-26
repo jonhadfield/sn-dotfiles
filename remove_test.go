@@ -41,7 +41,6 @@ func TestRemoveInvalidSession(t *testing.T) {
 		Server: "invalid",
 	}, home, []string{gitConfigPath}, true)
 	assert.Error(t, err)
-	fmt.Println(err)
 }
 
 func TestRemoveInvalidPath(t *testing.T) {

@@ -10,6 +10,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAddInvalidSession(t *testing.T) {
+	home := getTemporaryHome()
+	fwc := make(map[string]string)
+	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
+	fwc[gitConfigPath] = "git config content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	_, _, _, _, _, _, err := Add(gosn.Session{
+		Token:  "invalid",
+		Mk:     "invalid",
+		Ak:     "invalid",
+		Server: "invalid",
+	}, home, []string{gitConfigPath}, true)
+	assert.Error(t, err)
+}
+
 func TestAddInvalidPath(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)

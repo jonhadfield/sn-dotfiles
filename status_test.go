@@ -12,6 +12,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStatusInvalidSession(t *testing.T) {
+	_, _, err := Status(gosn.Session{
+		Token:  "invalid",
+		Mk:     "invalid",
+		Ak:     "invalid",
+		Server: "invalid",
+	}, getTemporaryHome(), []string{}, true)
+	assert.Error(t, err)
+}
+
 func TestStatus(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
@@ -209,7 +219,7 @@ func TestStatus2(t *testing.T) {
 }
 
 func updateRemoteNote(session gosn.Session, noteTitle, newContent string) error {
-	gii := gosn.GetItemsInput{Session:session}
+	gii := gosn.GetItemsInput{Session: session}
 	gio, err := gosn.GetItems(gii)
 	if err != nil {
 		return err
@@ -229,7 +239,7 @@ func updateRemoteNote(session gosn.Session, noteTitle, newContent string) error 
 	nItems := gosn.Items{uItem}
 	var eNItems gosn.EncryptedItems
 	eNItems, err = nItems.Encrypt(session.Mk, session.Ak)
-	pii := gosn.PutItemsInput{Session:session, Items:eNItems}
+	pii := gosn.PutItemsInput{Session: session, Items: eNItems}
 	_, err = gosn.PutItems(pii)
 	return err
 }

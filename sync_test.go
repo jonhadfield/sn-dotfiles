@@ -9,6 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSyncInvalidSession(t *testing.T) {
+	_, _, _, err := Sync(gosn.Session{
+		Token:  "invalid",
+		Mk:     "invalid",
+		Ak:     "invalid",
+		Server: "invalid",
+	}, getTemporaryHome(), true)
+	assert.Error(t, err)
+}
+
 func TestSyncNoItems(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
