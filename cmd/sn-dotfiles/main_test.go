@@ -190,8 +190,31 @@ func TestWipe(t *testing.T) {
 	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
-	assert.NotEmpty(t, msg)
 	assert.Contains(t, msg, "3 ")
+	assert.True(t, disp)
+}
+
+func TestStatus(t *testing.T) {
+	viper.SetEnvPrefix("sn")
+	assert.NoError(t, viper.BindEnv("email"))
+	assert.NoError(t, viper.BindEnv("password"))
+	assert.NoError(t, viper.BindEnv("server"))
+
+	home := getHome()
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	serverURL := os.Getenv("SN_SERVER")
+	if serverURL == "" {
+		serverURL = sndotfiles.SNServerURL
+	}
+	session, _, err := sndotfiles.GetSession(false, serverURL)
+	assert.NoError(t, err)
+	_, _, _, _, _, _, err = sndotfiles.Add(session, home, []string{applePath}, true)
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "status", applePath})
+	assert.NoError(t, err)
+	assert.Contains(t, msg, ".fruit/apple  identical")
 	assert.True(t, disp)
 }
 
