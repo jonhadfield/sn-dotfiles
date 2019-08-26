@@ -12,6 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStatusEmptyTWN(t *testing.T) {
+	home := getTemporaryHome()
+	_, msg, _ := status(tagsWithNotes{}, home, []string{}, true)
+	assert.Equal(t, "no dotfiles being tracked", msg)
+}
+
 func TestStatusInvalidSession(t *testing.T) {
 	_, _, err := Status(gosn.Session{
 		Token:  "invalid",
