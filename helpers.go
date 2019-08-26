@@ -11,7 +11,7 @@ import (
 
 	"github.com/jonhadfield/gosn"
 	"github.com/lithammer/shortuuid"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 )
 
 func debugPrint(show bool, msg string) {
@@ -64,37 +64,6 @@ func push(session gosn.Session, itemDiffs []ItemDiff) (pio gosn.PutItemsOutput, 
 	}
 
 	return putItems(session, dItems)
-}
-
-// GetTagConfig defines the input for getting tags from SN
-type GetTagConfig struct {
-	Session gosn.Session
-	Filters gosn.ItemFilters
-	Output  string
-	Debug   bool
-}
-
-func (input *GetTagConfig) Run() (tags gosn.Items, err error) {
-	gosn.SetErrorLogger(log.Println)
-	if input.Debug {
-		gosn.SetDebugLogger(log.Println)
-	}
-
-	getItemsInput := gosn.GetItemsInput{
-		Session: input.Session,
-	}
-	var output gosn.GetItemsOutput
-	output, err = gosn.GetItems(getItemsInput)
-	if err != nil {
-		return nil, err
-	}
-	output.Items.DeDupe()
-	tags, err = output.Items.DecryptAndParse(input.Session.Mk, input.Session.Ak)
-	if err != nil {
-		return nil, err
-	}
-	tags.Filter(input.Filters)
-	return
 }
 
 func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Item, found bool) {
@@ -503,7 +472,7 @@ func GetSession(loadSession bool, server string) (session gosn.Session, email st
 		if err != nil {
 			return
 		}
-		email, session, err = parseSessionString(rawSess)
+		email, session, err = ParseSessionString(rawSess)
 		if err != nil {
 			return
 		}
@@ -533,7 +502,7 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 	return sess, email, err
 }
 
-func parseSessionString(in string) (email string, session gosn.Session, err error) {
+func ParseSessionString(in string) (email string, session gosn.Session, err error) {
 	parts := strings.Split(in, ";")
 	if len(parts) != 5 {
 		err = errors.New("invalid Session found")

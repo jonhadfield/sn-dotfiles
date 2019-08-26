@@ -140,3 +140,8 @@ func TestCompareLocalNewer(t *testing.T) {
 	assert.Equal(t, lemonPath, iDiff.path)
 	assert.Equal(t, lemonNote, iDiff.remote)
 }
+
+func TestStripDot(t *testing.T) {
+	assert.Equal(t, "test", stripDot(".test"))
+	assert.Equal(t, "test", stripDot("test"))
+}

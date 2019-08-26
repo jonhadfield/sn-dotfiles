@@ -9,7 +9,7 @@ import (
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/spf13/viper"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 
@@ -76,17 +76,6 @@ func TestMakeSessionString(t *testing.T) {
 	}
 	ss := makeSessionString(testSessionEmail, sess)
 	assert.Equal(t, testSession, ss)
-}
-
-func TestParseSessionString(t *testing.T) {
-	ss, err := parseSessionString(testSession)
-	assert.NoError(t, err)
-	assert.Len(t, ss, 5)
-	assert.Equal(t, testSessionEmail, ss[0])
-	assert.Equal(t, testSessionServer, ss[1])
-	assert.Equal(t, testSessionToken, ss[2])
-	assert.Equal(t, testSessionAk, ss[3])
-	assert.Equal(t, testSessionMk, ss[4])
 }
 
 func TestStripHome(t *testing.T) {

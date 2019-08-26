@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -269,13 +269,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 						msg = errMsg
 						return nil
 					}
-					var sessionParts []string
-					sessionParts, err = parseSessionString(s)
+					var email string
+					email, _, err = dotfilesSN.ParseSessionString(s)
 					if err != nil {
 						msg = fmt.Sprint("failed to parse session: ", err)
 						return nil
 					}
-					msg = fmt.Sprint("session found: ", sessionParts[0])
+					msg = fmt.Sprint("session found: ", email)
 				}
 				return err
 			},
@@ -382,13 +382,7 @@ func getSession() (s string, errMsg string) {
 func makeSessionString(email string, session gosn.Session) string {
 	return fmt.Sprintf("%s;%s;%s;%s;%s", email, session.Server, session.Token, session.Ak, session.Mk)
 }
-func parseSessionString(in string) (res []string, err error) {
-	res = strings.Split(in, ";")
-	if len(res) != 5 {
-		err = errors.New("invalid session")
-	}
-	return
-}
+
 func stripHome(in, home string) (res string, err error) {
 	if home == "" {
 		err = errors.New("home required")
