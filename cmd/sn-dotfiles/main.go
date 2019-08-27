@@ -373,7 +373,7 @@ func getSession() (s string, errMsg string) {
 	var err error
 	s, err = keyring.Get(service, "session")
 	if err != nil {
-		errMsg = fmt.Sprint("failed to get session: ", err)
+		errMsg = fmt.Sprint("session not found: ", err)
 		return
 	}
 	return
