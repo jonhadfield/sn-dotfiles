@@ -354,7 +354,7 @@ func addSession(snServer string) string {
 	if err != nil {
 		return fmt.Sprint("failed to get session: ", err)
 	}
-	err = keyring.Set(service, "session", makeSessionString(email, session))
+	err = keyring.Set(service, dotfilesSN.KeyringApplicationName, makeSessionString(email, session))
 	if err != nil {
 		return fmt.Sprint("failed to set session: ", err)
 	}
@@ -362,7 +362,7 @@ func addSession(snServer string) string {
 }
 
 func removeSession() string {
-	err := keyring.Delete(service, "session")
+	err := keyring.Delete(service, dotfilesSN.KeyringApplicationName)
 	if err != nil {
 		return fmt.Sprintf("%s: %s", msgSessionRemovalFailure, err.Error())
 	}
@@ -371,7 +371,7 @@ func removeSession() string {
 
 func getSession() (s string, errMsg string) {
 	var err error
-	s, err = keyring.Get(service, "session")
+	s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
 	if err != nil {
 		errMsg = fmt.Sprint("session not found: ", err)
 		return

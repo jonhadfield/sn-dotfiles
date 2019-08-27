@@ -468,7 +468,7 @@ func GetSession(loadSession bool, server string) (session gosn.Session, email st
 	if loadSession {
 		service := "StandardNotesCLI"
 		var rawSess string
-		rawSess, err = keyring.Get(service, "session")
+		rawSess, err = keyring.Get(service, KeyringApplicationName)
 		if err != nil {
 			return
 		}

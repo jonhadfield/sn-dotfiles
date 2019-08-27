@@ -47,7 +47,7 @@ var (
 
 func TestGetSession(t *testing.T) {
 	keyring.MockInit()
-	err := keyring.Set(service, "session", testSession)
+	err := keyring.Set(service, sndotfiles.KeyringApplicationName, testSession)
 	assert.NoError(t, err)
 
 	var s, errMsg string
@@ -58,7 +58,7 @@ func TestGetSession(t *testing.T) {
 
 func TestRemoveSession(t *testing.T) {
 	keyring.MockInit()
-	err := keyring.Set(service, "session", testSession)
+	err := keyring.Set(service, sndotfiles.KeyringApplicationName, testSession)
 	assert.NoError(t, err)
 
 	msg := removeSession()
