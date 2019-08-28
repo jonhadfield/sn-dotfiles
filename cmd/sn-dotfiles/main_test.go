@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/spf13/viper"
@@ -259,6 +260,7 @@ func TestSync(t *testing.T) {
 	assert.True(t, disp)
 	fwc[applePath] = "apple content updated"
 	assert.NoError(t, createTemporaryFiles(fwc))
+	time.Sleep(1 * time.Second)
 	msg, disp, err = startCLI([]string{"sn-dotfiles", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "pushed")
