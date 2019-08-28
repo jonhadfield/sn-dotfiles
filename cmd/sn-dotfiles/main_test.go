@@ -9,7 +9,7 @@ import (
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/spf13/viper"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 
