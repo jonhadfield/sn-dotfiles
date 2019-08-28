@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -221,6 +221,26 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				} else {
 					msg = fmt.Sprintf("nothing to do")
 				}
+				return err
+			},
+		},
+		{
+			Name:  "diff",
+			Usage: "display differences between local and remote",
+			Action: func(c *cli.Context) error {
+				if !c.GlobalBool("quiet") {
+					display = true
+				}
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+					c.GlobalString("server"))
+				if err != nil {
+					return err
+				}
+				home := c.GlobalString("home-dir")
+				if home == "" {
+					home = getHome()
+				}
+				_, msg, err = dotfilesSN.Diff(session, home, c.Args(), c.GlobalBool("debug"))
 				return err
 			},
 		},

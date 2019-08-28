@@ -2,15 +2,13 @@ package main
 
 import (
 	"fmt"
+	sndotfiles "github.com/jonhadfield/dotfiles-sn"
+	"github.com/spf13/viper"
+	"github.com/zalando/go-keyring"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
-
-	sndotfiles "github.com/jonhadfield/dotfiles-sn"
-	"github.com/spf13/viper"
-	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 
@@ -254,14 +252,13 @@ func TestSync(t *testing.T) {
 	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
 	_, err = sndotfiles.Add(ai)
 	assert.NoError(t, err)
-	msg, disp, err := startCLI([]string{"sn-dotfiles", "sync", applePath})
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "nothing to do")
 	assert.True(t, disp)
 	fwc[applePath] = "apple content updated"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	time.Sleep(1 * time.Second)
-	msg, disp, err = startCLI([]string{"sn-dotfiles", "sync", applePath})
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "pushed")
 }

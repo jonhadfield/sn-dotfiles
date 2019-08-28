@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,6 +20,79 @@ const (
 	untracked    = "untracked"
 	identical    = "identical"
 )
+
+func Diff(session gosn.Session, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
+	remote, err := get(session)
+	if err != nil {
+		return diffs, msg, err
+	}
+	return appDiff(remote, home, paths, debug)
+}
+
+func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
+	debugPrint(debug, fmt.Sprintf("diff | %d remote items", len(twn)))
+	err = preflight(twn, paths)
+	if err != nil {
+		return
+	}
+	if len(twn) == 0 {
+		msg = "no dotfiles being tracked"
+		return
+	}
+	if len(paths) == 0 {
+		debugPrint(debug, fmt.Sprint("appDiff | calling diff without any paths"))
+	} else {
+		debugPrint(debug, fmt.Sprintf("appDiff | calling diff with paths: %s", strings.Join(paths, ",")))
+	}
+
+
+	diffs, err = diff(twn, home, paths, debug)
+	if err != nil {
+		return diffs, msg, err
+	}
+	debugPrint(debug, fmt.Sprintf("diff | %d diffs generated", len(diffs)))
+	//var lines []string
+	if len(diffs) == 0 {
+		return diffs, msg, err
+	}
+	for _, diff := range diffs {
+		//lines = append(lines, fmt.Sprintf("%s | %s \n", bold(diff.homeRelPath), colourDiff(diff.diff)))
+		// diff  <(echo "$string1" ) <(echo "$string2")
+		localContent := diff.local
+		remoteContent := diff.remote.Content.GetText()
+		if localContent != remoteContent {
+			// write local and remote content to temporary files
+			var f1, f2 *os.File
+			f1, err = os.Create("/tmp/f1")
+			f2, err = os.Create("/tmp/f2")
+			_, err = f1.WriteString(diff.local)
+			_, err = f2.WriteString(diff.remote.Content.GetText())
+			//cmd := exec.Command("/usr/bin/diff")
+			cmd := exec.Command("/usr/bin/diff", "/tmp/f1", "/tmp/f2")
+			out, err := cmd.CombinedOutput()
+			var exitCode int
+			if err != nil {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					exitCode = exitError.ExitCode()
+				}
+			}
+			if exitCode == 2 {
+				panic("oops")
+			}
+			//cmd := exec.Command("/usr/bin/diff", "/tmp/f1", "/tmp/f2")
+			//err = cmd.Run()
+			//if err := cmd.Run() ; err != nil {
+			//	if exitError, ok := err.(*exec.ExitError); ok {
+			//		return exitError.ExitCode()
+			//	}
+			//}
+			fmt.Println("OUT:", string(out))
+			fmt.Println(err)
+		}
+	}
+
+	return diffs, msg, err
+}
 
 func pathIsPrefixOfPaths(path string, paths []string) bool {
 	for i := range paths {
