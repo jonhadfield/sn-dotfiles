@@ -1,7 +1,9 @@
 package sndotfiles
 
 import (
+	"errors"
 	"fmt"
+	"github.com/fatih/color"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jonhadfield/findexec"
 	"github.com/jonhadfield/gosn"
 )
 
@@ -45,7 +48,6 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 		debugPrint(debug, fmt.Sprintf("appDiff | calling diff with paths: %s", strings.Join(paths, ",")))
 	}
 
-
 	diffs, err = diff(twn, home, paths, debug)
 	if err != nil {
 		return diffs, msg, err
@@ -55,21 +57,43 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 	if len(diffs) == 0 {
 		return diffs, msg, err
 	}
+	diffBinary := findexec.Find("diff", "")
+	if diffBinary == "" {
+		err = errors.New("failed to find diff binary")
+		return
+	}
+	// get tempdir
+	tempDir := os.TempDir()
 	for _, diff := range diffs {
-		//lines = append(lines, fmt.Sprintf("%s | %s \n", bold(diff.homeRelPath), colourDiff(diff.diff)))
-		// diff  <(echo "$string1" ) <(echo "$string2")
 		localContent := diff.local
 		remoteContent := diff.remote.Content.GetText()
 		if localContent != remoteContent {
 			// write local and remote content to temporary files
 			var f1, f2 *os.File
-			f1, err = os.Create("/tmp/f1")
-			f2, err = os.Create("/tmp/f2")
+			uuid := gosn.GenUUID()
+			f1path := fmt.Sprintf("%ssn-dotfiles-diff-%s-f1", tempDir, uuid)
+			f2path := fmt.Sprintf("%ssn-dotfiles-diff-%s-f2", tempDir, uuid)
+			f1, err = os.Create(f1path)
+			if err != nil {
+				return
+			}
+			f2, err = os.Create(f2path)
+			if err != nil {
+				return
+			}
 			_, err = f1.WriteString(diff.local)
 			_, err = f2.WriteString(diff.remote.Content.GetText())
-			//cmd := exec.Command("/usr/bin/diff")
-			cmd := exec.Command("/usr/bin/diff", "/tmp/f1", "/tmp/f2")
-			out, err := cmd.CombinedOutput()
+			cmd := exec.Command(diffBinary, f1path, f2path)
+			var out []byte
+			out, err = cmd.CombinedOutput()
+			if f1DelErr := os.Remove(f1path); f1DelErr != nil {
+				err = f1DelErr
+				return
+			}
+			if f2DelErr := os.Remove(f2path); f2DelErr != nil {
+				err = f2DelErr
+				return
+			}
 			var exitCode int
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
@@ -77,20 +101,14 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 				}
 			}
 			if exitCode == 2 {
-				panic("oops")
+				panic(fmt.Sprintf("failed to diff: '%s' with '%s'", f1path, f2path))
 			}
-			//cmd := exec.Command("/usr/bin/diff", "/tmp/f1", "/tmp/f2")
-			//err = cmd.Run()
-			//if err := cmd.Run() ; err != nil {
-			//	if exitError, ok := err.(*exec.ExitError); ok {
-			//		return exitError.ExitCode()
-			//	}
-			//}
-			fmt.Println("OUT:", string(out))
-			fmt.Println(err)
+
+			bold := color.New(color.Bold).SprintFunc()
+			fmt.Println(bold(diff.remote.Content.GetTitle()))
+			fmt.Println(string(out))
 		}
 	}
-
 	return diffs, msg, err
 }
 
