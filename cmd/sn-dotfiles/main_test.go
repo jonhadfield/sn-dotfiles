@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/jonhadfield/gosn"
 
@@ -258,6 +259,8 @@ func TestSync(t *testing.T) {
 	assert.True(t, disp)
 	fwc[applePath] = "apple content updated"
 	assert.NoError(t, createTemporaryFiles(fwc))
+	// add delay so local file is recognised as newer
+	time.Sleep(1 * time.Second)
 	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "pushed")
