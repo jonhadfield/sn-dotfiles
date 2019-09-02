@@ -62,12 +62,15 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 		err = errors.New("failed to find diff binary")
 		return
 	}
+
+	var differencesFound bool
 	// get tempdir
 	tempDir := os.TempDir()
 	for _, diff := range diffs {
 		localContent := diff.local
 		remoteContent := diff.remote.Content.GetText()
 		if localContent != remoteContent {
+			differencesFound = true
 			// write local and remote content to temporary files
 			var f1, f2 *os.File
 			uuid := gosn.GenUUID()
@@ -108,6 +111,9 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 			fmt.Println(bold(diff.remote.Content.GetTitle()))
 			fmt.Println(string(out))
 		}
+	}
+	if ! differencesFound {
+		fmt.Println("no differences found")
 	}
 	return diffs, msg, err
 }
