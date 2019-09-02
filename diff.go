@@ -3,7 +3,6 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 
 	"github.com/jonhadfield/findexec"
 	"github.com/jonhadfield/gosn"
@@ -112,7 +113,7 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 			fmt.Println(string(out))
 		}
 	}
-	if ! differencesFound {
+	if !differencesFound {
 		fmt.Println("no differences found")
 	}
 	return diffs, msg, err

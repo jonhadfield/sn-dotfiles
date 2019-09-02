@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
-	sndotfiles "github.com/jonhadfield/dotfiles-sn"
-	"github.com/jonhadfield/gosn"
-	"github.com/spf13/viper"
-	"github.com/zalando/go-keyring"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
+
+	sndotfiles "github.com/jonhadfield/dotfiles-sn"
+	"github.com/jonhadfield/gosn"
+	"github.com/spf13/viper"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/stretchr/testify/assert"
 )
