@@ -34,9 +34,9 @@ export SN_SERVER=<https://myserver.example.com>   # optional, if running persona
 #### session - macOS Keychain
 Using a session is different from storing credentials as you no longer need to authenticate. As a result, if using 2FA, you won't need to enter your token value each time.  
 ##### add session
-``
-sn-dotfiles session --add   # session will be stored after
-``
+```
+sn-dotfiles session --add   # session will be stored after successful authentication
+```
 ##### using a session
 Prefix any command with ```--use-session``` to automatically retrieve and use the session.
 
