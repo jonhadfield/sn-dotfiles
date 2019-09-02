@@ -4,18 +4,41 @@
 
 ## about
 
+sn-dotfiles is a command-line tool to sync dotfiles with a [Standard Notes](https://standardnotes.org/) account.  
+It works by creating a tag called 'dotfiles' and then maps dotfile directories with tags and dotfiles as notes.
+
 ## installation
-TBC  
+Download the latest release here: https://github.com/jonhadfield/sn-dotfiles/releases
 
 #### macOS and Linux
-  
+
 Install:  
 ``
 $ install <downloaded binary> /usr/local/bin/sn-dotfiles
 ``  
 
 ## running
-TBC
+
+### credentials
+
+By default, your credentials will be requested every time, but you can store them using either environment variables or, on MacOS, store your session using the native Keychain application.
+
+#### environment variables
+Note: if using 2FA, the token value will be requested each time
+```
+export SN_EMAIL=<email address>
+export SN_PASSWORD=<password>
+export SN_SERVER=<https://myserver.example.com>   # optional, if running personal server
+```
+
+#### session - macOS Keychain
+Using a session is different from storing credentials as you no longer need to authenticate. As a result, if using 2FA, you won't need to enter your token value each time.  
+##### add session
+``
+sn-dotfiles session --add   # session will be stored after
+``
+##### using a session
+Prefix any command with ```--use-session``` to automatically retrieve and use the session.
 
 
 [circleci-image]: https://circleci.com/gh/jonhadfield/sn-dotfiles.svg?style=svg
