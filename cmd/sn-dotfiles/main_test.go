@@ -45,17 +45,6 @@ var (
 		testSessionToken, testSessionAk, testSessionMk)
 )
 
-func TestGetSession(t *testing.T) {
-	keyring.MockInit()
-	err := keyring.Set(service, sndotfiles.KeyringApplicationName, testSession)
-	assert.NoError(t, err)
-
-	var s, errMsg string
-	s, errMsg = getSession()
-	assert.Empty(t, errMsg)
-	assert.Equal(t, testSession, s)
-}
-
 func TestRemoveSession(t *testing.T) {
 	keyring.MockInit()
 	err := keyring.Set(service, sndotfiles.KeyringApplicationName, testSession)
@@ -275,7 +264,8 @@ func TestAddSession(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles.SNServerURL
 	}
-	res := addSession(serverURL)
+	res, err := addSession(serverURL)
+	assert.NoError(t, err)
 	assert.Contains(t, res, "successfully")
 }
 
