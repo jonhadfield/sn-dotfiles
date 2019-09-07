@@ -393,6 +393,7 @@ func getSession() (s string, errMsg string) {
 	var err error
 	s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
 	if err != nil {
+		fmt.Printf("%+v\n", err)
 		errMsg = fmt.Sprint("session not found: ", err)
 		return
 	}
