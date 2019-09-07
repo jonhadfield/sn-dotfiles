@@ -113,8 +113,14 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			Flags: []cli.Flag{
 				// TODO: not implemented
 				cli.BoolFlag{
-					Name:  "delete",
-					Usage: "remove remotes that don't exist locally",
+					Name:   "delete",
+					Usage:  "remove remotes that don't exist locally",
+					Hidden: true,
+				},
+				cli.BoolFlag{
+					Name:   "exclude",
+					Usage:  "exlude paths from sync",
+					Hidden: true,
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -129,7 +135,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, msg, err = dotfilesSN.Sync(session, home, c.GlobalBool("debug"))
+				_, _, msg, err = dotfilesSN.Sync(session, home, c.Args(), c.GlobalBool("debug"))
 				if err != nil {
 					return err
 				}

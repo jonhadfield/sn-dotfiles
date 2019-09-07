@@ -15,7 +15,7 @@ func TestSyncInvalidSession(t *testing.T) {
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	}, getTemporaryHome(), true)
+	}, getTemporaryHome(), []string{}, true)
 	assert.Error(t, err)
 }
 
@@ -26,7 +26,7 @@ func TestSyncNoItems(t *testing.T) {
 	home := getTemporaryHome()
 	// add item
 	var noPushed, noPulled int
-	noPushed, noPulled, _, err = Sync(session, home, true)
+	noPushed, noPulled, _, err = Sync(session, home, []string{}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no remote dotfiles found")
 	assert.Equal(t, 0, noPushed)

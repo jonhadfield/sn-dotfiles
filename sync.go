@@ -13,7 +13,7 @@ import (
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
-func Sync(session gosn.Session, home string, debug bool) (noPushed, noPulled int, msg string, err error) {
+func Sync(session gosn.Session, home string, paths []string, debug bool) (noPushed, noPulled int, msg string, err error) {
 	var remote tagsWithNotes
 	remote, err = get(session)
 	if err != nil {
