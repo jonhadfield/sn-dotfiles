@@ -274,17 +274,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					_ = cli.ShowCommandHelp(c, "session")
 					os.Exit(1)
 				}
-
 				if sAdd {
-					msg = addSession(c.GlobalString("server"))
-					return nil
+					msg, err = addSession(c.GlobalString("server"))
+					return err
 				}
 				if sRemove {
 					msg = removeSession()
 					return nil
 				}
 				if sStatus {
-					//s, errMsg := getSession()
 					var s string
 					s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
 					if err != nil {
@@ -358,29 +356,32 @@ func numTrue(in ...bool) (total int) {
 	return
 }
 
-func addSession(snServer string) string {
-
-	s, _ := getSession()
+func addSession(snServer string) (res string, err error) {
+	var s string
+	s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
+	// only return an error if there's an issue accessing the keyring
+	if err != nil && !strings.Contains(err.Error(), "secret not found in keyring") {
+		return
+	}
 	if s != "" {
 		fmt.Print("replace existing session (y|n): ")
 		var resp string
 		_, err := fmt.Scanln(&resp)
 		if err != nil || strings.ToLower(resp) != "y" {
-			return ""
+			return "", err
 		}
 	}
 	var session gosn.Session
 	var email string
-	var err error
 	session, email, err = dotfilesSN.GetSessionFromUser(snServer)
 	if err != nil {
-		return fmt.Sprint("failed to get session: ", err)
+		return fmt.Sprint("failed to get session: ", err), err
 	}
 	err = keyring.Set(service, dotfilesSN.KeyringApplicationName, makeSessionString(email, session))
 	if err != nil {
-		return fmt.Sprint("failed to set session: ", err)
+		return fmt.Sprint("failed to set session: ", err), err
 	}
-	return "session added successfully"
+	return "session added successfully", err
 }
 
 func removeSession() string {
@@ -389,32 +390,6 @@ func removeSession() string {
 		return fmt.Sprintf("%s: %s", msgSessionRemovalFailure, err.Error())
 	}
 	return msgSessionRemovalSuccess
-}
-
-func sessionStatus() {
-
-}
-
-//func getSession() (s string, errMsg string) {
-//	var err error
-//	s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
-//	if err != nil {
-//		fmt.Printf("%+v\n", err)
-//		errMsg = fmt.Sprint("session not found: ", err)
-//		return
-//	}
-//	return
-//}
-
-func getSession() (s string, errMsg string) {
-	var err error
-	s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-		errMsg = fmt.Sprint("session not found: ", err)
-		return
-	}
-	return
 }
 
 func makeSessionString(email string, session gosn.Session) string {
