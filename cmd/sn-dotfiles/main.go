@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -284,10 +284,11 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					return nil
 				}
 				if sStatus {
-					s, errMsg := getSession()
-					if errMsg != "" {
-						msg = errMsg
-						return nil
+					//s, errMsg := getSession()
+					var s string
+					s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
+					if err != nil {
+						return err
 					}
 					var email string
 					email, _, err = dotfilesSN.ParseSessionString(s)
@@ -358,6 +359,7 @@ func numTrue(in ...bool) (total int) {
 }
 
 func addSession(snServer string) string {
+
 	s, _ := getSession()
 	if s != "" {
 		fmt.Print("replace existing session (y|n): ")
@@ -388,6 +390,21 @@ func removeSession() string {
 	}
 	return msgSessionRemovalSuccess
 }
+
+func sessionStatus() {
+
+}
+
+//func getSession() (s string, errMsg string) {
+//	var err error
+//	s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
+//	if err != nil {
+//		fmt.Printf("%+v\n", err)
+//		errMsg = fmt.Sprint("session not found: ", err)
+//		return
+//	}
+//	return
+//}
 
 func getSession() (s string, errMsg string) {
 	var err error
