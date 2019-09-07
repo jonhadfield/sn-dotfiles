@@ -3,6 +3,7 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/fatih/color"
@@ -26,9 +27,23 @@ func Sync(session gosn.Session, home string, paths, exclude []string, debug bool
 	return sync(session, remote, home, exclude, debug)
 }
 
+func ensureTrailingPathSep(in string) string {
+	if strings.HasSuffix(in, string(os.PathSeparator)) {
+		return in
+	}
+	return in + string(os.PathSeparator)
+}
+
 func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
+	fmt.Println("in matchesPathsToExclude")
 	for _, pte := range pathsToExclude {
-		if stripHome(pte, home) == path {
+		homeStrippedPath := stripHome(pte, home)
+		// return match if paths match exactly
+		if homeStrippedPath == path {
+			return true
+		}
+		// return match if pte is a parent of the path
+		if strings.HasPrefix(path, ensureTrailingPathSep(homeStrippedPath)) {
 			return true
 		}
 	}
