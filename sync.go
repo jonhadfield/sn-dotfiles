@@ -13,22 +13,31 @@ import (
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
-func Sync(session gosn.Session, home string, paths []string, debug bool) (noPushed, noPulled int, msg string, err error) {
+func Sync(session gosn.Session, home string, paths, exclude []string, debug bool) (noPushed, noPulled int, msg string, err error) {
 	var remote tagsWithNotes
 	remote, err = get(session)
 	if err != nil {
 		return
 	}
-	err = preflight(remote, []string{})
+	err = preflight(remote, paths)
 	if err != nil {
 		return
 	}
-	return sync(session, remote, home, debug)
+	return sync(session, remote, home, exclude, debug)
 }
 
-func sync(session gosn.Session, twn tagsWithNotes, home string, debug bool) (noPushed, noPulled int, msg string, err error) {
+func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
+	for _, pte := range pathsToExclude {
+		if stripHome(pte, home) == path {
+			return true
+		}
+	}
+	return false
+}
+
+func sync(session gosn.Session, twn tagsWithNotes, home string, exclude []string, debug bool) (noPushed, noPulled int, msg string, err error) {
 	var itemDiffs []ItemDiff
-	itemDiffs, err = diff(twn, home, nil, debug)
+	itemDiffs, err = diff(twn, home, nil, exclude, debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
@@ -39,6 +48,12 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, debug bool) (noP
 	var itemsToPush, itemsToPull []ItemDiff
 	var itemsToSync bool
 	for _, itemDiff := range itemDiffs {
+		// check if itemDiff is for a path to be excluded
+		if matchesPathsToExclude(home, itemDiff.homeRelPath, exclude) {
+			debugPrint(debug, fmt.Sprintf("sync | excluding: %s", itemDiff.homeRelPath))
+			continue
+		}
+
 		switch itemDiff.diff {
 		case localNewer:
 			//push

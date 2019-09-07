@@ -64,12 +64,12 @@ func TestDiff1(t *testing.T) {
 	}()
 
 	// missing remote and missing local
-	_, err = diff(tagsWithNotes{}, home, []string{"missing-file"}, true)
+	_, err = diff(tagsWithNotes{}, home, []string{"missing-file"}, []string{}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "tags with notes not supplied")
 
 	// existing remote and missing local
-	_, err = diff(twn, home, []string{"missing-file"}, true)
+	_, err = diff(twn, home, []string{"missing-file"}, []string{}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no such file")
 
@@ -77,7 +77,7 @@ func TestDiff1(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)
 	lemonPath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)
 	allPaths := []string{applePath, lemonPath}
-	diffs, err = diff(twn, home, allPaths, true)
+	diffs, err = diff(twn, home, allPaths, []string{}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 2)
 	assert.NotEmpty(t, diffs)
@@ -204,7 +204,7 @@ func TestDiff2(t *testing.T) {
 
 	// valid local, valid remote, grape not diff'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.sn-dotfiles-test-fruit/", home)}
-	diffs, err = diff(twn, home, paths, true)
+	diffs, err = diff(twn, home, paths, []string{}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.NotEmpty(t, diffs)
@@ -254,7 +254,7 @@ func TestDiff3(t *testing.T) {
 
 	// valid local, valid remote, grape not diff'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.apple", home)}
-	diffs, err = diff(twn, home, paths, true)
+	diffs, err = diff(twn, home, paths, []string{}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, identical, diffs[0].diff)
@@ -295,7 +295,7 @@ func TestDiff4(t *testing.T) {
 	}()
 
 	paths := []string{fmt.Sprintf("%s/.apple", home), fmt.Sprintf("%s/.banana", home), fmt.Sprintf("%s/.cars", home)}
-	diffs, err = diff(twn, home, paths, true)
+	diffs, err = diff(twn, home, paths, []string{}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.Equal(t, identical, diffs[0].diff)

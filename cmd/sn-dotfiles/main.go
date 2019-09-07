@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -117,9 +117,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					Usage:  "remove remotes that don't exist locally",
 					Hidden: true,
 				},
-				cli.BoolFlag{
+				cli.StringSliceFlag{
 					Name:   "exclude",
-					Usage:  "exlude paths from sync",
+					Usage:  "exlude path from sync",
 					Hidden: true,
 				},
 			},
@@ -135,7 +135,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, msg, err = dotfilesSN.Sync(session, home, c.Args(), c.GlobalBool("debug"))
+				_, _, msg, err = dotfilesSN.Sync(session, home, c.Args(), c.StringSlice("exclude"), c.GlobalBool("debug"))
 				if err != nil {
 					return err
 				}

@@ -49,7 +49,7 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 		debugPrint(debug, fmt.Sprintf("appDiff | calling diff with paths: %s", strings.Join(paths, ",")))
 	}
 
-	diffs, err = diff(twn, home, paths, debug)
+	diffs, err = diff(twn, home, paths, []string{}, debug)
 	if err != nil {
 		return diffs, msg, err
 	}
@@ -214,10 +214,10 @@ func diffRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, de
 	return itemDiffs, remotePaths, err
 }
 
-func diff(remote tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, err error) {
-	debugPrint(debug, fmt.Sprintf("diff | Home: %s", home))
-	debugPrint(debug, fmt.Sprintf("diff | %d Paths supplied", len(paths)))
-
+func diff(remote tagsWithNotes, home string, paths, exclude []string, debug bool) (diffs []ItemDiff, err error) {
+	debugPrint(debug, fmt.Sprintf("diff | home: %s", home))
+	debugPrint(debug, fmt.Sprintf("diff | %d paths to include supplied", len(paths)))
+	debugPrint(debug, fmt.Sprintf("diff | %d paths to exclude supplied", len(exclude)))
 	// fail immediately if remote or Paths are empty
 	if len(remote) == 0 {
 		return nil, fmt.Errorf("tags with notes not supplied")
@@ -299,7 +299,6 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 			})
 		}
 	}
-
 	return itemDiffs
 }
 
