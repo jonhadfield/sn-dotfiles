@@ -21,7 +21,6 @@ import (
 var version, versionOutput, tag, sha, buildDate string
 
 const (
-	service                  = "StandardNotesCLI"
 	msgSessionRemovalSuccess = "session removed successfully"
 	msgSessionRemovalFailure = "failed to remove session"
 )
@@ -80,6 +79,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.StringFlag{Name: "server"},
 		cli.StringFlag{Name: "home-dir"},
 		cli.BoolFlag{Name: "use-session"},
+		cli.BoolFlag{Name: "session-key"},
 		cli.BoolFlag{Name: "quiet"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
@@ -99,6 +99,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if err != nil {
 					return err
 				}
+
 				home := c.GlobalString("home-dir")
 				if home == "" {
 					home = getHome()
@@ -265,6 +266,10 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					Name:  "status",
 					Usage: "get session details",
 				},
+				cli.StringFlag{
+					Name:  "session-key",
+					Usage: "key to encrypt/decrypt session",
+				},
 			},
 			Hidden: false,
 			Action: func(c *cli.Context) error {
@@ -274,13 +279,19 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				sAdd := c.Bool("add")
 				sRemove := c.Bool("remove")
 				sStatus := c.Bool("status")
+				sessKey := c.String("session-key")
+				if sStatus || sRemove {
+					if err = sessionExists(); err != nil {
+						return err
+					}
+				}
 				nTrue := numTrue(sAdd, sRemove, sStatus)
 				if nTrue == 0 || nTrue > 1 {
 					_ = cli.ShowCommandHelp(c, "session")
 					os.Exit(1)
 				}
 				if sAdd {
-					msg, err = addSession(c.GlobalString("server"))
+					msg, err = addSession(c.GlobalString("server"), sessKey)
 					return err
 				}
 				if sRemove {
@@ -289,7 +300,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				}
 				if sStatus {
 					var s string
-					s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
+					s, err = dotfilesSN.GetSessionFromKeyring(sessKey)
 					if err != nil {
 						return err
 					}
@@ -361,9 +372,21 @@ func numTrue(in ...bool) (total int) {
 	return
 }
 
-func addSession(snServer string) (res string, err error) {
+func sessionExists() error {
+	eS, err := keyring.Get(dotfilesSN.Service, dotfilesSN.KeyringApplicationName)
+	if err != nil {
+		return err
+	}
+	if len(eS) == 0 {
+		return errors.New("session is empty")
+	}
+	return nil
+}
+
+func addSession(snServer, inKey string) (res string, err error) {
+	// check if session exists in keyring
 	var s string
-	s, err = keyring.Get(service, dotfilesSN.KeyringApplicationName)
+	s, err = keyring.Get(dotfilesSN.Service, dotfilesSN.KeyringApplicationName)
 	// only return an error if there's an issue accessing the keyring
 	if err != nil && !strings.Contains(err.Error(), "secret not found in keyring") {
 		return
@@ -382,7 +405,13 @@ func addSession(snServer string) (res string, err error) {
 	if err != nil {
 		return fmt.Sprint("failed to get session: ", err), err
 	}
-	err = keyring.Set(service, dotfilesSN.KeyringApplicationName, makeSessionString(email, session))
+
+	rS := makeSessionString(email, session)
+	if inKey != "" {
+		key := []byte(inKey)
+		rS = dotfilesSN.Encrypt(key, makeSessionString(email, session))
+	}
+	err = keyring.Set(dotfilesSN.Service, dotfilesSN.KeyringApplicationName, rS)
 	if err != nil {
 		return fmt.Sprint("failed to set session: ", err), err
 	}
@@ -390,7 +419,7 @@ func addSession(snServer string) (res string, err error) {
 }
 
 func removeSession() string {
-	err := keyring.Delete(service, dotfilesSN.KeyringApplicationName)
+	err := keyring.Delete(dotfilesSN.Service, dotfilesSN.KeyringApplicationName)
 	if err != nil {
 		return fmt.Sprintf("%s: %s", msgSessionRemovalFailure, err.Error())
 	}
