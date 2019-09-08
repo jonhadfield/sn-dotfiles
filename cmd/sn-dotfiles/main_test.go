@@ -2,16 +2,18 @@ package main
 
 import (
 	"fmt"
+	"index/suffixarray"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -218,6 +220,68 @@ func TestStatus(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
+	viper.SetEnvPrefix("sn")
+	assert.NoError(t, viper.BindEnv("email"))
+	assert.NoError(t, viper.BindEnv("password"))
+	assert.NoError(t, viper.BindEnv("server"))
+
+	home := getHome()
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+	lemonPath := fmt.Sprintf("%s/.fruit/lemon", home)
+	fwc[lemonPath] = "lemon content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	serverURL := os.Getenv("SN_SERVER")
+	if serverURL == "" {
+		serverURL = sndotfiles.SNServerURL
+	}
+	session, _, err := sndotfiles.GetSession(false, serverURL)
+	defer func() {
+		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NoError(t, err)
+	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath, lemonPath}, Debug: true}
+	_, err = sndotfiles.Add(ai)
+	assert.NoError(t, err)
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
+	assert.NoError(t, err)
+	assert.Contains(t, msg, "nothing to do")
+	assert.True(t, disp)
+	// test push
+	fwc[applePath] = "apple content updated"
+	// add delay so local file is recognised as newer
+	time.Sleep(1 * time.Second)
+	assert.NoError(t, createTemporaryFiles(fwc))
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
+	assert.NoError(t, err)
+	assert.Contains(t, msg, "pushed")
+	// test pull - specify unchanged path and expect no change
+	err = os.Remove(lemonPath)
+	assert.NoError(t, err)
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
+	assert.NoError(t, err)
+	assert.Contains(t, msg, "nothing to do")
+	// test pull - specify changed path (updated content set to be older) and expect change
+	assert.NoError(t, err)
+
+	fwc[lemonPath] = "lemon content updated"
+	assert.NoError(t, createTemporaryFiles(fwc))
+
+	tenMinsAgo := time.Now().Add(-time.Minute * 10)
+	err = os.Chtimes(lemonPath, tenMinsAgo, tenMinsAgo)
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "sync", lemonPath})
+	assert.NoError(t, err)
+	r := regexp.MustCompile("pulled")
+	index := suffixarray.New([]byte(msg))
+	results := index.FindAllIndex(r, -1)
+	fmt.Println(len(results))
+	assert.Len(t, results, 1)
+}
+
+func TestSyncExclude(t *testing.T) {
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))

@@ -24,7 +24,7 @@ func Sync(session gosn.Session, home string, paths, exclude []string, debug bool
 	if err != nil {
 		return
 	}
-	return sync(session, remote, home, exclude, debug)
+	return sync(session, remote, home, paths, exclude, debug)
 }
 
 func ensureTrailingPathSep(in string) string {
@@ -49,9 +49,9 @@ func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
 	return false
 }
 
-func sync(session gosn.Session, twn tagsWithNotes, home string, exclude []string, debug bool) (noPushed, noPulled int, msg string, err error) {
+func sync(session gosn.Session, twn tagsWithNotes, home string, paths, exclude []string, debug bool) (noPushed, noPulled int, msg string, err error) {
 	var itemDiffs []ItemDiff
-	itemDiffs, err = diff(twn, home, nil, exclude, debug)
+	itemDiffs, err = diff(twn, home, paths, exclude, debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
