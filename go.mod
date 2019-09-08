@@ -24,6 +24,6 @@ require (
 	github.com/urfave/cli v1.21.0
 	github.com/zalando/go-keyring v0.0.0-20190715212148-76787ff3b3bd
 	golang.org/x/crypto v0.0.0-20190907121410-71b5226ff739
-	golang.org/x/sys v0.0.0-20190904154756-749cb33beabd // indirect
+	golang.org/x/sys v0.0.0-20190907184412-d223b2b6db03 // indirect
 	golang.org/x/text v0.3.2 // indirect
 )

@@ -118,8 +118,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					Hidden: true,
 				},
 				cli.StringSliceFlag{
-					Name:   "exclude",
-					Usage:  "exlude path from sync",
+					Name:  "exclude",
+					Usage: "exlude path from sync",
 				},
 			},
 			Action: func(c *cli.Context) error {
