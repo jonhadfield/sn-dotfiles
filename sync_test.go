@@ -76,7 +76,7 @@ func TestSync(t *testing.T) {
 	// Sync with changes to pull based on missing local
 	var noPushed, noPulled int
 	debugPrint(true, "test | sync with changes to pull based on missing local")
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, true)
+	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 1, noPulled)
@@ -88,7 +88,7 @@ func TestSync(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	fwc[applePath] = "new apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, true)
+	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, noPushed)
 	assert.Equal(t, 0, noPulled)
@@ -114,14 +114,14 @@ func TestSync(t *testing.T) {
 		uTwn = append(uTwn, x)
 	}
 	assert.NoError(t, err)
-	noPushed, noPulled, _, err = sync(session, uTwn, home, []string{}, true)
+	noPushed, noPulled, _, err = sync(session, uTwn, home, []string{}, []string{}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 1, noPulled)
 
 	// Sync with nothing to do
 	debugPrint(true, "test | sync with nothing to do")
-	noPushed, noPulled, _, err = sync(session, uTwn, home, []string{}, true)
+	noPushed, noPulled, _, err = sync(session, uTwn, home, []string{}, []string{}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 0, noPulled)
@@ -162,7 +162,7 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 
 	debugPrint(true, "test | sync with three changes to pull based on exclusion of golf path")
 	golfPath := fmt.Sprintf("%s/.cars/vw/golf.txt", home)
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{golfPath}, true)
+	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{golfPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 3, noPulled)
@@ -203,7 +203,7 @@ func TestSyncWithExcludeParentPaths(t *testing.T) {
 
 	debugPrint(true, "test | sync with two changes to pull based on exclusion of cars path")
 	carsPath := fmt.Sprintf("%s/.cars", home)
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{carsPath}, true)
+	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{carsPath}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 2, noPulled)
