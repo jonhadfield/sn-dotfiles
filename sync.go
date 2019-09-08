@@ -35,7 +35,6 @@ func ensureTrailingPathSep(in string) string {
 }
 
 func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
-	fmt.Println("in matchesPathsToExclude")
 	for _, pte := range pathsToExclude {
 		homeStrippedPath := stripHome(pte, home)
 		// return match if paths match exactly
