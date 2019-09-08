@@ -67,6 +67,9 @@ func appDiff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs 
 	var differencesFound bool
 	// get tempdir
 	tempDir := os.TempDir()
+	if ! strings.HasSuffix(tempDir, string(os.PathSeparator)) {
+		tempDir = tempDir + string(os.PathSeparator)
+	}
 	for _, diff := range diffs {
 		localContent := diff.local
 		remoteContent := diff.remote.Content.GetText()
