@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -267,8 +267,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					Usage: "get session details",
 				},
 				cli.StringFlag{
-					Name:  "session-key",
-					Usage: "key to encrypt/decrypt session",
+					Name:     "session-key",
+					Usage:    "[optional] key to encrypt/decrypt session",
+					Required: false,
 				},
 			},
 			Hidden: false,
