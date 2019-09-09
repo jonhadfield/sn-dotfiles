@@ -99,7 +99,7 @@ func TestAdd(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, serverURL)
+	session, _, err := sndotfiles.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -140,7 +140,7 @@ func TestRemove(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, serverURL)
+	session, _, err := sndotfiles.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -172,7 +172,7 @@ func TestWipe(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, serverURL)
+	session, _, err := sndotfiles.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -203,7 +203,7 @@ func TestStatus(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, serverURL)
+	session, _, err := sndotfiles.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -236,7 +236,7 @@ func TestSync(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, serverURL)
+	session, _, err := sndotfiles.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -296,7 +296,7 @@ func TestSyncExclude(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, serverURL)
+	session, _, err := sndotfiles.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")

@@ -3,13 +3,14 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/lithammer/shortuuid"
