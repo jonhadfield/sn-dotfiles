@@ -79,7 +79,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.StringFlag{Name: "server"},
 		cli.StringFlag{Name: "home-dir"},
 		cli.BoolFlag{Name: "use-session"},
-		cli.BoolFlag{Name: "session-key"},
+		cli.StringFlag{Name: "session-key"},
 		cli.BoolFlag{Name: "quiet"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
@@ -95,7 +95,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if !c.GlobalBool("quiet") {
 					display = true
 				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+					c.GlobalString("session-key"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -127,7 +128,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if !c.GlobalBool("quiet") {
 					display = true
 				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+					c.GlobalString("session-key"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -135,7 +137,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if home == "" {
 					home = getHome()
 				}
-				_, _, msg, err = dotfilesSN.Sync(session, home, c.Args(), c.StringSlice("exclude"), c.GlobalBool("debug"))
+				_, _, msg, err = dotfilesSN.Sync(session, home, c.Args(),
+					c.StringSlice("exclude"), c.GlobalBool("debug"))
 				if err != nil {
 					return err
 				}
@@ -164,7 +167,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if invalidPaths {
 					return nil
 				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
+
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+					c.GlobalString("session-key"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -209,7 +214,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if invalidPaths {
 					return nil
 				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"), c.GlobalString("server"))
+				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+					c.GlobalString("session-key"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -238,7 +244,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					display = true
 				}
 				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("server"))
+					c.GlobalString("session-key"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}
@@ -331,7 +337,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					display = true
 				}
 				session, email, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("server"))
+					c.GlobalString("session-key"), c.GlobalString("server"))
 				if err != nil {
 					return err
 				}

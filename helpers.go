@@ -3,11 +3,13 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/lithammer/shortuuid"
@@ -439,7 +441,7 @@ func tagTitleToFSDIR(title, home string) (path string, isHome bool, err error) {
 		return
 	}
 	if home == "" {
-		err = errors.New("Home directory required")
+		err = errors.New("home directory required")
 		return
 	}
 	if !strings.HasPrefix(title, DotFilesTag) {
@@ -464,13 +466,28 @@ func pathToTag(homeRelPath string) string {
 	}
 	return r
 }
-func GetSession(loadSession bool, server string) (session gosn.Session, email string, err error) {
+func GetSession(loadSession bool, sessionKey, server string) (session gosn.Session, email string, err error) {
 	if loadSession {
 		service := "StandardNotesCLI"
 		var rawSess string
 		rawSess, err = keyring.Get(service, KeyringApplicationName)
 		if err != nil {
 			return
+		}
+		// request session key if a period was provided
+		// this is so it doesn't need to be entered in plaintext on command-line
+		if sessionKey == "." {
+			var byteKey []byte
+			fmt.Print("session key:")
+			byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				return
+			}
+			sessionKey = string(byteKey)
+			fmt.Println()
+		}
+		if sessionKey != "" {
+			rawSess = Decrypt([]byte(sessionKey), rawSess)
 		}
 		email, session, err = ParseSessionString(rawSess)
 		if err != nil {
@@ -491,7 +508,11 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 	var password, apiServer, errMsg string
 	email, password, apiServer, errMsg = GetCredentials(server)
 	if errMsg != "" {
-		fmt.Printf("\nerror: %s\n\n", errMsg)
+		if strings.Contains(errMsg, "password not defined") {
+			err = fmt.Errorf("password not defined")
+		} else {
+			fmt.Printf("\nerror: %s\n\n", errMsg)
+		}
 		return sess, email, err
 	}
 	sess, err = gosn.CliSignIn(email, password, apiServer)
@@ -504,8 +525,8 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 
 func ParseSessionString(in string) (email string, session gosn.Session, err error) {
 	parts := strings.Split(in, ";")
-		err = errors.New("invalid session found or session is encrypted and key was not provided")
 	if len(parts) != 5 {
+		err = errors.New("invalid session found or session is encrypted and key was not provided")
 		return
 	}
 	email = parts[0]
