@@ -504,8 +504,8 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 
 func ParseSessionString(in string) (email string, session gosn.Session, err error) {
 	parts := strings.Split(in, ";")
+		err = errors.New("invalid session found or session is encrypted and key was not provided")
 	if len(parts) != 5 {
-		err = errors.New("invalid session found")
 		return
 	}
 	email = parts[0]
