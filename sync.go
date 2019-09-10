@@ -51,7 +51,7 @@ func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
 
 func sync(session gosn.Session, twn tagsWithNotes, home string, paths, exclude []string, debug bool) (noPushed, noPulled int, msg string, err error) {
 	var itemDiffs []ItemDiff
-	itemDiffs, err = diff(twn, home, paths, exclude, debug)
+	itemDiffs, err = compare(twn, home, paths, exclude, debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")

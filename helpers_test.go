@@ -88,7 +88,7 @@ func TestCompareIdentical(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote identical produces correct ItemDiff
-	iDiff := compare("apple", applePath, home, appleNote, true)
+	iDiff := compareNoteWithFile("apple", applePath, home, appleNote, true)
 	assert.Equal(t, identical, iDiff.diff)
 	assert.Equal(t, "apple", iDiff.tagTitle)
 	assert.Equal(t, "apple", iDiff.noteTitle)
@@ -111,7 +111,7 @@ func TestCompareRemoteNewer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote differ and remote newer produces correct ItemDiff
-	iDiff := compare("lemon", lemonPath, home, lemonNote, true)
+	iDiff := compareNoteWithFile("lemon", lemonPath, home, lemonNote, true)
 	assert.Equal(t, remoteNewer, iDiff.diff)
 	assert.Equal(t, "lemon", iDiff.tagTitle)
 	assert.Equal(t, "lemon", iDiff.noteTitle)
@@ -133,7 +133,7 @@ func TestCompareLocalNewer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote differ and local newer produces correct ItemDiff
-	iDiff := compare("lemon", lemonPath, home, lemonNote, true)
+	iDiff := compareNoteWithFile("lemon", lemonPath, home, lemonNote, true)
 	assert.Equal(t, localNewer, iDiff.diff)
 	assert.Equal(t, "lemon", iDiff.tagTitle)
 	assert.Equal(t, "lemon", iDiff.noteTitle)

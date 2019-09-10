@@ -55,7 +55,7 @@ func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs [
 	}
 	bold := color.New(color.Bold).SprintFunc()
 
-	diffs, err = diff(twn, home, paths, []string{}, debug)
+	diffs, err = compare(twn, home, paths, []string{}, debug)
 	if err != nil {
 		return diffs, msg, err
 	}
