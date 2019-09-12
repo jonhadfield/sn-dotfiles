@@ -53,7 +53,7 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 	if len(diffs) == 0 {
 		return diffs, msg, err
 	}
-	diffBinary := findexec.Find("compare", "")
+	diffBinary := findexec.Find("diff", "")
 	if diffBinary == "" {
 		err = errors.New("failed to find compare binary")
 		return
