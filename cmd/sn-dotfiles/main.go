@@ -3,14 +3,16 @@ package main
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -398,6 +400,18 @@ func addSession(snServer, inKey string) (res string, err error) {
 	if err != nil && !strings.Contains(err.Error(), "secret not found in keyring") {
 		return
 	}
+
+	if inKey == "." {
+		var byteKey []byte
+		fmt.Print("session key:")
+		byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			return
+		}
+		inKey = string(byteKey)
+		fmt.Println()
+	}
+
 	if s != "" {
 		fmt.Print("replace existing session (y|n): ")
 		var resp string
