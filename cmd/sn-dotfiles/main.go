@@ -417,7 +417,8 @@ func addSession(snServer, inKey string) (res string, err error) {
 		var resp string
 		_, err := fmt.Scanln(&resp)
 		if err != nil || strings.ToLower(resp) != "y" {
-			return "", err
+			// do nothing
+			return "", nil
 		}
 	}
 	var session gosn.Session
