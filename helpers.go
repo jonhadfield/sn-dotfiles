@@ -474,15 +474,20 @@ func GetSession(loadSession bool, sessionKey, server string) (session gosn.Sessi
 			return
 		}
 		if ! isUnencryptedSession(rawSess) {
-			// if stored session is encrypted, then prompt for session key
-			var byteKey []byte
-			fmt.Print("session key:")
-			byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
-			if err != nil {
-				return
+			if sessionKey == "" {
+				var byteKey []byte
+				fmt.Print("session key:")
+				byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
+				if err != nil {
+					return
+				}
+				fmt.Println()
+				if len(byteKey) == 0 {
+					err = fmt.Errorf("key not provided")
+					return
+				}
+				sessionKey = string(byteKey)
 			}
-			sessionKey = string(byteKey)
-			fmt.Println()
 			rawSess = Decrypt([]byte(sessionKey), rawSess)
 		}
 		email, session, err = ParseSessionString(rawSess)
