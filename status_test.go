@@ -188,7 +188,8 @@ func TestStatus2(t *testing.T) {
 	d1 = []byte("green content")
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
 	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
-
+	// pause so that remote updated time newer
+	time.Sleep(1 * time.Second)
 	// update premium remote to trigger remote newer condition
 	assert.NoError(t, updateRemoteNote(session, "premium", "new content"))
 
