@@ -21,7 +21,7 @@ $ install <downloaded binary> /usr/local/bin/sn-dotfiles
 
 ### credentials
 
-By default, your credentials will be requested every time, but you can store them using either environment variables or, on MacOS, store your session using the native Keychain application.
+By default, your credentials will be requested every time, but you can store them using either environment variables or, on MacOS and Linux, store your session using the native Keychain application.
 
 #### environment variables
 Note: if using 2FA, the token value will be requested each time

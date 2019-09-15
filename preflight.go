@@ -37,7 +37,7 @@ func preflight(twn tagsWithNotes, paths []string) error {
 		}
 	}
 	inter := set.Intersection(tagPaths, notePaths)
-	var overlaps []string
+	overlaps := make([]string, len(inter.List()))
 	for _, i := range inter.List() {
 		overlaps = append(overlaps, "- "+i.(string))
 	}

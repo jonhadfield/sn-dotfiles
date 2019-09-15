@@ -60,10 +60,10 @@ func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs [
 		return diffs, msg, err
 	}
 	debugPrint(debug, fmt.Sprintf("status | %d diffs generated", len(diffs)))
-	var lines []string
 	if len(diffs) == 0 {
 		return diffs, msg, err
 	}
+	lines := make([]string, len(diffs))
 	for _, diff := range diffs {
 		lines = append(lines, fmt.Sprintf("%s | %s \n", bold(diff.homeRelPath), colourDiff(diff.diff)))
 	}
