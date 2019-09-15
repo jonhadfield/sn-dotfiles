@@ -476,7 +476,7 @@ func GetSession(loadSession bool, sessionKey, server string) (session gosn.Sessi
 		if ! isUnencryptedSession(rawSess) {
 			if sessionKey == "" {
 				var byteKey []byte
-				fmt.Print("session key:")
+				fmt.Print("session key: ")
 				byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
 				if err != nil {
 					return

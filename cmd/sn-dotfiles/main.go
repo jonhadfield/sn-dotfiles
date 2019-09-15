@@ -403,7 +403,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 
 	if inKey == "." {
 		var byteKey []byte
-		fmt.Print("session key:")
+		fmt.Print("session key: ")
 		byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
 		if err != nil {
 			return
