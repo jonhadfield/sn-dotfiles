@@ -19,7 +19,7 @@ fmt:
 	goimports -w .
 
 lint:
-	golangci-lint run --enable-all --disable lll --disable interfacer
+	golangci-lint run --tests=false --enable-all --disable lll --disable interfacer
 
 ci: lint test
 

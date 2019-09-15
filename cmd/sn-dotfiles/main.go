@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
 	"time"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
 	"github.com/zalando/go-keyring"
@@ -88,285 +89,302 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		_, _ = fmt.Fprintf(c.App.Writer, "\ninvalid command: \"%s\" \n\n", command)
 		cli.ShowAppHelpAndExit(c, 1)
 	}
-	app.Commands = []cli.Command{
-		{
-			Name:  "status",
-			Usage: "compare local and remote",
 
-			Action: func(c *cli.Context) error {
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("session-key"), c.GlobalString("server"))
-				if err != nil {
-					return err
-				}
+	statusCmd := cli.Command{
+		Name:  "status",
+		Usage: "compare local and remote",
 
-				home := c.GlobalString("home-dir")
-				if home == "" {
-					home = getHome()
-				}
-				_, msg, err = dotfilesSN.Status(session, home, c.Args(), c.GlobalBool("debug"))
+		Action: func(c *cli.Context) error {
+			if !c.GlobalBool("quiet") {
+				display = true
+			}
+			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"))
+			if err != nil {
 				return err
+			}
+
+			home := c.GlobalString("home-dir")
+			if home == "" {
+				home = getHome()
+			}
+			_, msg, err = dotfilesSN.Status(session, home, c.Args(), c.GlobalBool("debug"))
+			return err
+		},
+	}
+
+	syncCmd := cli.Command{
+		Name:  "sync",
+		Usage: "sync dotfiles",
+		Flags: []cli.Flag{
+			// TODO: not implemented
+			cli.BoolFlag{
+				Name:   "delete",
+				Usage:  "remove remotes that don't exist locally",
+				Hidden: true,
+			},
+			cli.StringSliceFlag{
+				Name:  "exclude",
+				Usage: "exlude path from sync",
 			},
 		},
-		{
-			Name:  "sync",
-			Usage: "sync dotfiles",
-			Flags: []cli.Flag{
-				// TODO: not implemented
-				cli.BoolFlag{
-					Name:   "delete",
-					Usage:  "remove remotes that don't exist locally",
-					Hidden: true,
-				},
-				cli.StringSliceFlag{
-					Name:  "exclude",
-					Usage: "exlude path from sync",
-				},
-			},
-			Action: func(c *cli.Context) error {
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("session-key"), c.GlobalString("server"))
-				if err != nil {
-					return err
-				}
-				home := c.GlobalString("home-dir")
-				if home == "" {
-					home = getHome()
-				}
-				_, _, msg, err = dotfilesSN.Sync(session, home, c.Args(),
-					c.StringSlice("exclude"), c.GlobalBool("debug"))
-				if err != nil {
-					return err
-				}
+		Action: func(c *cli.Context) error {
+			if !c.GlobalBool("quiet") {
+				display = true
+			}
+			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"))
+			if err != nil {
 				return err
-			},
+			}
+			home := c.GlobalString("home-dir")
+			if home == "" {
+				home = getHome()
+			}
+			var so dotfilesSN.SyncOutput
+			so, err = dotfilesSN.Sync(dotfilesSN.SyncInput{
+				Session: session,
+				Home:    home,
+				Paths:   c.Args(),
+				Exclude: c.StringSlice("exclude"),
+				Debug:   c.GlobalBool("debug"),
+			})
+			if err != nil {
+				return err
+			}
+			msg = so.Msg
+			return err
 		},
-		{
-			Name:  "add",
-			Usage: "start tracking file(s)",
-			Action: func(c *cli.Context) error {
-				if len(c.Args()) == 0 {
-					_ = cli.ShowCommandHelp(c, "add")
+	}
+
+	addCmd := cli.Command{
+		Name:  "add",
+		Usage: "start tracking file(s)",
+		Action: func(c *cli.Context) error {
+			if len(c.Args()) == 0 {
+				_ = cli.ShowCommandHelp(c, "add")
+				return nil
+			}
+			if !c.GlobalBool("quiet") {
+				display = true
+			}
+			for _, path := range c.Args() {
+				if !isValidDotfilePath(path) {
+					msg = fmt.Sprintf("\"%s\" is not a valid dotfile path", path)
 					return nil
 				}
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
-				var invalidPaths bool
-				for _, path := range c.Args() {
-					if !isValidDotfilePath(path) {
-						invalidPaths = true
-						msg = fmt.Sprintf("\"%s\" is not a valid dotfile path\n", path)
-						return nil
-					}
-				}
-				if invalidPaths {
-					return nil
-				}
+			}
 
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("session-key"), c.GlobalString("server"))
-				if err != nil {
-					return err
-				}
-				home := c.GlobalString("home-dir")
-				if home == "" {
-					home = getHome()
-				}
-				ai := dotfilesSN.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
-				var ao dotfilesSN.AddOutput
-				ao, err = dotfilesSN.Add(ai)
+			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"))
+			if err != nil {
+				return err
+			}
+			home := c.GlobalString("home-dir")
+			if home == "" {
+				home = getHome()
+			}
+			ai := dotfilesSN.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
+			var ao dotfilesSN.AddOutput
+			ao, err = dotfilesSN.Add(ai)
 
-				if err != nil {
-					return err
-				}
-				if ao.NotesPushed > 0 {
-					msg = fmt.Sprintf("%d files added", ao.NotesPushed)
-				} else {
-					msg = "nothing to do"
-				}
+			if err != nil {
 				return err
+			}
+			if ao.NotesPushed > 0 {
+				msg = fmt.Sprintf("%d files added", ao.NotesPushed)
+			} else {
+				msg = "nothing to do"
+			}
+			return err
 
+		},
+	}
+
+	removeCmd := cli.Command{
+		Name:  "remove",
+		Usage: "stop tracking file(s)",
+		Action: func(c *cli.Context) error {
+			if len(c.Args()) == 0 {
+				_ = cli.ShowCommandHelp(c, "remove")
+				return nil
+			}
+			if !c.GlobalBool("quiet") {
+				display = true
+			}
+			var invalidPaths bool
+			for _, path := range c.Args() {
+				if !isValidDotfilePath(path) {
+					invalidPaths = true
+					fmt.Printf("\"%s\" is not a valid dotfile path\n", path)
+				}
+			}
+			if invalidPaths {
+				return nil
+			}
+			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"))
+			if err != nil {
+				return err
+			}
+			home := c.GlobalString("home-dir")
+			if home == "" {
+				home = getHome()
+			}
+			var notesRemoved int
+			notesRemoved, _, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.GlobalBool("debug"))
+			if err != nil {
+				return err
+			}
+			if notesRemoved > 0 {
+				msg = fmt.Sprintf("%d files removed", notesRemoved)
+			} else {
+				msg = fmt.Sprintf("nothing to do")
+			}
+			return err
+		},
+	}
+
+	diffCmd := cli.Command{
+		Name:  "diff",
+		Usage: "display differences between local and remote",
+		Action: func(c *cli.Context) error {
+			if !c.GlobalBool("quiet") {
+				display = true
+			}
+			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"))
+			if err != nil {
+				return err
+			}
+			home := c.GlobalString("home-dir")
+			if home == "" {
+				home = getHome()
+			}
+			_, msg, err = dotfilesSN.Diff(session, home, c.Args(), c.GlobalBool("debug"))
+			return err
+		},
+	}
+
+	sessionCmd := cli.Command{
+		Name:  "session",
+		Usage: "manage session credentials",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "add",
+				Usage: "add session to keychain",
+			},
+			cli.BoolFlag{
+				Name:  "remove",
+				Usage: "remove session from keychain",
+			},
+			cli.BoolFlag{
+				Name:  "status",
+				Usage: "get session details",
+			},
+			cli.StringFlag{
+				Name:     "session-key",
+				Usage:    "[optional] key to encrypt/decrypt session",
+				Required: false,
 			},
 		},
-		{
-			Name:  "remove",
-			Usage: "stop tracking file(s)",
-			Action: func(c *cli.Context) error {
-				if len(c.Args()) == 0 {
-					_ = cli.ShowCommandHelp(c, "remove")
+		Hidden: false,
+		Action: func(c *cli.Context) error {
+			if !c.GlobalBool("quiet") {
+				display = true
+			}
+			sAdd := c.Bool("add")
+			sRemove := c.Bool("remove")
+			sStatus := c.Bool("status")
+			sessKey := c.String("session-key")
+			if sStatus || sRemove {
+				if err = sessionExists(); err != nil {
+					return err
+				}
+			}
+			nTrue := numTrue(sAdd, sRemove, sStatus)
+			if nTrue == 0 || nTrue > 1 {
+				_ = cli.ShowCommandHelp(c, "session")
+				os.Exit(1)
+			}
+			if sAdd {
+				msg, err = addSession(c.GlobalString("server"), sessKey)
+				return err
+			}
+			if sRemove {
+				msg = removeSession()
+				return nil
+			}
+			if sStatus {
+				var s string
+				s, err = dotfilesSN.GetSessionFromKeyring(sessKey)
+				if err != nil {
+					return err
+				}
+				var email string
+				email, _, err = dotfilesSN.ParseSessionString(s)
+				if err != nil {
+					msg = fmt.Sprint("failed to parse session: ", err)
 					return nil
 				}
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
-				var invalidPaths bool
-				for _, path := range c.Args() {
-					if !isValidDotfilePath(path) {
-						invalidPaths = true
-						fmt.Printf("\"%s\" is not a valid dotfile path\n", path)
-					}
-				}
-				if invalidPaths {
-					return nil
-				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("session-key"), c.GlobalString("server"))
-				if err != nil {
-					return err
-				}
-				home := c.GlobalString("home-dir")
-				if home == "" {
-					home = getHome()
-				}
-				var notesRemoved int
-				notesRemoved, _, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.GlobalBool("debug"))
-				if err != nil {
-					return err
-				}
-				if notesRemoved > 0 {
-					msg = fmt.Sprintf("%d files removed", notesRemoved)
-				} else {
-					msg = fmt.Sprintf("nothing to do")
-				}
-				return err
+				msg = fmt.Sprint("session found: ", email)
+			}
+			return err
+		},
+	}
+
+	wipeCmd := cli.Command{
+		Name:  "wipe",
+		Usage: "manage session credentials",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "force",
+				Usage: "assume user confirmation",
 			},
 		},
-		{
-			Name:  "diff",
-			Usage: "display differences between local and remote",
-			Action: func(c *cli.Context) error {
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
-				session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("session-key"), c.GlobalString("server"))
-				if err != nil {
-					return err
-				}
-				home := c.GlobalString("home-dir")
-				if home == "" {
-					home = getHome()
-				}
-				_, msg, err = dotfilesSN.Diff(session, home, c.Args(), c.GlobalBool("debug"))
+		Hidden: true,
+		Action: func(c *cli.Context) error {
+			if !c.GlobalBool("quiet") {
+				display = true
+			}
+			session, email, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"))
+			if err != nil {
 				return err
-			},
-		},
-		{
-			Name:  "session",
-			Usage: "manage session credentials",
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "add",
-					Usage: "add session to keychain",
-				},
-				cli.BoolFlag{
-					Name:  "remove",
-					Usage: "remove session from keychain",
-				},
-				cli.BoolFlag{
-					Name:  "status",
-					Usage: "get session details",
-				},
-				cli.StringFlag{
-					Name:     "session-key",
-					Usage:    "[optional] key to encrypt/decrypt session",
-					Required: false,
-				},
-			},
-			Hidden: false,
-			Action: func(c *cli.Context) error {
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
-				sAdd := c.Bool("add")
-				sRemove := c.Bool("remove")
-				sStatus := c.Bool("status")
-				sessKey := c.String("session-key")
-				if sStatus || sRemove {
-					if err = sessionExists(); err != nil {
-						return err
-					}
-				}
-				nTrue := numTrue(sAdd, sRemove, sStatus)
-				if nTrue == 0 || nTrue > 1 {
-					_ = cli.ShowCommandHelp(c, "session")
-					os.Exit(1)
-				}
-				if sAdd {
-					msg, err = addSession(c.GlobalString("server"), sessKey)
-					return err
-				}
-				if sRemove {
-					msg = removeSession()
-					return nil
-				}
-				if sStatus {
-					var s string
-					s, err = dotfilesSN.GetSessionFromKeyring(sessKey)
-					if err != nil {
-						return err
-					}
-					var email string
-					email, _, err = dotfilesSN.ParseSessionString(s)
-					if err != nil {
-						msg = fmt.Sprint("failed to parse session: ", err)
-						return nil
-					}
-					msg = fmt.Sprint("session found: ", email)
-				}
-				return err
-			},
-		},
-		{
-			Name:  "wipe",
-			Usage: "manage session credentials",
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "force",
-					Usage: "assume user confirmation",
-				},
-			},
-			Hidden: true,
-			Action: func(c *cli.Context) error {
-				if !c.GlobalBool("quiet") {
-					display = true
-				}
-				session, email, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
-					c.GlobalString("session-key"), c.GlobalString("server"))
-				if err != nil {
-					return err
-				}
-				var proceed bool
-				if c.Bool("force") {
+			}
+			var proceed bool
+			if c.Bool("force") {
+				proceed = true
+			} else {
+				fmt.Printf("wipe all dotfiles for account %s? ", email)
+				var input string
+				_, err = fmt.Scanln(&input)
+				if err == nil && dotfilesSN.StringInSlice(input, []string{"y", "yes"}, false) {
 					proceed = true
-				} else {
-					fmt.Printf("wipe all dotfiles for account %s? ", email)
-					var input string
-					_, err = fmt.Scanln(&input)
-					if err == nil && dotfilesSN.StringInSlice(input, []string{"y", "yes"}, false) {
-						proceed = true
-					}
 				}
-				if proceed {
-					var num int
-					num, err = dotfilesSN.WipeDotfileTagsAndNotes(session, c.GlobalBool("quiet"))
-					if err != nil {
-						return err
-					}
-					msg = fmt.Sprintf("%d removed", num)
-				} else {
-					return nil
+			}
+			if proceed {
+				var num int
+				num, err = dotfilesSN.WipeDotfileTagsAndNotes(session, c.GlobalBool("quiet"))
+				if err != nil {
+					return err
 				}
-				return err
-			},
+				msg = fmt.Sprintf("%d removed", num)
+			} else {
+				return nil
+			}
+			return err
 		},
+	}
+
+	app.Commands = []cli.Command{
+		statusCmd,
+		syncCmd,
+		addCmd,
+		removeCmd,
+		diffCmd,
+		sessionCmd,
+		wipeCmd,
 	}
 	sort.Sort(cli.FlagsByName(app.Flags))
 	return msg, display, app.Run(args)
@@ -382,7 +400,7 @@ func numTrue(in ...bool) (total int) {
 }
 
 func sessionExists() error {
-	eS, err := keyring.Get(dotfilesSN.Service, dotfilesSN.KeyringApplicationName)
+	eS, err := keyring.Get(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName)
 	if err != nil {
 		return err
 	}
@@ -395,7 +413,7 @@ func sessionExists() error {
 func addSession(snServer, inKey string) (res string, err error) {
 	// check if session exists in keyring
 	var s string
-	s, err = keyring.Get(dotfilesSN.Service, dotfilesSN.KeyringApplicationName)
+	s, err = keyring.Get(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName)
 	// only return an error if there's an issue accessing the keyring
 	if err != nil && !strings.Contains(err.Error(), "secret not found in keyring") {
 		return
@@ -404,7 +422,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 	if inKey == "." {
 		var byteKey []byte
 		fmt.Print("session key: ")
-		byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
+		byteKey, err = terminal.ReadPassword(syscall.Stdin)
 		if err != nil {
 			return
 		}
@@ -433,7 +451,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 		key := []byte(inKey)
 		rS = dotfilesSN.Encrypt(key, makeSessionString(email, session))
 	}
-	err = keyring.Set(dotfilesSN.Service, dotfilesSN.KeyringApplicationName, rS)
+	err = keyring.Set(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName, rS)
 	if err != nil {
 		return fmt.Sprint("failed to set session: ", err), err
 	}
@@ -441,7 +459,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 }
 
 func removeSession() string {
-	err := keyring.Delete(dotfilesSN.Service, dotfilesSN.KeyringApplicationName)
+	err := keyring.Delete(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName)
 	if err != nil {
 		return fmt.Sprintf("%s: %s", msgSessionRemovalFailure, err.Error())
 	}

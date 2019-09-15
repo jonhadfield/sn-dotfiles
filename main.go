@@ -12,13 +12,15 @@ const (
 	SNServerURL = "https://sync.standardnotes.org"
 	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
 	DotFilesTag = "dotfiles"
-	// KeyringApplicationName defines the name of the application the session is stored against
+	// KeyringApplicationName defines the name of the application the Session is stored against
 	KeyringApplicationName = "session"
+	KeyringService = "StandardNotesCLI"
+
 )
 
 func get(session gosn.Session) (t tagsWithNotes, err error) {
 	getItemsInput := gosn.GetItemsInput{
-		Session: session,
+		Session:  session,
 		PageSize: 500,
 	}
 	var output gosn.GetItemsOutput

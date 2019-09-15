@@ -11,20 +11,38 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
+type SyncInput struct {
+	Session        gosn.Session
+	Home           string
+	Paths, Exclude []string
+	Debug          bool
+}
+type SyncOutput struct {
+	NoPushed, NoPulled int
+	Msg                string
+}
+
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
-func Sync(session gosn.Session, home string, paths, exclude []string, debug bool) (noPushed, noPulled int, msg string, err error) {
+func Sync(in SyncInput) (out SyncOutput, err error) {
 	var remote tagsWithNotes
-	remote, err = get(session)
+	remote, err = get(in.Session)
 	if err != nil {
 		return
 	}
-	err = preflight(remote, paths)
+	err = preflight(remote, in.Paths)
 	if err != nil {
 		return
 	}
-	return sync(session, remote, home, paths, exclude, debug)
+	var sOut syncOutput
+	sOut, err = sync(syncInput{session: in.Session, twn: remote, home: in.Home, paths: in.Paths,
+		exclude: in.Exclude, debug: in.Debug})
+	return SyncOutput{
+		NoPushed: sOut.noPushed,
+		NoPulled: sOut.noPulled,
+		Msg:      sOut.msg,
+	}, err
 }
 
 func ensureTrailingPathSep(in string) string {
@@ -37,7 +55,7 @@ func ensureTrailingPathSep(in string) string {
 func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
 	for _, pte := range pathsToExclude {
 		homeStrippedPath := stripHome(pte, home)
-		// return match if paths match exactly
+		// return match if Paths match exactly
 		if homeStrippedPath == path {
 			return true
 		}
@@ -49,9 +67,22 @@ func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
 	return false
 }
 
-func sync(session gosn.Session, twn tagsWithNotes, home string, paths, exclude []string, debug bool) (noPushed, noPulled int, msg string, err error) {
+type syncInput struct {
+	session        gosn.Session
+	twn            tagsWithNotes
+	home           string
+	paths, exclude []string
+	debug          bool
+}
+
+type syncOutput struct {
+	noPushed, noPulled int
+	msg                string
+}
+
+func sync(in syncInput) (out syncOutput, err error) {
 	var itemDiffs []ItemDiff
-	itemDiffs, err = compare(twn, home, paths, exclude, debug)
+	itemDiffs, err = compare(in.twn, in.home, in.paths, in.exclude, in.debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
@@ -63,26 +94,26 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, paths, exclude [
 	var itemsToSync bool
 	for _, itemDiff := range itemDiffs {
 		// check if itemDiff is for a path to be excluded
-		if matchesPathsToExclude(home, itemDiff.homeRelPath, exclude) {
-			debugPrint(debug, fmt.Sprintf("sync | excluding: %s", itemDiff.homeRelPath))
+		if matchesPathsToExclude(in.home, itemDiff.homeRelPath, in.exclude) {
+			debugPrint(in.debug, fmt.Sprintf("sync | excluding: %s", itemDiff.homeRelPath))
 			continue
 		}
 
 		switch itemDiff.diff {
 		case localNewer:
 			//push
-			debugPrint(debug, fmt.Sprintf("sync | local %s is newer", itemDiff.homeRelPath))
+			debugPrint(in.debug, fmt.Sprintf("sync | local %s is newer", itemDiff.homeRelPath))
 			itemDiff.remote.Content.SetText(itemDiff.local)
 			itemsToPush = append(itemsToPush, itemDiff)
 			itemsToSync = true
 		case localMissing:
 			// pull
-			debugPrint(debug, fmt.Sprintf("sync | %s is missing", itemDiff.homeRelPath))
+			debugPrint(in.debug, fmt.Sprintf("sync | %s is missing", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		case remoteNewer:
 			// pull
-			debugPrint(debug, fmt.Sprintf("sync | remote %s is newer", itemDiff.homeRelPath))
+			debugPrint(in.debug, fmt.Sprintf("sync | remote %s is newer", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		}
@@ -91,14 +122,14 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, paths, exclude [
 
 	// check items to sync
 	if !itemsToSync {
-		msg = fmt.Sprint(bold("nothing to do"))
+		out.msg = fmt.Sprint(bold("nothing to do"))
 		return
 	}
 
 	// push
 	if len(itemsToPush) > 0 {
-		_, err = push(session, itemsToPush)
-		noPushed = len(itemsToPush)
+		_, err = push(in.session, itemsToPush)
+		out.noPushed = len(itemsToPush)
 		if err != nil {
 			return
 		}
@@ -109,22 +140,22 @@ func sync(session gosn.Session, twn tagsWithNotes, home string, paths, exclude [
 	strPushed := green("pushed")
 	strPulled := green("pulled")
 
-	for _, pushItem := range itemsToPush {
+	for i, pushItem := range itemsToPush {
 		line := fmt.Sprintf("%s | %s", bold(addDot(pushItem.homeRelPath)), strPushed)
-		res = append(res, line)
+		res[i] = line
 	}
 
 	// pull
 	if err = pull(itemsToPull); err != nil {
 		return
 	}
-	noPulled = len(itemsToPull)
+	out.noPulled = len(itemsToPull)
 
 	for _, pullItem := range itemsToPull {
 		line := fmt.Sprintf("%s | %s\n", bold(addDot(pullItem.homeRelPath)), strPulled)
 		res = append(res, line)
 	}
-	msg = fmt.Sprint(columnize.SimpleFormat(res))
+	out.msg = fmt.Sprint(columnize.SimpleFormat(res))
 
-	return noPushed, noPulled, msg, err
+	return out, err
 }

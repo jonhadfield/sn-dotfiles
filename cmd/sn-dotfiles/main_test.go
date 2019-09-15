@@ -13,7 +13,7 @@ import (
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -49,7 +49,7 @@ var (
 
 func TestRemoveSession(t *testing.T) {
 	keyring.MockInit()
-	err := keyring.Set(sndotfiles.Service, sndotfiles.KeyringApplicationName, testSession)
+	err := keyring.Set(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName, testSession)
 	assert.NoError(t, err)
 
 	msg := removeSession()

@@ -6,13 +6,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"syscall"
 
 	"github.com/jonhadfield/gosn"
-	"github.com/lithammer/shortuuid"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -41,11 +41,6 @@ func localExists(path string) bool {
 		return false
 	}
 	return true
-}
-
-func getTemporaryHome() string {
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
-	return strings.ReplaceAll(home, "//", "/")
 }
 
 func stripHome(in, home string) string {
@@ -163,7 +158,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 
 	_, err = putItems(session, itemsToPush)
 	tagsPushed, notesPushed = getItemCounts(itemsToPush)
-	return
+	return tagsPushed, notesPushed, err
 }
 
 func getItemCounts(items gosn.Items) (tags, notes int) {
@@ -441,7 +436,7 @@ func tagTitleToFSDIR(title, home string) (path string, isHome bool, err error) {
 		return
 	}
 	if home == "" {
-		err = errors.New("home directory required")
+		err = errors.New("Home directory required")
 		return
 	}
 	if !strings.HasPrefix(title, DotFilesTag) {
@@ -468,9 +463,8 @@ func pathToTag(homeRelPath string) string {
 }
 func GetSession(loadSession bool, sessionKey, server string) (session gosn.Session, email string, err error) {
 	if loadSession {
-		service := "StandardNotesCLI"
 		var rawSess string
-		rawSess, err = keyring.Get(service, KeyringApplicationName)
+		rawSess, err = keyring.Get(KeyringService, KeyringApplicationName)
 		if err != nil {
 			return
 		}
@@ -489,7 +483,9 @@ func GetSession(loadSession bool, sessionKey, server string) (session gosn.Sessi
 				}
 				sessionKey = string(byteKey)
 			}
-			rawSess = Decrypt([]byte(sessionKey), rawSess)
+			if rawSess, err = Decrypt([]byte(sessionKey), rawSess); err != nil {
+				return
+			}
 		}
 		email, session, err = ParseSessionString(rawSess)
 		if err != nil {
@@ -501,7 +497,7 @@ func GetSession(loadSession bool, sessionKey, server string) (session gosn.Sessi
 			return
 		}
 	}
-	return
+	return session, email, err
 }
 func GetSessionFromUser(server string) (gosn.Session, string, error) {
 	var sess gosn.Session
@@ -526,12 +522,16 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 }
 
 func isUnencryptedSession(in string) bool {
-	return len(strings.Split(in, ";")) != 5
+	re := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	if len(strings.Split(in, ";")) == 5 && re.MatchString(strings.Split(in, ";")[0]) {
+		return true
+	}
+	return false
 }
 
 func ParseSessionString(in string) (email string, session gosn.Session, err error) {
 	if !isUnencryptedSession(in) {
-		err = errors.New("invalid session found or session is encrypted and key was not provided")
+		err = errors.New("session invalid, or encrypted and key was not provided")
 		return
 	}
 	parts := strings.Split(in, ";")
@@ -544,6 +544,7 @@ func ParseSessionString(in string) (email string, session gosn.Session, err erro
 	}
 	return
 }
+
 func StringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 	for i := range inSlice {
 		if matchCase && inStr == inSlice[i] {

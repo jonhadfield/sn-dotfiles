@@ -15,10 +15,10 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	tagToItemMap = make(map[string]gosn.Items)
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	//red := color.New(color.FgRed).SprintFunc()
 	bold := color.New(color.Bold).SprintFunc()
-	var added, existing, missing []string
-	for _, path := range fsPaths {
+	added := make([]string, len(fsPaths))
+	var existing []string
+	for i, path := range fsPaths {
 		dir, filename := filepath.Split(path)
 		homeRelPath := stripHome(dir+filename, home)
 		boldHomeRelPath := bold(homeRelPath)
@@ -45,9 +45,9 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 			return
 		}
 		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
-		added = append(added, fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked")))
+		added[i] = fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked"))
 	}
-	statusLines = append(missing, existing...)
+	statusLines = append(statusLines, existing...)
 	statusLines = append(statusLines, added...)
 
 	return

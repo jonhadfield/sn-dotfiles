@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -35,7 +36,7 @@ func GetCredentials(inServer string) (email, password, apiServer, errMsg string)
 		password = viper.GetString("password")
 	} else {
 		fmt.Print("password: ")
-		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+		bytePassword, err := terminal.ReadPassword(syscall.Stdin)
 		fmt.Println()
 		if err == nil {
 			password = string(bytePassword)
@@ -90,15 +91,19 @@ func Encrypt(key []byte, text string) string {
 }
 
 // decrypt from base64 to decrypted string
-func Decrypt(key []byte, cryptoText string) string {
-	ciphertext, _ := base64.URLEncoding.DecodeString(cryptoText)
-	key = padToAESBlockSize(key)
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err)
+func Decrypt(key []byte, cryptoText string) (pt string, err error) {
+	var ciphertext []byte
+	if ciphertext, err = base64.URLEncoding.DecodeString(cryptoText); err != nil {
+		return
 	}
+	key = padToAESBlockSize(key)
+	var block cipher.Block
+	if block, err = aes.NewCipher(key); err != nil {
+		return
+	}
+
 	if len(ciphertext) < aes.BlockSize {
-		panic("ciphertext too short")
+		return "", errors.New("ciphertext too short")
 	}
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
@@ -106,32 +111,34 @@ func Decrypt(key []byte, cryptoText string) string {
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
 
-	return fmt.Sprintf("%s", ciphertext)
+	pt = fmt.Sprintf("%s", ciphertext)
+	return
 }
-
-const Service = "StandardNotesCLI"
 
 func GetSessionFromKeyring(key string) (session string, err error) {
 	var rS string
-	rS, err = keyring.Get(Service, KeyringApplicationName)
+	rS, err = keyring.Get(KeyringService, KeyringApplicationName)
 	if err != nil {
 		return
 	}
-	// check if session is encrypted
+	// check if Session is encrypted
 	if len(strings.Split(rS, ";")) != 5 {
 		if key == "" {
 			fmt.Printf("encryption key: ")
 			var byteKey []byte
-			byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
+			byteKey, err = terminal.ReadPassword(syscall.Stdin)
 			fmt.Println()
 			if err == nil {
 				key = string(byteKey)
 			}
 			if len(strings.TrimSpace(key)) == 0 {
-				err = fmt.Errorf("password required")
+				err = fmt.Errorf("key required")
+				return
 			}
 		}
-		session = Decrypt([]byte(key), rS)
+		if session, err = Decrypt([]byte(key), rS); err != nil {
+			return
+		}
 		if len(strings.Split(session, ";")) != 5 {
 			err = fmt.Errorf("invalid session or wrong encryption key provided")
 		}

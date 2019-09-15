@@ -238,6 +238,9 @@ func updateRemoteNote(session gosn.Session, noteTitle, newContent string) error 
 	eItems.DeDupe()
 	var items gosn.Items
 	items, err = eItems.DecryptAndParse(session.Mk, session.Ak)
+	if err != nil {
+		return err
+	}
 	var uItem gosn.Item
 	for i := range items {
 		if items[i].ContentType == "Note" && items[i].Content.GetTitle() == noteTitle {

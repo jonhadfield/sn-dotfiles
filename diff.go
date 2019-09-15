@@ -3,11 +3,12 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/fatih/color"
 
 	"github.com/jonhadfield/findexec"
 	"github.com/jonhadfield/gosn"
@@ -40,9 +41,9 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 		return
 	}
 	if len(paths) == 0 {
-		debugPrint(debug, fmt.Sprint("diff | calling compare without any paths"))
+		debugPrint(debug, fmt.Sprint("diff | calling compare without any Paths"))
 	} else {
-		debugPrint(debug, fmt.Sprintf("diff | calling compare with paths: %s", strings.Join(paths, ",")))
+		debugPrint(debug, fmt.Sprintf("diff | calling compare with Paths: %s", strings.Join(paths, ",")))
 	}
 
 	diffs, err = compare(twn, home, paths, []string{}, debug)
@@ -63,7 +64,7 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 	// get tempdir
 	tempDir := os.TempDir()
 	if !strings.HasSuffix(tempDir, string(os.PathSeparator)) {
-		tempDir = tempDir + string(os.PathSeparator)
+		tempDir += string(os.PathSeparator)
 	}
 
 	differencesFound, err = processContentDiffs(diffs, tempDir, diffBinary)
@@ -96,22 +97,25 @@ func processContentDiffs(diffs []ItemDiff, tempDir, diffBinary string) (differen
 			if err != nil {
 				return
 			}
-			_, err = f1.WriteString(diff.local)
-			_, err = f2.WriteString(diff.remote.Content.GetText())
+			if _, err = f1.WriteString(diff.local); err != nil {
+				return
+			}
+			if _, err = f2.WriteString(diff.remote.Content.GetText()); err != nil {
+				return
+			}
 			cmd := exec.Command(diffBinary, f1path, f2path)
-			var out []byte
-			out, err = cmd.CombinedOutput()
-			if f1DelErr := os.Remove(f1path); f1DelErr != nil {
-				err = f1DelErr
+			out, oErr := cmd.CombinedOutput()
+
+			if err = os.Remove(f1path); err != nil {
 				return
 			}
-			if f2DelErr := os.Remove(f2path); f2DelErr != nil {
-				err = f2DelErr
+			if err = os.Remove(f2path); err != nil {
 				return
 			}
+
 			var exitCode int
-			if err != nil {
-				if exitError, ok := err.(*exec.ExitError); ok {
+			if oErr != nil {
+				if exitError, ok := oErr.(*exec.ExitError); ok {
 					exitCode = exitError.ExitCode()
 				}
 			}
@@ -124,7 +128,7 @@ func processContentDiffs(diffs []ItemDiff, tempDir, diffBinary string) (differen
 			fmt.Println(string(out))
 		}
 	}
-	return
+	return differencesFound, err
 }
 
 func pathIsPrefixOfPaths(path string, paths []string) bool {

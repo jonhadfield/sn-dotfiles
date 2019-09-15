@@ -64,8 +64,8 @@ func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs [
 		return diffs, msg, err
 	}
 	lines := make([]string, len(diffs))
-	for _, diff := range diffs {
-		lines = append(lines, fmt.Sprintf("%s | %s \n", bold(diff.homeRelPath), colourDiff(diff.diff)))
+	for i, diff := range diffs {
+		lines[i] = fmt.Sprintf("%s | %s \n", bold(diff.homeRelPath), colourDiff(diff.diff))
 	}
 	msg = columnize.SimpleFormat(lines)
 	return diffs, msg, err

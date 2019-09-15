@@ -2,17 +2,18 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn"
 	"io/ioutil"
 	"log"
 	"os"
 	"time"
+
+	"github.com/jonhadfield/gosn"
 )
 
 func compare(remote tagsWithNotes, home string, paths, exclude []string, debug bool) (diffs []ItemDiff, err error) {
-	debugPrint(debug, fmt.Sprintf("compare | home: %s", home))
-	debugPrint(debug, fmt.Sprintf("compare | %d paths to include supplied", len(paths)))
-	debugPrint(debug, fmt.Sprintf("compare | %d paths to exclude supplied", len(exclude)))
+	debugPrint(debug, fmt.Sprintf("compare | Home: %s", home))
+	debugPrint(debug, fmt.Sprintf("compare | %d Paths to include supplied", len(paths)))
+	debugPrint(debug, fmt.Sprintf("compare | %d Paths to Exclude supplied", len(exclude)))
 	// fail immediately if remote or Paths are empty
 	if len(remote) == 0 {
 		return nil, fmt.Errorf("tags with notes not supplied")

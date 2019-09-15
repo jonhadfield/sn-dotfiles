@@ -38,8 +38,8 @@ func preflight(twn tagsWithNotes, paths []string) error {
 	}
 	inter := set.Intersection(tagPaths, notePaths)
 	overlaps := make([]string, len(inter.List()))
-	for _, i := range inter.List() {
-		overlaps = append(overlaps, "- "+i.(string))
+	for c, i := range inter.List() {
+		overlaps[c] = "- " + i.(string)
 	}
 	if inter.IsEmpty() {
 		return nil

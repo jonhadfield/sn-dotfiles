@@ -10,12 +10,18 @@ import (
 )
 
 func TestSyncInvalidSession(t *testing.T) {
-	_, _, _, err := Sync(gosn.Session{
-		Token:  "invalid",
-		Mk:     "invalid",
-		Ak:     "invalid",
-		Server: "invalid",
-	}, getTemporaryHome(), []string{}, []string{}, true)
+	_, err := Sync(SyncInput{
+		Session: gosn.Session{
+			Token:  "invalid",
+			Mk:     "invalid",
+			Ak:     "invalid",
+			Server: "invalid",
+		},
+		Home:    getTemporaryHome(),
+		Paths:   []string{},
+		Exclude: []string{},
+		Debug:   true,
+	})
 	assert.Error(t, err)
 }
 
@@ -25,12 +31,18 @@ func TestSyncNoItems(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	home := getTemporaryHome()
 	// add item
-	var noPushed, noPulled int
-	noPushed, noPulled, _, err = Sync(session, home, []string{}, []string{}, true)
+	var so SyncOutput
+	so, err = Sync(SyncInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{},
+		Exclude: []string{},
+		Debug:   true,
+	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no remote dotfiles found")
-	assert.Equal(t, 0, noPushed)
-	assert.Equal(t, 0, noPulled)
+	assert.Equal(t, 0, so.NoPushed)
+	assert.Equal(t, 0, so.NoPulled)
 }
 
 func TestSync(t *testing.T) {
@@ -76,10 +88,18 @@ func TestSync(t *testing.T) {
 	// Sync with changes to pull based on missing local
 	var noPushed, noPulled int
 	debugPrint(true, "test | sync with changes to pull based on missing local")
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{}, true)
+	var so syncOutput
+	so, err = sync(syncInput{
+		session: session,
+		twn:     twn,
+		home:    home,
+		paths:   []string{},
+		exclude: []string{},
+		debug:   true,
+	})
 	assert.NoError(t, err)
-	assert.Equal(t, 0, noPushed)
-	assert.Equal(t, 1, noPulled)
+	assert.Equal(t, 0, so.noPushed)
+	assert.Equal(t, 1, so.noPulled)
 
 	// Sync with changes to push
 	debugPrint(true, "test | sync with single local content update")
@@ -88,10 +108,17 @@ func TestSync(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	fwc[applePath] = "new apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{}, true)
+	so, err = sync(syncInput{
+		session: session,
+		twn:     twn,
+		home:    home,
+		paths:   []string{},
+		exclude: []string{},
+		debug:   true,
+	})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, noPushed)
-	assert.Equal(t, 0, noPulled)
+	assert.Equal(t, 1, so.noPushed)
+	assert.Equal(t, 0, so.noPulled)
 
 	// Sync with changes to pull
 	debugPrint(true, "test | sync with changes to pull based on time")
@@ -114,14 +141,28 @@ func TestSync(t *testing.T) {
 		uTwn = append(uTwn, x)
 	}
 	assert.NoError(t, err)
-	noPushed, noPulled, _, err = sync(session, uTwn, home, []string{}, []string{}, true)
+	so, err = sync(syncInput{
+		session: session,
+		twn:     uTwn,
+		home:    home,
+		paths:   []string{},
+		exclude: []string{},
+		debug:   true,
+	})
 	assert.NoError(t, err)
-	assert.Equal(t, 0, noPushed)
-	assert.Equal(t, 1, noPulled)
+	assert.Equal(t, 0, so.noPushed)
+	assert.Equal(t, 1, so.noPulled)
 
 	// Sync with nothing to do
 	debugPrint(true, "test | sync with nothing to do")
-	noPushed, noPulled, _, err = sync(session, uTwn, home, []string{}, []string{}, true)
+	so, err = sync(syncInput{
+		session: session,
+		twn:     uTwn,
+		home:    home,
+		paths:   []string{},
+		exclude: []string{},
+		debug:   true,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, noPushed)
 	assert.Equal(t, 0, noPulled)
@@ -158,14 +199,20 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Items{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
-	var noPushed, noPulled int
-
 	debugPrint(true, "test | sync with three changes to pull based on exclusion of golf path")
 	golfPath := fmt.Sprintf("%s/.cars/vw/golf.txt", home)
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{golfPath}, true)
+	var so syncOutput
+	so, err = sync(syncInput{
+		session: session,
+		twn:     twn,
+		home:    home,
+		paths:   []string{},
+		exclude: []string{golfPath},
+		debug:   true,
+	})
 	assert.NoError(t, err)
-	assert.Equal(t, 0, noPushed)
-	assert.Equal(t, 3, noPulled)
+	assert.Equal(t, 0, so.noPushed)
+	assert.Equal(t, 3, so.noPulled)
 
 }
 
@@ -199,12 +246,18 @@ func TestSyncWithExcludeParentPaths(t *testing.T) {
 	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Items{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
-	var noPushed, noPulled int
-
 	debugPrint(true, "test | sync with two changes to pull based on exclusion of cars path")
 	carsPath := fmt.Sprintf("%s/.cars", home)
-	noPushed, noPulled, _, err = sync(session, twn, home, []string{}, []string{carsPath}, true)
+	var so syncOutput
+	so, err = sync(syncInput{
+		session: session,
+		twn:     twn,
+		home:    home,
+		paths:   []string{},
+		exclude: []string{carsPath},
+		debug:   true,
+	})
 	assert.NoError(t, err)
-	assert.Equal(t, 0, noPushed)
-	assert.Equal(t, 2, noPulled)
+	assert.Equal(t, 0, so.noPushed)
+	assert.Equal(t, 2, so.noPulled)
 }

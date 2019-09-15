@@ -4,11 +4,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
+
+	"github.com/lithammer/shortuuid"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
 )
+
+func getTemporaryHome() string {
+	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	return strings.ReplaceAll(home, "//", "/")
+}
 
 func TestAddInvalidSession(t *testing.T) {
 	home := getTemporaryHome()
