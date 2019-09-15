@@ -3,16 +3,17 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/gosn"
-	"github.com/lithammer/shortuuid"
-	"github.com/zalando/go-keyring"
-	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
+
+	"github.com/jonhadfield/gosn"
+	"github.com/lithammer/shortuuid"
+	keyring "github.com/zalando/go-keyring"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func debugPrint(show bool, msg string) {
@@ -473,11 +474,11 @@ func GetSession(loadSession bool, sessionKey, server string) (session gosn.Sessi
 		if err != nil {
 			return
 		}
-		if ! isUnencryptedSession(rawSess) {
+		if !isUnencryptedSession(rawSess) {
 			if sessionKey == "" {
 				var byteKey []byte
 				fmt.Print("session key: ")
-				byteKey, err = terminal.ReadPassword(int(syscall.Stdin))
+				byteKey, err = terminal.ReadPassword(syscall.Stdin)
 				if err != nil {
 					return
 				}
@@ -525,15 +526,11 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 }
 
 func isUnencryptedSession(in string) bool {
-	if len(strings.Split(in, ";")) != 5 {
-		return false
-	}
-	// TODO: more validation, e.g. is first item a valid email address?
-	return true
+	return len(strings.Split(in, ";")) != 5
 }
 
 func ParseSessionString(in string) (email string, session gosn.Session, err error) {
-	if ! isUnencryptedSession(in) {
+	if !isUnencryptedSession(in) {
 		err = errors.New("invalid session found or session is encrypted and key was not provided")
 		return
 	}
