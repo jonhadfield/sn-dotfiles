@@ -13,7 +13,7 @@ import (
 	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/stretchr/testify/assert"
 )

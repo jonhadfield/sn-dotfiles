@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/sn-cli/auth"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,7 +14,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -325,7 +326,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if sStatus {
 				var s string
-				s, err = dotfilesSN.GetSessionFromKeyring(sessKey)
+				s, err = auth.GetSessionFromKeyring(sessKey)
 				if err != nil {
 					return err
 				}
@@ -467,7 +468,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 	rS := makeSessionString(email, session)
 	if inKey != "" {
 		key := []byte(inKey)
-		rS = dotfilesSN.Encrypt(key, makeSessionString(email, session))
+		rS = auth.Encrypt(key, makeSessionString(email, session))
 	}
 	err = keyring.Set(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName, rS)
 	if err != nil {

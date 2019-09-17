@@ -3,6 +3,7 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/sn-cli/auth"
 	"log"
 	"os"
 	"path/filepath"
@@ -483,7 +484,7 @@ func GetSession(loadSession bool, sessionKey, server string) (session gosn.Sessi
 				}
 				sessionKey = string(byteKey)
 			}
-			if rawSess, err = Decrypt([]byte(sessionKey), rawSess); err != nil {
+			if rawSess, err = auth.Decrypt([]byte(sessionKey), rawSess); err != nil {
 				return
 			}
 		}
@@ -504,7 +505,7 @@ func GetSessionFromUser(server string) (gosn.Session, string, error) {
 	var email string
 	var err error
 	var password, apiServer, errMsg string
-	email, password, apiServer, errMsg = GetCredentials(server)
+	email, password, apiServer, errMsg = auth.GetCredentials(server)
 	if errMsg != "" {
 		if strings.Contains(errMsg, "password not defined") {
 			err = fmt.Errorf("password not defined")
