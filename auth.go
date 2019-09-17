@@ -140,7 +140,7 @@ func GetSessionFromKeyring(key string) (session string, err error) {
 			return
 		}
 		if len(strings.Split(session, ";")) != 5 {
-			err = fmt.Errorf("invalid session or wrong encryption key provided")
+			err = fmt.Errorf("invalid session or wrong key provided")
 		}
 	} else {
 		session = rS
