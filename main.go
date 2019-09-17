@@ -14,8 +14,7 @@ const (
 	DotFilesTag = "dotfiles"
 	// KeyringApplicationName defines the name of the application the Session is stored against
 	KeyringApplicationName = "session"
-	KeyringService = "StandardNotesCLI"
-
+	KeyringService         = "StandardNotesCLI"
 )
 
 func get(session gosn.Session) (t tagsWithNotes, err error) {

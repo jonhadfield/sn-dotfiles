@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -89,11 +89,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		_, _ = fmt.Fprintf(c.App.Writer, "\ninvalid command: \"%s\" \n\n", command)
 		cli.ShowAppHelpAndExit(c, 1)
 	}
-
 	statusCmd := cli.Command{
 		Name:  "status",
 		Usage: "compare local and remote",
-
 		Action: func(c *cli.Context) error {
 			if !c.GlobalBool("quiet") {
 				display = true
@@ -117,16 +115,16 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		Name:  "sync",
 		Usage: "sync dotfiles",
 		Flags: []cli.Flag{
-			// TODO: not implemented
-			cli.BoolFlag{
-				Name:   "delete",
-				Usage:  "remove remotes that don't exist locally",
-				Hidden: true,
-			},
 			cli.StringSliceFlag{
 				Name:  "exclude",
 				Usage: "exlude path from sync",
 			},
+		},
+		BashComplete: func(c *cli.Context) {
+			syncTasks := []string{"--exclude"}
+			for _, t := range syncTasks {
+				fmt.Println(t)
+			}
 		},
 		Action: func(c *cli.Context) error {
 			if !c.GlobalBool("quiet") {
@@ -137,6 +135,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if err != nil {
 				return err
 			}
+
 			home := c.GlobalString("home-dir")
 			if home == "" {
 				home = getHome()
@@ -289,6 +288,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			},
 		},
 		Hidden: false,
+		BashComplete: func(c *cli.Context) {
+			tasks := []string{"--add", "--remove", "--status", "--session-key"}
+			if c.NArg() > 0 {
+				return
+			}
+			for _, t := range tasks {
+				fmt.Println(t)
+			}
+		},
 		Action: func(c *cli.Context) error {
 			if !c.GlobalBool("quiet") {
 				display = true
@@ -342,6 +350,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				Usage: "assume user confirmation",
 			},
 		},
+		BashComplete: func(c *cli.Context) {
+			tasks := []string{"--force"}
+			if c.NArg() > 0 {
+				return
+			}
+			for _, t := range tasks {
+				fmt.Println(t)
+			}
+		},
 		Hidden: true,
 		Action: func(c *cli.Context) error {
 			if !c.GlobalBool("quiet") {
@@ -386,6 +403,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		sessionCmd,
 		wipeCmd,
 	}
+
 	sort.Sort(cli.FlagsByName(app.Flags))
 	return msg, display, app.Run(args)
 }

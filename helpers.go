@@ -436,7 +436,7 @@ func tagTitleToFSDIR(title, home string) (path string, isHome bool, err error) {
 		return
 	}
 	if home == "" {
-		err = errors.New("Home directory required")
+		err = errors.New("home directory required")
 		return
 	}
 	if !strings.HasPrefix(title, DotFilesTag) {
