@@ -46,3 +46,31 @@ Prefix any command with ```--use-session``` to automatically retrieve and use th
 [go-report-card-image]: https://goreportcard.com/badge/github.com/jonhadfield/sn-dotfiles
 [coverage-image]: https://coveralls.io/repos/github/jonhadfield/sn-dotfiles/badge.svg?branch=master
 [coverage-url]: https://coveralls.io/github/jonhadfield/sn-dotfiles?branch=master
+
+## bash autocompletion
+
+#### tool
+the bash completion tool should be installed by default on most Linux installations.  
+
+To install on macOS (Homebrew)  
+``
+$ brew install bash_completion  
+``  
+then add the following to ~/.bash_profile:  
+``  
+[ -f /usr/local/etc/bash_completion ] && . /usr/local/etc/bash_completion
+`` 
+#### installing completion script ([found here](https://github.com/jonhadfield/sn-dotfiles/tree/master/autocomplete/bash_autocomplete))
+##### macOS  
+``  
+$ cp bash_autocomplete /usr/local/etc/bash_completion.d/sn-dotfiles
+``  
+##### Linux  
+``
+$ cp bash_autocomplete /etc/bash_completion.d/sn-dotfiles
+``
+
+##### autocomplete commands
+``
+$ sn-dotfiles <tab>
+``
