@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"index/suffixarray"
 	"os"
 	"os/exec"
@@ -10,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	sndotfiles "github.com/jonhadfield/dotfiles-sn"
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
 	"github.com/zalando/go-keyring"
@@ -49,7 +49,7 @@ var (
 
 func TestRemoveSession(t *testing.T) {
 	keyring.MockInit()
-	err := keyring.Set(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName, testSession)
+	err := keyring.Set(sndotfiles2.KeyringService, sndotfiles2.KeyringApplicationName, testSession)
 	assert.NoError(t, err)
 
 	msg := removeSession()
@@ -97,11 +97,11 @@ func TestAdd(t *testing.T) {
 	assert.NoError(t, viper.BindEnv("server"))
 	serverURL := os.Getenv("SN_SERVER")
 	if serverURL == "" {
-		serverURL = sndotfiles.SNServerURL
+		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, "", serverURL)
+	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -138,17 +138,17 @@ func TestRemove(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	serverURL := os.Getenv("SN_SERVER")
 	if serverURL == "" {
-		serverURL = sndotfiles.SNServerURL
+		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, "", serverURL)
+	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
 	assert.NoError(t, err)
-	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles.Add(ai)
+	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "remove", applePath})
 	assert.NoError(t, err)
@@ -170,17 +170,17 @@ func TestWipe(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	serverURL := os.Getenv("SN_SERVER")
 	if serverURL == "" {
-		serverURL = sndotfiles.SNServerURL
+		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, "", serverURL)
+	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
 	assert.NoError(t, err)
-	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles.Add(ai)
+	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
@@ -201,17 +201,17 @@ func TestStatus(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	serverURL := os.Getenv("SN_SERVER")
 	if serverURL == "" {
-		serverURL = sndotfiles.SNServerURL
+		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, "", serverURL)
+	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
 	assert.NoError(t, err)
-	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles.Add(ai)
+	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "status", applePath})
 	assert.NoError(t, err)
@@ -234,17 +234,17 @@ func TestSync(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	serverURL := os.Getenv("SN_SERVER")
 	if serverURL == "" {
-		serverURL = sndotfiles.SNServerURL
+		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, "", serverURL)
+	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
 	assert.NoError(t, err)
-	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath, lemonPath}, Debug: true}
-	_, err = sndotfiles.Add(ai)
+	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath, lemonPath}, Debug: true}
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
@@ -294,17 +294,17 @@ func TestSyncExclude(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	serverURL := os.Getenv("SN_SERVER")
 	if serverURL == "" {
-		serverURL = sndotfiles.SNServerURL
+		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles.GetSession(false, "", serverURL)
+	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
 	assert.NoError(t, err)
-	ai := sndotfiles.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles.Add(ai)
+	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
@@ -326,7 +326,7 @@ func TestAddSession(t *testing.T) {
 	assert.NoError(t, viper.BindEnv("server"))
 	serverURL := os.Getenv("SN_SERVER")
 	if serverURL == "" {
-		serverURL = sndotfiles.SNServerURL
+		serverURL = sndotfiles2.SNServerURL
 	}
 	res, err := addSession(serverURL, "")
 	assert.NoError(t, err)

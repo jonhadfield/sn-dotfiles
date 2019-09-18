@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"github.com/jonhadfield/sn-cli/auth"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 
-	dotfilesSN "github.com/jonhadfield/dotfiles-sn"
 	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
@@ -97,7 +97,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -107,7 +107,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			_, msg, err = dotfilesSN.Status(session, home, c.Args(), c.GlobalBool("debug"))
+			_, msg, err = sndotfiles.Status(session, home, c.Args(), c.GlobalBool("debug"))
 			return err
 		},
 	}
@@ -131,7 +131,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -141,8 +141,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			var so dotfilesSN.SyncOutput
-			so, err = dotfilesSN.Sync(dotfilesSN.SyncInput{
+			var so sndotfiles.SyncOutput
+			so, err = sndotfiles.Sync(sndotfiles.SyncInput{
 				Session: session,
 				Home:    home,
 				Paths:   c.Args(),
@@ -175,7 +175,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				}
 			}
 
-			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -184,9 +184,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			ai := dotfilesSN.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
-			var ao dotfilesSN.AddOutput
-			ao, err = dotfilesSN.Add(ai)
+			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
+			var ao sndotfiles.AddOutput
+			ao, err = sndotfiles.Add(ai)
 
 			if err != nil {
 				return err
@@ -222,7 +222,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if invalidPaths {
 				return nil
 			}
-			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -232,7 +232,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				home = getHome()
 			}
 			var notesRemoved int
-			notesRemoved, _, _, _, err = dotfilesSN.Remove(session, home, c.Args(), c.GlobalBool("debug"))
+			notesRemoved, _, _, _, err = sndotfiles.Remove(session, home, c.Args(), c.GlobalBool("debug"))
 			if err != nil {
 				return err
 			}
@@ -252,7 +252,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -261,7 +261,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			_, msg, err = dotfilesSN.Diff(session, home, c.Args(), c.GlobalBool("debug"))
+			_, msg, err = sndotfiles.Diff(session, home, c.Args(), c.GlobalBool("debug"))
 			return err
 		},
 	}
@@ -331,7 +331,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 					return err
 				}
 				var email string
-				email, _, err = dotfilesSN.ParseSessionString(s)
+				email, _, err = sndotfiles.ParseSessionString(s)
 				if err != nil {
 					msg = fmt.Sprint("failed to parse session: ", err)
 					return nil
@@ -365,7 +365,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, email, err := dotfilesSN.GetSession(c.GlobalBool("use-session"),
+			session, email, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -377,13 +377,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				fmt.Printf("wipe all dotfiles for account %s? ", email)
 				var input string
 				_, err = fmt.Scanln(&input)
-				if err == nil && dotfilesSN.StringInSlice(input, []string{"y", "yes"}, false) {
+				if err == nil && sndotfiles.StringInSlice(input, []string{"y", "yes"}, false) {
 					proceed = true
 				}
 			}
 			if proceed {
 				var num int
-				num, err = dotfilesSN.WipeDotfileTagsAndNotes(session, c.GlobalBool("quiet"))
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(session, c.GlobalBool("quiet"))
 				if err != nil {
 					return err
 				}
@@ -419,7 +419,7 @@ func numTrue(in ...bool) (total int) {
 }
 
 func sessionExists() error {
-	eS, err := keyring.Get(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName)
+	eS, err := keyring.Get(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName)
 	if err != nil {
 		return err
 	}
@@ -432,7 +432,7 @@ func sessionExists() error {
 func addSession(snServer, inKey string) (res string, err error) {
 	// check if session exists in keyring
 	var s string
-	s, err = keyring.Get(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName)
+	s, err = keyring.Get(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName)
 	// only return an error if there's an issue accessing the keyring
 	if err != nil && !strings.Contains(err.Error(), "secret not found in keyring") {
 		return
@@ -460,7 +460,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 	}
 	var session gosn.Session
 	var email string
-	session, email, err = dotfilesSN.GetSessionFromUser(snServer)
+	session, email, err = sndotfiles.GetSessionFromUser(snServer)
 	if err != nil {
 		return fmt.Sprint("failed to get session: ", err), err
 	}
@@ -470,7 +470,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 		key := []byte(inKey)
 		rS = auth.Encrypt(key, makeSessionString(email, session))
 	}
-	err = keyring.Set(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName, rS)
+	err = keyring.Set(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName, rS)
 	if err != nil {
 		return fmt.Sprint("failed to set session: ", err), err
 	}
@@ -478,7 +478,7 @@ func addSession(snServer, inKey string) (res string, err error) {
 }
 
 func removeSession() string {
-	err := keyring.Delete(dotfilesSN.KeyringService, dotfilesSN.KeyringApplicationName)
+	err := keyring.Delete(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName)
 	if err != nil {
 		return fmt.Sprintf("%s: %s", msgSessionRemovalFailure, err.Error())
 	}
