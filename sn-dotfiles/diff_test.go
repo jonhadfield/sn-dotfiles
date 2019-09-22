@@ -36,7 +36,7 @@ func TestNoteInPaths(t *testing.T) {
 	assert.True(t, noteInPaths("/tmp/myNote.txt", []string{"/tmp/myNote.doc", "/tmp/myNote.txt"}))
 }
 
-func testDiffSetup1and2(home string) (twn tagsWithNotes, fwc map[string]string) {
+func testCompareSetup1and2(home string) (twn tagsWithNotes, fwc map[string]string) {
 	fruitTag := createTag("dotfiles.sn-dotfiles-test-fruit")
 	appleNote := createNote("apple", "apple content")
 	lemonNote := createNote("lemon", "lemon content")
@@ -48,12 +48,39 @@ func testDiffSetup1and2(home string) (twn tagsWithNotes, fwc map[string]string) 
 	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)] = "apple content"
 	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)] = "lemon content"
 	return
-
 }
 
-func TestDiff1(t *testing.T) {
+func TestDiff(t *testing.T) {
 	home := getTemporaryHome()
-	twn, filesWithContent := testDiffSetup1and2(home)
+	twn, fwc := testCompareSetup1and2(home)
+	// test when locals do not exist
+	diffs, _, err := diff(twn, home, []string{}, true)
+	assert.NoError(t, err)
+	assert.Len(t, diffs, 3)
+	assert.Equal(t, diffs[0].diff, localMissing)
+	assert.Equal(t, diffs[1].diff, localMissing)
+	assert.Equal(t, diffs[2].diff, localMissing)
+	// test when two local files exist
+	err = createTemporaryFiles(fwc)
+	assert.NoError(t, err)
+	defer func() {
+		if err := deleteTemporaryFiles(home); err != nil {
+			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
+		}
+	}()
+	diffs, _, err = diff(twn, home, []string{}, true)
+	assert.Equal(t, diffs[0].diff, identical)
+	assert.Equal(t, diffs[1].diff, identical)
+	assert.Equal(t, diffs[2].diff, localMissing)
+	// test when no tags with notes supplied
+	diffs, _, err = diff(tagsWithNotes{}, home, []string{}, true)
+	assert.NoError(t, err)
+	assert.Len(t, diffs, 0)
+}
+
+func TestCompare1(t *testing.T) {
+	home := getTemporaryHome()
+	twn, filesWithContent := testCompareSetup1and2(home)
 	var diffs []ItemDiff
 	err := createTemporaryFiles(filesWithContent)
 	assert.NoError(t, err)
@@ -136,9 +163,9 @@ func TestCheckPathExists(t *testing.T) {
 	assert.Error(t, checkPathsExist([]string{newFilePathWithSlashes, newFilePath}))
 }
 
-func TestDiff2(t *testing.T) {
+func TestCompare2(t *testing.T) {
 	home := getTemporaryHome()
-	twn, filesWithContent := testDiffSetup1and2(home)
+	twn, filesWithContent := testCompareSetup1and2(home)
 	var diffs []ItemDiff
 	err := createTemporaryFiles(filesWithContent)
 	assert.NoError(t, err)
@@ -179,7 +206,7 @@ func TestDiff2(t *testing.T) {
 	assert.Equal(t, 3, foundCount)
 }
 
-func TestDiff3(t *testing.T) {
+func TestCompare3(t *testing.T) {
 	home := getTemporaryHome()
 	fruitTag := createTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")
@@ -218,7 +245,7 @@ func TestDiff3(t *testing.T) {
 	}
 }
 
-func TestDiff4(t *testing.T) {
+func TestCompare4(t *testing.T) {
 	home := getTemporaryHome()
 	fruitTag := createTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")

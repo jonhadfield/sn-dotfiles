@@ -189,10 +189,9 @@ func TestStatus2(t *testing.T) {
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
 	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
 	// pause so that remote updated time newer
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 	// update premium remote to trigger remote newer condition
 	assert.NoError(t, updateRemoteNote(session, "premium", "new content"))
-
 	diffs, _, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
