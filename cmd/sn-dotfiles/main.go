@@ -10,8 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"github.com/jonhadfield/sn-cli/auth"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"golang.org/x/crypto/ssh/terminal"
 

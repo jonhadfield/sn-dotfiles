@@ -63,6 +63,7 @@ github.com/jonhadfield/gosn v0.0.0-20190826130620-d7f407206ce9 h1:7CugeYNB7ybDrg
 github.com/jonhadfield/gosn v0.0.0-20190826130620-d7f407206ce9/go.mod h1:4ylR+BtTGcjOG8VRU6suAsn/P1ro9X1ZknXF0+bPEZ4=
 github.com/jonhadfield/sn-cli v0.0.0-20190917213631-a16b8d96b84a h1:syYicnngW5YAGu6GCuZUvVFsYYFRnWDM6NvwUSuM444=
 github.com/jonhadfield/sn-cli v0.0.0-20190917213631-a16b8d96b84a/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
+github.com/jonhadfield/sn-dotfiles v0.0.0-20190922215921-9e73c0f80ed9 h1:KG/N0QdYikHdWJpoV3xFUoqlQVzlCnzsqpycmXsjcOE=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=

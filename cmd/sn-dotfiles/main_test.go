@@ -11,7 +11,7 @@ import (
 	"time"
 
 	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	keyring "github.com/zalando/go-keyring"
+	"github.com/zalando/go-keyring"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
