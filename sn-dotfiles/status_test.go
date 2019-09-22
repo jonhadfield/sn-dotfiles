@@ -53,7 +53,7 @@ func TestStatus(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -127,7 +127,7 @@ func TestStatus1(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, awsConfig}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 2)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -167,7 +167,7 @@ func TestStatus2(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)

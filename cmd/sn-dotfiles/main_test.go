@@ -148,7 +148,7 @@ func TestRemove(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "remove", applePath})
 	assert.NoError(t, err)
@@ -180,7 +180,7 @@ func TestWipe(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
@@ -211,7 +211,7 @@ func TestStatus(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "status", applePath})
 	assert.NoError(t, err)
@@ -244,7 +244,7 @@ func TestSync(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath, lemonPath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
@@ -304,7 +304,7 @@ func TestSyncExclude(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)

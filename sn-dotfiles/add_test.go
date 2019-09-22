@@ -31,7 +31,7 @@ func TestAddInvalidSession(t *testing.T) {
 		Ak:     "invalid",
 		Server: "invalid",
 	}, Home: home, Paths: []string{gitConfigPath}, Debug: true}
-	_, err := Add(ai)
+	_, err := Add(ai, true)
 	assert.Error(t, err)
 }
 
@@ -56,7 +56,7 @@ func TestAddInvalidPath(t *testing.T) {
 	//var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, duffPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.Error(t, err)
 	assert.Equal(t, 0, len(ao.PathsAdded))
 	assert.Equal(t, 0, len(ao.PathsExisting))
@@ -82,7 +82,7 @@ func TestAddOne(t *testing.T) {
 	// add item
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(ao.PathsAdded))
 	assert.Equal(t, applePath, ao.PathsAdded[0])
@@ -113,7 +113,7 @@ func TestAddTwoSameTag(t *testing.T) {
 	// add item
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, vwPath, bananaPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(ao.PathsAdded))
 	assert.Contains(t, ao.PathsAdded, applePath)
@@ -152,7 +152,7 @@ func TestAddRecursive(t *testing.T) {
 	// add item
 	ai := AddInput{Session: session, Home: home, Paths: []string{fruitPath, carsPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(ao.PathsAdded))
 	assert.Contains(t, ao.PathsAdded, applePath)

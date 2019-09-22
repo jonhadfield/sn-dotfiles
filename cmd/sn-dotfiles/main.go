@@ -186,7 +186,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
 			var ao sndotfiles.AddOutput
-			ao, err = sndotfiles.Add(ai)
+			ao, err = sndotfiles.Add(ai,c.GlobalBool("debug"))
 
 			if err != nil {
 				return err

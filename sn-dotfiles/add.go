@@ -67,9 +67,10 @@ type AddOutput struct {
 }
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
-func Add(ai AddInput) (ao AddOutput, err error) {
+func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	// remove any duplicate Paths
 	ai.Paths = dedupe(ai.Paths)
+	debugPrint(debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
 
 	if err = checkPathsExist(ai.Paths); err != nil {
 		return
@@ -111,6 +112,8 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 
 	// push and tag items
 	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, twn)
+	debugPrint(debug, fmt.Sprintf("Add | tags pushed: %d notes pushed %d", ao.TagsPushed, ao.NotesPushed))
+
 	if err != nil {
 		return
 	}
