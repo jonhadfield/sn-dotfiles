@@ -28,6 +28,10 @@ workflows:
   build-release:
     jobs:
       - build:
+          filters:
+            branches:
+              ignore:
+                - develop
       - release:
           requires:
             - build
