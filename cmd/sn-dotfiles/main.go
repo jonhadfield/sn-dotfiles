@@ -3,8 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/jonhadfield/sn-cli/auth"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,9 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/jonhadfield/sn-cli/auth"
+	keyring "github.com/zalando/go-keyring"
 
-	"github.com/zalando/go-keyring"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
@@ -186,7 +185,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
 			var ao sndotfiles.AddOutput
-			ao, err = sndotfiles.Add(ai,c.GlobalBool("debug"))
+			ao, err = sndotfiles.Add(ai, c.GlobalBool("debug"))
 
 			if err != nil {
 				return err

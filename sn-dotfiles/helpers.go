@@ -3,7 +3,6 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/sn-cli/auth"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,8 +11,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/jonhadfield/sn-cli/auth"
+	keyring "github.com/zalando/go-keyring"
+
 	"github.com/jonhadfield/gosn"
-	"github.com/zalando/go-keyring"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
