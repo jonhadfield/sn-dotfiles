@@ -26,6 +26,9 @@ type SyncOutput struct {
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
 func Sync(in SyncInput) (out SyncOutput, err error) {
+	if err = checkPathsExist(in.Exclude); err != nil {
+		return
+	}
 	var remote tagsWithNotes
 	remote, err = get(in.Session)
 	if err != nil {
