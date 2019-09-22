@@ -28,14 +28,9 @@ workflows:
   build-release:
     jobs:
       - build:
-          filters:
-            tags:
-              only: /.*/
       - release:
           requires:
             - build
           filters:
             tags:
               only: /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)/
-            branches:
-              ignore: /.*/
