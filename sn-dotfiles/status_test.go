@@ -162,7 +162,6 @@ func TestStatus2(t *testing.T) {
 	fwc[yellowPath] = "yellow content"
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
-
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
@@ -180,8 +179,6 @@ func TestStatus2(t *testing.T) {
 
 	// update yellow content
 	d1 := []byte("new yellow content")
-	// pause so that local updated time newer
-	time.Sleep(1 * time.Second)
 	assert.NoError(t, ioutil.WriteFile(yellowPath, d1, 0644))
 
 	// create untracked file
@@ -189,7 +186,7 @@ func TestStatus2(t *testing.T) {
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
 	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
 	// pause so that remote updated time newer
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 	// update premium remote to trigger remote newer condition
 	assert.NoError(t, updateRemoteNote(session, "premium", "new content"))
 	diffs, _, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, true)
