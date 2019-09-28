@@ -178,6 +178,8 @@ func TestStatus2(t *testing.T) {
 	assert.NoError(t, err)
 
 	// update yellow content
+	// wait 2 seconds so that update time comparison doesn't fail due to formats
+	time.Sleep(2 * time.Second)
 	d1 := []byte("new yellow content")
 	assert.NoError(t, ioutil.WriteFile(yellowPath, d1, 0644))
 
