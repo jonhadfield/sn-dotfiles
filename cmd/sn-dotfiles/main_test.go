@@ -11,9 +11,6 @@ import (
 	"time"
 
 	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/zalando/go-keyring"
-
-	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
@@ -38,37 +35,7 @@ func TestCLIInvalidCommand(t *testing.T) {
 	assert.Equal(t, expectedErrorString, e.Error())
 }
 
-var (
-	testSessionEmail  = "me@home.com"
-	testSessionServer = "https://sync.server.com"
-	testSessionToken  = "testsessiontoken"
-	testSessionAk     = "testsessionak"
-	testSessionMk     = "testsessionmk"
-	testSession       = fmt.Sprintf("%s;%s;%s;%s;%s", testSessionEmail, testSessionServer,
-		testSessionToken, testSessionAk, testSessionMk)
-)
 
-func TestRemoveSession(t *testing.T) {
-	keyring.MockInit()
-	err := keyring.Set(sndotfiles2.KeyringService, sndotfiles2.KeyringApplicationName, testSession)
-	assert.NoError(t, err)
-
-	msg := removeSession()
-	assert.Equal(t, msgSessionRemovalSuccess, msg)
-	msg = removeSession()
-	assert.Equal(t, fmt.Sprintf("%s: %s", msgSessionRemovalFailure, "secret not found in keyring"), msg)
-}
-
-func TestMakeSessionString(t *testing.T) {
-	sess := gosn.Session{
-		Token:  testSessionToken,
-		Mk:     testSessionMk,
-		Ak:     testSessionAk,
-		Server: testSessionServer,
-	}
-	ss := makeSessionString(testSessionEmail, sess)
-	assert.Equal(t, testSession, ss)
-}
 
 func TestStripHome(t *testing.T) {
 	res, err := stripHome("/home/bob/something/else.txt", "/home/bob")
@@ -320,19 +287,6 @@ func TestSyncExclude(t *testing.T) {
 	assert.Contains(t, msg, "pushed")
 }
 
-func TestAddSession(t *testing.T) {
-	viper.SetEnvPrefix("sn")
-	assert.NoError(t, viper.BindEnv("email"))
-	assert.NoError(t, viper.BindEnv("password"))
-	assert.NoError(t, viper.BindEnv("server"))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
-	res, err := addSession(serverURL, "")
-	assert.NoError(t, err)
-	assert.Contains(t, res, "successfully")
-}
 
 func TestNumTrue(t *testing.T) {
 	assert.Equal(t, 3, numTrue(true, false, true, true))

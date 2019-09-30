@@ -3,31 +3,19 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
-	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/jonhadfield/sn-cli/auth"
-	"github.com/zalando/go-keyring"
-
-	"golang.org/x/crypto/ssh/terminal"
-
-	"github.com/jonhadfield/gosn"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 )
 
 // overwritten at build time
 var version, versionOutput, tag, sha, buildDate string
-
-const (
-	msgSessionRemovalSuccess = "session removed successfully"
-	msgSessionRemovalFailure = "failed to remove session"
-)
 
 func main() {
 	msg, display, err := startCLI(os.Args)
@@ -306,37 +294,22 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			sRemove := c.Bool("remove")
 			sStatus := c.Bool("status")
 			sessKey := c.String("session-key")
-			if sStatus || sRemove {
-				if err = sessionExists(); err != nil {
-					return err
-				}
-			}
+
 			nTrue := numTrue(sAdd, sRemove, sStatus)
 			if nTrue == 0 || nTrue > 1 {
 				_ = cli.ShowCommandHelp(c, "session")
 				os.Exit(1)
 			}
 			if sAdd {
-				msg, err = addSession(c.GlobalString("server"), sessKey)
+				msg, err = sndotfiles.AddSession(c.GlobalString("server"), sessKey, nil)
 				return err
 			}
 			if sRemove {
-				msg = removeSession()
+				msg = sndotfiles.RemoveSession(nil)
 				return nil
 			}
 			if sStatus {
-				var s string
-				s, err = auth.GetSessionFromKeyring(sessKey)
-				if err != nil {
-					return err
-				}
-				var email string
-				email, _, err = sndotfiles.ParseSessionString(s)
-				if err != nil {
-					msg = fmt.Sprint("failed to parse session: ", err)
-					return nil
-				}
-				msg = fmt.Sprint("session found: ", email)
+				msg, err = sndotfiles.SessionStatus(sessKey, nil)
 			}
 			return err
 		},
@@ -416,77 +389,6 @@ func numTrue(in ...bool) (total int) {
 		}
 	}
 	return
-}
-
-func sessionExists() error {
-	eS, err := keyring.Get(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName)
-	if err != nil {
-		return err
-	}
-	if len(eS) == 0 {
-		return errors.New("session is empty")
-	}
-	return nil
-}
-
-func addSession(snServer, inKey string) (res string, err error) {
-	// check if session exists in keyring
-	var s string
-	s, err = keyring.Get(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName)
-	// only return an error if there's an issue accessing the keyring
-	if err != nil && !strings.Contains(err.Error(), "secret not found in keyring") {
-		return
-	}
-
-	if inKey == "." {
-		var byteKey []byte
-		fmt.Print("session key: ")
-		byteKey, err = terminal.ReadPassword(syscall.Stdin)
-		if err != nil {
-			return
-		}
-		inKey = string(byteKey)
-		fmt.Println()
-	}
-
-	if s != "" {
-		fmt.Print("replace existing session (y|n): ")
-		var resp string
-		_, err := fmt.Scanln(&resp)
-		if err != nil || strings.ToLower(resp) != "y" {
-			// do nothing
-			return "", nil
-		}
-	}
-	var session gosn.Session
-	var email string
-	session, email, err = sndotfiles.GetSessionFromUser(snServer)
-	if err != nil {
-		return fmt.Sprint("failed to get session: ", err), err
-	}
-
-	rS := makeSessionString(email, session)
-	if inKey != "" {
-		key := []byte(inKey)
-		rS = auth.Encrypt(key, makeSessionString(email, session))
-	}
-	err = keyring.Set(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName, rS)
-	if err != nil {
-		return fmt.Sprint("failed to set session: ", err), err
-	}
-	return "session added successfully", err
-}
-
-func removeSession() string {
-	err := keyring.Delete(sndotfiles.KeyringService, sndotfiles.KeyringApplicationName)
-	if err != nil {
-		return fmt.Sprintf("%s: %s", msgSessionRemovalFailure, err.Error())
-	}
-	return msgSessionRemovalSuccess
-}
-
-func makeSessionString(email string, session gosn.Session) string {
-	return fmt.Sprintf("%s;%s;%s;%s;%s", email, session.Server, session.Token, session.Ak, session.Mk)
 }
 
 func stripHome(in, home string) (res string, err error) {

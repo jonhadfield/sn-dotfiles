@@ -61,8 +61,10 @@ github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77 h1:U1mtIepXhv
 github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77/go.mod h1:9Q9pFtVLzvgKEi8++fNhmSR7HpD9+9+dPy/SECsNB6k=
 github.com/jonhadfield/gosn v0.0.0-20190826130620-d7f407206ce9 h1:7CugeYNB7ybDrgbvoXfQ1c24nrK6p4S1WrzK7dhDzy4=
 github.com/jonhadfield/gosn v0.0.0-20190826130620-d7f407206ce9/go.mod h1:4ylR+BtTGcjOG8VRU6suAsn/P1ro9X1ZknXF0+bPEZ4=
-github.com/jonhadfield/sn-cli v0.0.0-20190917213631-a16b8d96b84a h1:syYicnngW5YAGu6GCuZUvVFsYYFRnWDM6NvwUSuM444=
-github.com/jonhadfield/sn-cli v0.0.0-20190917213631-a16b8d96b84a/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
+github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46 h1:2mnXOpSPmJ8wnOHqD9TjsFYNhhHnWFq5vEJzk3MwMxE=
+github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46/go.mod h1:s/C+F1Np2mlCvzHNinGQqz+IedNX2Eu+6PMT50I6bac=
+github.com/jonhadfield/sn-cli v0.0.0-20191003214654-6b501909ed23 h1:SW85yspRDjgTWPhsK8/HEdF/zMp1Xps1mcQ54FkRbFw=
+github.com/jonhadfield/sn-cli v0.0.0-20191003214654-6b501909ed23/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
@@ -163,6 +165,8 @@ golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 h1:HuIa8hRrWRSrqYzx1qI49N
 golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 h1:0hQKqeLdqlt5iIwVOBErRisrHJAN57yOiPRQItI20fU=
 golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
+golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc h1:c0o/qxkaO2LF5t6fQrT4b5hzyggAkLLlCUjqfRxd8Q4=
+golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=
 golang.org/x/net v0.0.0-20180826012351-8a410e7b638d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
