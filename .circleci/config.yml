@@ -38,3 +38,5 @@ workflows:
           filters:
             tags:
               only: /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)/
+            branches:
+              ignore: /.*/
