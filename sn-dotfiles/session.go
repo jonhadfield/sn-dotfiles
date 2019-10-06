@@ -110,25 +110,4 @@ func makeSessionString(email string, session gosn.Session) string {
 	return fmt.Sprintf("%s;%s;%s;%s;%s", email, session.Server, session.Token, session.Ak, session.Mk)
 }
 
-func SessionStatus(sKey string, k keyring.Keyring) (msg string, err error) {
-	var s, keyringContent string
-	keyringContent, err = k.Get(KeyringService, KeyringApplicationName)
-	if keyringContent == "" {
-		return "", errors.New("keyring is empty")
-	}
-	s, err = auth.GetSessionFromKeyring(sKey, k)
-	if err != nil {
-		if strings.Contains(err.Error(), "illegal base64") {
-			err = errors.New("stored session is corrupt")
-		}
-		return
-	}
-	var email string
-	email, _, err = ParseSessionString(s)
-	if err != nil {
-		msg = fmt.Sprint("failed to parse session: ", err)
-		return
-	}
-	msg = fmt.Sprint("session found: ", email)
-	return
-}
+

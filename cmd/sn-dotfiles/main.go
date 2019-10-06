@@ -310,7 +310,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				return nil
 			}
 			if sStatus {
-				msg, err = sndotfiles.SessionStatus(sessKey, nil)
+				msg, err = auth.SessionStatus(sessKey, nil)
 			}
 			return err
 		},

@@ -65,6 +65,8 @@ github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46 h1:2mnXOpSPmJ8wnO
 github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46/go.mod h1:s/C+F1Np2mlCvzHNinGQqz+IedNX2Eu+6PMT50I6bac=
 github.com/jonhadfield/sn-cli v0.0.0-20191003214654-6b501909ed23 h1:SW85yspRDjgTWPhsK8/HEdF/zMp1Xps1mcQ54FkRbFw=
 github.com/jonhadfield/sn-cli v0.0.0-20191003214654-6b501909ed23/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
+github.com/jonhadfield/sn-cli v0.0.0-20191006202846-b7668638113f h1:PoEIJnjx3mqtVu4Am5lCsMoR2YQ7dqzkm8pkmBz2464=
+github.com/jonhadfield/sn-cli v0.0.0-20191006202846-b7668638113f/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
