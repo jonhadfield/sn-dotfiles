@@ -3,6 +3,7 @@ package sndotfiles
 import (
 	"fmt"
 	"github.com/jonhadfield/gosn"
+	"github.com/jonhadfield/sn-cli/auth"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -114,14 +115,14 @@ func TestSessionStatus(t *testing.T) {
 	// if session is undefined then session value should
 	// be empty and error returned to reflect that
 	var kUndefined MockKeyRingUnDefined
-	s, err := SessionStatus("", kUndefined)
+	s, err := auth.SessionStatus("", kUndefined)
 	assert.Contains(t, err.Error(), "empty")
 	assert.Empty(t, s)
 
 	// if session is not empty but a value is found then
 	// assume session is not encrypted
 	var kDefined MockKeyRingDefined
-	s, err = SessionStatus("", kDefined)
+	s, err = auth.SessionStatus("", kDefined)
 	assert.NoError(t, err)
 	assert.Contains(t, s, "session found: someone@example.com")
 
@@ -129,14 +130,14 @@ func TestSessionStatus(t *testing.T) {
 	// then session is assumed to be encrypted so ensure
 	// a key, if not provided, is flagged
 	var kDodgy MockKeyRingDodgy
-	s, err = SessionStatus("", kDodgy)
+	s, err = auth.SessionStatus("", kDodgy)
 	assert.Contains(t, err.Error(), "key required")
 	assert.Empty(t, s)
 
 	// if stored session value is not immediately valid
 	// then session is assumed to be encrypted so ensure
 	// session that cannot be encrypted is flagged
-	s, err = SessionStatus("somekey", kDodgy)
+	s, err = auth.SessionStatus("somekey", kDodgy)
 	assert.Contains(t, err.Error(), "corrupt")
 	assert.Empty(t, s)
 }
