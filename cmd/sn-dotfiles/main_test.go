@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
+	"github.com/jonhadfield/sn-cli/auth"
+	"github.com/spf13/viper"
 	"index/suffixarray"
 	"os"
 	"os/exec"
@@ -9,9 +12,6 @@ import (
 	"regexp"
 	"testing"
 	"time"
-
-	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -34,8 +34,6 @@ func TestCLIInvalidCommand(t *testing.T) {
 	assert.Equal(t, true, ok)
 	assert.Equal(t, expectedErrorString, e.Error())
 }
-
-
 
 func TestStripHome(t *testing.T) {
 	res, err := stripHome("/home/bob/something/else.txt", "/home/bob")
@@ -67,7 +65,7 @@ func TestAdd(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
+	session, _, err := auth.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -108,7 +106,7 @@ func TestRemove(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
+	session, _, err := auth.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -140,7 +138,7 @@ func TestWipe(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
+	session, _, err := auth.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -171,7 +169,7 @@ func TestStatus(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
+	session, _, err := auth.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -204,7 +202,7 @@ func TestSync(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
+	session, _, err := auth.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -264,7 +262,7 @@ func TestSyncExclude(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := sndotfiles2.GetSession(false, "", serverURL)
+	session, _, err := auth.GetSession(false, "", serverURL)
 	defer func() {
 		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
 			fmt.Println("failed to wipe")
@@ -286,7 +284,6 @@ func TestSyncExclude(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "pushed")
 }
-
 
 func TestNumTrue(t *testing.T) {
 	assert.Equal(t, 3, numTrue(true, false, true, true))

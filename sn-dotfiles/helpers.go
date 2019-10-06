@@ -3,19 +3,13 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/gosn"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
-	"syscall"
-
-	"github.com/jonhadfield/sn-cli/auth"
-	keyring "github.com/zalando/go-keyring"
-
-	"github.com/jonhadfield/gosn"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 func debugPrint(show bool, msg string) {
@@ -462,44 +456,6 @@ func pathToTag(homeRelPath string) string {
 		return r[:len(r)-1]
 	}
 	return r
-}
-func GetSession(loadSession bool, sessionKey, server string) (session gosn.Session, email string, err error) {
-	if loadSession {
-		var rawSess string
-		rawSess, err = keyring.Get(KeyringService, KeyringApplicationName)
-		if err != nil {
-			return
-		}
-		if !isUnencryptedSession(rawSess) {
-			if sessionKey == "" {
-				var byteKey []byte
-				fmt.Print("session key: ")
-				byteKey, err = terminal.ReadPassword(syscall.Stdin)
-				if err != nil {
-					return
-				}
-				fmt.Println()
-				if len(byteKey) == 0 {
-					err = fmt.Errorf("key not provided")
-					return
-				}
-				sessionKey = string(byteKey)
-			}
-			if rawSess, err = auth.Decrypt([]byte(sessionKey), rawSess); err != nil {
-				return
-			}
-		}
-		email, session, err = ParseSessionString(rawSess)
-		if err != nil {
-			return
-		}
-	} else {
-		session, email, err = auth.GetSessionFromUser(server)
-		if err != nil {
-			return
-		}
-	}
-	return session, email, err
 }
 
 func isUnencryptedSession(in string) bool {

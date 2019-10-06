@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
+	"github.com/jonhadfield/sn-cli/auth"
 	"os"
 	"path/filepath"
 	"sort"
@@ -85,7 +86,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
+			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -119,7 +120,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
+			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -163,7 +164,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				}
 			}
 
-			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
+			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -210,7 +211,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if invalidPaths {
 				return nil
 			}
-			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
+			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -240,7 +241,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
+			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -338,7 +339,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, email, err := sndotfiles.GetSession(c.GlobalBool("use-session"),
+			session, email, err := auth.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
