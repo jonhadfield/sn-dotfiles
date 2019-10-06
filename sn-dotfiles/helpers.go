@@ -494,33 +494,12 @@ func GetSession(loadSession bool, sessionKey, server string) (session gosn.Sessi
 			return
 		}
 	} else {
-		session, email, err = GetSessionFromUser(server)
+		session, email, err = auth.GetSessionFromUser(server)
 		if err != nil {
 			return
 		}
 	}
 	return session, email, err
-}
-func GetSessionFromUser(server string) (gosn.Session, string, error) {
-	var sess gosn.Session
-	var email string
-	var err error
-	var password, apiServer, errMsg string
-	email, password, apiServer, errMsg = auth.GetCredentials(server)
-	if errMsg != "" {
-		if strings.Contains(errMsg, "password not defined") {
-			err = fmt.Errorf("password not defined")
-		} else {
-			fmt.Printf("\nerror: %s\n\n", errMsg)
-		}
-		return sess, email, err
-	}
-	sess, err = gosn.CliSignIn(email, password, apiServer)
-	if err != nil {
-		return sess, email, err
-
-	}
-	return sess, email, err
 }
 
 func isUnencryptedSession(in string) bool {

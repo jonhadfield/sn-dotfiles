@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn"
 	"os"
 	"testing"
 	"time"
@@ -144,4 +145,45 @@ func TestCompareLocalNewer(t *testing.T) {
 func TestStripDot(t *testing.T) {
 	assert.Equal(t, "test", stripDot(".test"))
 	assert.Equal(t, "test", stripDot("test"))
+}
+
+func TestIsUnEncryptedSession(t *testing.T) {
+	assert.False(t, isUnencryptedSession("invalid"))
+	assert.True(t, isUnencryptedSession("someone@example.com;https://sync.standardnotes.org;eyJhbGciOiJKUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c;8f0f5166841ca4dee2975c74cc7e0a4345ce24b54d7b215677a3d540303aa203;6d5ffc6f8e337e6e3ae6d0c3201d9e2d00ffee64672bc4fe1886ad31770c19f1"))
+}
+
+func TestParsesessionString(t *testing.T) {
+	// ensure an invalid session returns an error, no email address, and an empty session
+	email, sess, err := ParseSessionString("invalid session string")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "session invalid")
+	assert.Empty(t, email)
+	assert.NotNil(t, sess)
+	assert.Equal(t, gosn.Session{}, sess)
+
+	// ensure an invalid session returns an error, no email address, and an empty session
+	email, sess, err = ParseSessionString("someone@example.com;https://sync.standardnotes.org;eyJhbGciOiJKUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c;8f0f5166841ca4dee2975c74cc7e0a4345ce24b54d7b215677a3d540303aa203;6d5ffc6f8e337e6e3ae6d0c3201d9e2d00ffee64672bc4fe1886ad31770c19f1")
+	assert.NoError(t, err)
+	assert.Equal(t, "someone@example.com", email)
+	assert.NotNil(t, sess)
+	assert.Equal(t, gosn.Session{Server: "https://sync.standardnotes.org",
+		Token: "eyJhbGciOiJKUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+		Mk:    "6d5ffc6f8e337e6e3ae6d0c3201d9e2d00ffee64672bc4fe1886ad31770c19f1",
+		Ak:    "8f0f5166841ca4dee2975c74cc7e0a4345ce24b54d7b215677a3d540303aa203"},
+		sess)
+}
+
+func TestNoteWithTagExists(t *testing.T) {
+	note := gosn.NewNote()
+	nContent := gosn.NewNoteContent()
+	nContent.SetTitle("apple")
+	note.Content = nContent
+	tContent := gosn.NewTagContent()
+	tag := gosn.NewTag()
+	tContent.SetTitle("fruit")
+	tag.Content = tContent
+	twn := tagsWithNotes{
+		tagWithNotes{tag: *tag, notes: []gosn.Item{*note}},
+	}
+	assert.Equal(t, 1, noteWithTagExists("fruit", "apple", twn))
 }

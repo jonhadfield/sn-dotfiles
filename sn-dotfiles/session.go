@@ -65,7 +65,7 @@ func AddSession(snServer, inKey string, k keyring.Keyring) (res string, err erro
 	}
 	var session gosn.Session
 	var email string
-	session, email, err = GetSessionFromUser(snServer)
+	session, email, err = auth.GetSessionFromUser(snServer)
 	if err != nil {
 		return fmt.Sprint("failed to get session: ", err), err
 	}
