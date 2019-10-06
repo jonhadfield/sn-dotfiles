@@ -28,17 +28,31 @@ func TestStatusInvalidSession(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStatus(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
-	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
-		}
-	}()
-	home := getTemporaryHome()
+func testStatusSetup(home string) (twn tagsWithNotes) {
+	dotfilesTag := createTag("dotfiles")
+	gitconfigNote := createNote(".gitconfig", "git config content")
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Items{gitconfigNote}}
 
+	fruitTag := createTag("dotfiles.fruit")
+	fruitBananaTag := createTag("dotfiles.fruit.banana")
+	appleNote := createNote("apple", "apple content")
+	lemonNote := createNote("lemon", "lemon content")
+	grapeNote := createNote("grape", "grape content")
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote, lemonNote, grapeNote}}
+
+	yellowNote := createNote("yellow", "yellow content")
+	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Items{yellowNote}}
+
+	premiumNote := createNote("premium", "premium content")
+	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
+	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Items{premiumNote}}
+
+	twn = tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
+	return
+}
+
+func TestStatus(t *testing.T) {
+	home := getTemporaryHome()
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
 	fwc[gitConfigPath] = "git config content"
@@ -50,17 +64,13 @@ func TestStatus(t *testing.T) {
 	fwc[premiumPath] = "premium content"
 
 	assert.NoError(t, createTemporaryFiles(fwc))
-	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 4)
-	assert.Len(t, ao.PathsExisting, 0)
-	assert.Len(t, ao.PathsInvalid, 0)
-	var diffs []ItemDiff
 
-	diffs, _, err = Status(session, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	twn := testStatusSetup(home)
+
+	var diffs []ItemDiff
+	var err error
+
+	diffs, _, err = status(twn, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
 	var pDiff int
@@ -89,21 +99,6 @@ func TestStatus(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 4, pDiff)
-}
-
-// TODO: use 'small' status and pass pre-gen twn **********
-func testStatusSetup(home string) (twn tagsWithNotes, fwc map[string]string) {
-	fruitTag := createTag("dotfiles.sn-dotfiles-test-fruit")
-	appleNote := createNote("apple", "apple content")
-	lemonNote := createNote("lemon", "lemon content")
-	grapeNote := createNote("grape", "grape content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote, lemonNote, grapeNote}}
-	twn = tagsWithNotes{fruitTagWithNotes}
-
-	fwc = make(map[string]string)
-	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)] = "apple content"
-	fwc[fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)] = "lemon content"
-	return
 }
 
 func TestStatus1(t *testing.T) {
