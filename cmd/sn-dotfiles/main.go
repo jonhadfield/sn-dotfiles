@@ -3,14 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/jonhadfield/sn-cli/auth"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
+	"github.com/jonhadfield/sn-cli/auth"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 )
@@ -186,7 +186,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				msg = "nothing to do"
 			}
 			return err
-
 		},
 	}
 

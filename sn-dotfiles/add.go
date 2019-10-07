@@ -34,7 +34,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 			continue
 		} else if existingCount > 1 {
 			err = fmt.Errorf("duplicate items found with name '%s' and tag '%s'", filename, remoteTagTitle)
-			return
+			return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
 		}
 		// now add
 		pathsAdded = append(pathsAdded, path)
@@ -50,7 +50,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	statusLines = append(statusLines, existing...)
 	statusLines = append(statusLines, added...)
 
-	return
+	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
 }
 
 type AddInput struct {

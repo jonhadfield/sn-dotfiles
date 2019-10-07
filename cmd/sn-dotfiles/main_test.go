@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/jonhadfield/sn-cli/auth"
-	"github.com/spf13/viper"
 	"index/suffixarray"
 	"os"
 	"os/exec"
@@ -12,6 +9,10 @@ import (
 	"regexp"
 	"testing"
 	"time"
+
+	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
+	"github.com/jonhadfield/sn-cli/auth"
+	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
 )

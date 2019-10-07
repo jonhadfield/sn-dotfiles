@@ -3,13 +3,14 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/gosn"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/jonhadfield/gosn"
 )
 
 func debugPrint(show bool, msg string) {
@@ -486,7 +487,7 @@ func StringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 	for i := range inSlice {
 		if matchCase && inStr == inSlice[i] {
 			return true
-		} else if strings.ToLower(inStr) == strings.ToLower(inSlice[i]) {
+		} else if strings.EqualFold(inStr, inSlice[i]) {
 			return true
 		}
 	}
