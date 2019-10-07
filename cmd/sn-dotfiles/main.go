@@ -302,11 +302,11 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				os.Exit(1)
 			}
 			if sAdd {
-				msg, err = sndotfiles.AddSession(c.GlobalString("server"), sessKey, nil)
+				msg, err = auth.AddSession(c.GlobalString("server"), sessKey, nil)
 				return err
 			}
 			if sRemove {
-				msg = sndotfiles.RemoveSession(nil)
+				msg = auth.RemoveSession(nil)
 				return nil
 			}
 			if sStatus {
