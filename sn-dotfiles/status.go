@@ -2,32 +2,10 @@ package sndotfiles
 
 import (
 	"fmt"
-
-	"github.com/ryanuber/columnize"
-
 	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn"
+	"github.com/ryanuber/columnize"
 )
-
-func colourDiff(diff string) string {
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
-	switch diff {
-	case identical:
-		return green(diff)
-	case localMissing:
-		return red(diff)
-	case localNewer:
-		return yellow(diff)
-	case untracked:
-		return yellow(diff)
-	case remoteNewer:
-		return yellow(diff)
-	default:
-		return diff
-	}
-}
 
 // Status compares and then outputs status of all items (or a subset defined by Paths param):
 // - local items that missing
@@ -69,4 +47,24 @@ func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs [
 	}
 	msg = columnize.SimpleFormat(lines)
 	return diffs, msg, err
+}
+
+func colourDiff(diff string) string {
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
+	switch diff {
+	case identical:
+		return green(diff)
+	case localMissing:
+		return red(diff)
+	case localNewer:
+		return yellow(diff)
+	case untracked:
+		return yellow(diff)
+	case remoteNewer:
+		return yellow(diff)
+	default:
+		return diff
+	}
 }

@@ -2,69 +2,14 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/ryanuber/columnize"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn"
-	"github.com/ryanuber/columnize"
 )
-
-func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string, tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
-	tagToItemMap = make(map[string]gosn.Items)
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	bold := color.New(color.Bold).SprintFunc()
-	added := make([]string, len(fsPaths))
-	var existing []string
-	for i, path := range fsPaths {
-		dir, filename := filepath.Split(path)
-		homeRelPath := stripHome(dir+filename, home)
-		boldHomeRelPath := bold(homeRelPath)
-
-		var remoteTagTitleWithoutHome, remoteTagTitle string
-		remoteTagTitleWithoutHome = stripHome(dir, home)
-		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
-
-		existingCount := noteWithTagExists(remoteTagTitle, filename, twn)
-		if existingCount == 1 {
-			existing = append(existing, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("already tracked")))
-			pathsExisting = append(pathsExisting, path)
-			continue
-		} else if existingCount > 1 {
-			err = fmt.Errorf("duplicate items found with name '%s' and tag '%s'", filename, remoteTagTitle)
-			return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
-		}
-		// now add
-		pathsAdded = append(pathsAdded, path)
-
-		var itemToAdd gosn.Item
-		itemToAdd, err = createItem(path, filename)
-		if err != nil {
-			return
-		}
-		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
-		added[i] = fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked"))
-	}
-	statusLines = append(statusLines, existing...)
-	statusLines = append(statusLines, added...)
-
-	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
-}
-
-type AddInput struct {
-	Session gosn.Session
-	Home    string
-	Paths   []string
-	Debug   bool
-}
-
-type AddOutput struct {
-	TagsPushed, NotesPushed                 int
-	PathsAdded, PathsExisting, PathsInvalid []string
-	Msg                                     string
-}
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
 func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
@@ -122,6 +67,61 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	return ao, err
 }
 
+type AddInput struct {
+	Session gosn.Session
+	Home    string
+	Paths   []string
+	Debug   bool
+}
+
+type AddOutput struct {
+	TagsPushed, NotesPushed                 int
+	PathsAdded, PathsExisting, PathsInvalid []string
+	Msg                                     string
+}
+
+func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string, tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
+	tagToItemMap = make(map[string]gosn.Items)
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	bold := color.New(color.Bold).SprintFunc()
+	added := make([]string, len(fsPaths))
+	var existing []string
+	for i, path := range fsPaths {
+		dir, filename := filepath.Split(path)
+		homeRelPath := stripHome(dir+filename, home)
+		boldHomeRelPath := bold(homeRelPath)
+
+		var remoteTagTitleWithoutHome, remoteTagTitle string
+		remoteTagTitleWithoutHome = stripHome(dir, home)
+		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
+
+		existingCount := noteWithTagExists(remoteTagTitle, filename, twn)
+		if existingCount == 1 {
+			existing = append(existing, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("already tracked")))
+			pathsExisting = append(pathsExisting, path)
+			continue
+		} else if existingCount > 1 {
+			err = fmt.Errorf("duplicate items found with name '%s' and tag '%s'", filename, remoteTagTitle)
+			return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
+		}
+		// now add
+		pathsAdded = append(pathsAdded, path)
+
+		var itemToAdd gosn.Item
+		itemToAdd, err = createItem(path, filename)
+		if err != nil {
+			return
+		}
+		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
+		added[i] = fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked"))
+	}
+	statusLines = append(statusLines, existing...)
+	statusLines = append(statusLines, added...)
+
+	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
+}
+
 func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {
 	// check for directories
 	for _, path := range paths {
@@ -151,6 +151,7 @@ func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {
 	finalPaths = dedupe(finalPaths)
 	return
 }
+
 func createItem(path, title string) (item gosn.Item, err error) {
 	// read file content
 	file, err := os.Open(path)
