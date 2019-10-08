@@ -11,17 +11,6 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
-type SyncInput struct {
-	Session        gosn.Session
-	Home           string
-	Paths, Exclude []string
-	Debug          bool
-}
-type SyncOutput struct {
-	NoPushed, NoPulled int
-	Msg                string
-}
-
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
@@ -48,39 +37,15 @@ func Sync(in SyncInput) (out SyncOutput, err error) {
 	}, err
 }
 
-func ensureTrailingPathSep(in string) string {
-	if strings.HasSuffix(in, string(os.PathSeparator)) {
-		return in
-	}
-	return in + string(os.PathSeparator)
+type SyncInput struct {
+	Session        gosn.Session
+	Home           string
+	Paths, Exclude []string
+	Debug          bool
 }
-
-func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
-	for _, pte := range pathsToExclude {
-		homeStrippedPath := stripHome(pte, home)
-		// return match if Paths match exactly
-		if homeStrippedPath == path {
-			return true
-		}
-		// return match if pte is a parent of the path
-		if strings.HasPrefix(path, ensureTrailingPathSep(homeStrippedPath)) {
-			return true
-		}
-	}
-	return false
-}
-
-type syncInput struct {
-	session        gosn.Session
-	twn            tagsWithNotes
-	home           string
-	paths, exclude []string
-	debug          bool
-}
-
-type syncOutput struct {
-	noPushed, noPulled int
-	msg                string
+type SyncOutput struct {
+	NoPushed, NoPulled int
+	Msg                string
 }
 
 func sync(in syncInput) (out syncOutput, err error) {
@@ -161,4 +126,39 @@ func sync(in syncInput) (out syncOutput, err error) {
 	out.msg = fmt.Sprint(columnize.SimpleFormat(res))
 
 	return out, err
+}
+
+type syncInput struct {
+	session        gosn.Session
+	twn            tagsWithNotes
+	home           string
+	paths, exclude []string
+	debug          bool
+}
+
+type syncOutput struct {
+	noPushed, noPulled int
+	msg                string
+}
+
+func ensureTrailingPathSep(in string) string {
+	if strings.HasSuffix(in, string(os.PathSeparator)) {
+		return in
+	}
+	return in + string(os.PathSeparator)
+}
+
+func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
+	for _, pte := range pathsToExclude {
+		homeStrippedPath := stripHome(pte, home)
+		// return match if Paths match exactly
+		if homeStrippedPath == path {
+			return true
+		}
+		// return match if pte is a parent of the path
+		if strings.HasPrefix(path, ensureTrailingPathSep(homeStrippedPath)) {
+			return true
+		}
+	}
+	return false
 }

@@ -77,13 +77,6 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	return len(notesToRemove), len(emptyTags), notTracked, msg, err
 }
 
-func stripTrailingSlash(in string) string {
-	if strings.HasSuffix(in, "/") {
-		return in[:len(in)-1]
-	}
-	return in
-}
-
 func remove(session gosn.Session, items gosn.Items, debug bool) (err error) {
 	var itemsToRemove gosn.Items
 	for _, item := range items {
@@ -100,4 +93,11 @@ func remove(session gosn.Session, items gosn.Items, debug bool) (err error) {
 	}
 	debugPrint(debug, fmt.Sprintf("remove | items put: %d", len(pio.ResponseBody.SavedItems)))
 	return err
+}
+
+func stripTrailingSlash(in string) string {
+	if strings.HasSuffix(in, "/") {
+		return in[:len(in)-1]
+	}
+	return in
 }

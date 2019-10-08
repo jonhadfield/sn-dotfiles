@@ -30,6 +30,16 @@ func Diff(session gosn.Session, home string, paths []string, debug bool) (diffs 
 	return diff(remote, home, paths, debug)
 }
 
+type ItemDiff struct {
+	tagTitle    string
+	noteTitle   string
+	path        string
+	homeRelPath string
+	diff        string
+	remote      gosn.Item
+	local       string
+}
+
 func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("compare | %d remote items", len(twn)))
 	err = preflight(twn, paths)
@@ -231,14 +241,4 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 		}
 	}
 	return itemDiffs
-}
-
-type ItemDiff struct {
-	tagTitle    string
-	noteTitle   string
-	path        string
-	homeRelPath string
-	diff        string
-	remote      gosn.Item
-	local       string
 }
