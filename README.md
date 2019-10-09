@@ -39,13 +39,13 @@ sn-dotfiles session --add   # session will be stored after successful authentica
 ```
 To encrypt your session when adding:
 ```
-sn-dotfiles session --add --session-key   # either enter session key as part of command, or '.' to hide its input
+sn-dotfiles session --add --session-key   # either enter key as part of command, or '.' to hide its input
 ```
 ##### using a session
 Prefix any command with ```--use-session``` to automatically retrieve and use the session.
 If your session is encrypted, you will be prompted for the session key. To specify the key on the command line:
 ```
-sn-dotfiles --use-session --session-key <session-key> <command>
+sn-dotfiles --use-session --session-key <key> <command>
 ```
 
 [travisci-image]: https://travis-ci.org/jonhadfield/sn-dotfiles.svg?branch=master
