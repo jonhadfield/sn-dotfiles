@@ -31,8 +31,8 @@ export SN_PASSWORD=<password>
 export SN_SERVER=<https://myserver.example.com>   # optional, if running personal server
 ```
 
-#### session - macOS Keychain
-Using a session is different from storing credentials as you no longer need to authenticate. As a result, if using 2FA, you won't need to enter your token value each time.  
+#### session (macOS Keychain / Gnome Keyring)
+Using a session is different from storing credentials as you no longer need to authenticate. As a result, if using 2FA (Two Factor Authentication), you won't need to enter your token value each time.  
 ##### add session
 ```
 sn-dotfiles session --add   # session will be stored after successful authentication
@@ -82,3 +82,7 @@ $ cp bash_autocomplete /etc/bash_completion.d/sn-dotfiles
 ``
 $ sn-dotfiles <tab>
 ``
+
+## known issues
+
+- Notes moved to trash using the Standard Notes app will still be managed by sn-dotfiles until they are permanently deleted 
