@@ -272,7 +272,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			},
 			cli.StringFlag{
 				Name:     "session-key",
-				Usage:    "[optional] key to encrypt/decrypt session",
+				Usage:    "[optional] key to encrypt/decrypt session (enter '.' to hide key input)",
 				Required: false,
 			},
 		},
