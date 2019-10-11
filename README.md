@@ -4,8 +4,12 @@
 
 ## about
 
-sn-dotfiles is a command-line tool to sync dotfiles with a [Standard Notes](https://standardnotes.org/) account.  
+sn-dotfiles is a command-line tool to sync [dotfiles](https://www.thegeekyway.com/what-are-dotfiles/) with a [Standard Notes](https://standardnotes.org/) account.  
 It works by creating a tag called 'dotfiles' and then maps dotfile directories with tags and dotfiles as notes.
+
+## why?
+
+I wanted a simple way of securely storing, managing, and syncing my dotfiles across multiple machines. Standard Notes uses client-side encryption and provides numerous editors (some require [extended subscription](https://standardnotes.org/extensions)).  
 
 ## installation
 Download the latest release here: https://github.com/jonhadfield/sn-dotfiles/releases
@@ -47,6 +51,48 @@ If your session is encrypted, you will be prompted for the session key. To speci
 ```
 sn-dotfiles --use-session --session-key <key> <command>
 ```
+
+## commands
+
+### add
+example:
+```
+sn-dotfiles add /home/me/.file1 /home/me/.dir1/file2
+```
+Add will take a copy of the specified file(s) and convert the files to Notes and each path to a Tag. The above command would generate the following structure:
+```
+dotfiles           <- tag
+    - .file1       <- note 
+    - dir1         <- tag
+        - file2    <- note
+```
+
+### sync
+example:
+```
+sn-dotfiles sync --exclude /home/me/.file1
+```
+Sync will compare any dotfiles currently tracked in Standard Notes with their local equivalents and:
+- Update the filesystem dotfile if the remote was updated more recently
+- Update the remote if the filesystem dotfile is newer
+- Create any missing dotfiles and paths that exist remotely  
+
+The example command would sync the /home/me/dir1 path and the file it contains, but ignore /home/me/.file1. 
+
+### remove
+example:
+```
+sn-dotfiles remove /home/me/.dir1
+```
+Remove will recursively (if path specified) remove the remote Notes for the specified filesystem path.
+In the above example, the Note file2 and the Tag dir1 will be deleted. Remove will never change files on the filesystem.
+
+### diff
+example:
+```
+sn-dotfiles diff /home/me/.dir1
+```
+Diff will compare the filesystem with the remote and then use the diff tool to generate a list of differences.
 
 [travisci-image]: https://travis-ci.org/jonhadfield/sn-dotfiles.svg?branch=master
 [travisci-url]: https://travis-ci.org/jonhadfield/sn-dotfiles
