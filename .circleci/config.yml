@@ -29,9 +29,8 @@ workflows:
     jobs:
       - build:
           filters:
-            branches:
-              ignore:
-                - develop
+            tags:
+              only: /.*/
       - release:
           requires:
             - build
