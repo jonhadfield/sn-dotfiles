@@ -18,7 +18,7 @@ Download the latest release here: https://github.com/jonhadfield/sn-dotfiles/rel
 
 Install:  
 ``
-$ install <downloaded binary> /usr/local/bin/sn-dotfiles
+$ sudo install <downloaded binary> /usr/local/bin/sn-dotfiles
 ``  
 
 ## running
