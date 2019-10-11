@@ -27,10 +27,7 @@ workflows:
   version: 2
   build-release:
     jobs:
-      - build:
-          filters:
-            tags:
-              only: /.*/
+      - build
       - release:
           requires:
             - build
