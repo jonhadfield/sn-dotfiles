@@ -17,7 +17,7 @@ I wanted a simple way of securely storing, managing, and syncing my dotfiles acr
 
 ```
 $ curl -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_darwin_amd64  
-$ install ./sn-dotfiles_darwin_amd64 /usr/local/bin/sn-dotfiles && ./sn-dotfiles_darwin_amd64
+$ install ./sn-dotfiles_darwin_amd64 /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles_darwin_amd64
 ```
 
 ### Linux
