@@ -12,18 +12,24 @@ It works by creating a tag called 'dotfiles' and then maps dotfile directories w
 I wanted a simple way of securely storing, managing, and syncing my dotfiles across multiple machines. Standard Notes uses client-side encryption and provides numerous editors (some require [extended subscription](https://standardnotes.org/extensions)).  
 
 ## installation
-Download the latest release here: https://github.com/jonhadfield/sn-dotfiles/releases
 
-#### macOS and Linux
+### macOS
 
-Install:  
-``
-$ sudo install <downloaded binary> /usr/local/bin/sn-dotfiles
-``  
+```
+$ curl -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_darwin_amd64  
+$ install ./sn-dotfiles_darwin_amd64 /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles_darwin_amd64
+```
+
+### Linux
+
+```
+$ curl -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_linux_amd64  
+$ sudo install ./sn-dotfiles_linux_amd64 /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles_linux_amd64
+``` 
 
 ## running
 
-### credentials
+### authentication
 
 By default, your credentials will be requested every time, but you can store them using either environment variables or, on MacOS and Linux, store your session using the native Keychain application.
 
