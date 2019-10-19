@@ -27,7 +27,10 @@ workflows:
   version: 2
   build-release:
     jobs:
-      - build
+      - build:
+          filters:  # required since `release` has tag filters AND requires `build`
+            tags:
+              only: /.*/
       - release:
           requires:
             - build
@@ -35,4 +38,4 @@ workflows:
             tags:
               only: /^v?(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)/
             branches:
-              only: master
+              ignore: /.*/
