@@ -102,14 +102,6 @@ func TestStatus(t *testing.T) {
 }
 
 func TestStatus1(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
-	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
-		}
-	}()
 	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
@@ -119,17 +111,18 @@ func TestStatus1(t *testing.T) {
 	fwc[awsConfig] = "aws config content"
 
 	assert.NoError(t, createTemporaryFiles(fwc))
-	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, awsConfig}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 2)
-	assert.Len(t, ao.PathsExisting, 0)
-	assert.Len(t, ao.PathsInvalid, 0)
-	var diffs []ItemDiff
 
-	diffs, _, err = Status(session, home, []string{gitConfigPath}, true)
+	dotfilesTag := createTag("dotfiles")
+	gitconfigNote := createNote(".gitconfig", "git config content")
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Items{gitconfigNote}}
+
+	awsTag := createTag("dotfiles.aws")
+	awsConfigNote := createNote("config", "aws config content")
+	awsTagWithNotes := tagWithNotes{tag: awsTag, notes: gosn.Items{awsConfigNote}}
+
+	twn := tagsWithNotes{dotfilesTagWithNote, awsTagWithNotes}
+
+	diffs, _, err := status(twn, home, []string{gitConfigPath}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, ".gitconfig", diffs[0].noteTitle)
