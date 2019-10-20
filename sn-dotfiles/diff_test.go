@@ -50,6 +50,21 @@ func testCompareSetup1and2(home string) (twn tagsWithNotes, fwc map[string]strin
 	return
 }
 
+func TestTagExists(t *testing.T) {
+	tag1Content := gosn.NewTagContent()
+	tag1Content.Title = "rod"
+	tag1 := gosn.NewTag()
+	tag1.Content = tag1Content
+	twn := tagsWithNotes{
+		tagWithNotes{
+			tag:   *tag1,
+			notes: nil,
+		},
+	}
+	assert.False(t, tagExists("jane", twn))
+	assert.True(t, tagExists("rod", twn))
+}
+
 func TestDiff(t *testing.T) {
 	home := getTemporaryHome()
 	twn, fwc := testCompareSetup1and2(home)

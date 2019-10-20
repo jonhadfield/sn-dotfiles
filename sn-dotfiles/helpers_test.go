@@ -188,3 +188,10 @@ func TestNoteWithTagExists(t *testing.T) {
 	}
 	assert.Equal(t, 1, noteWithTagExists("fruit", "apple", twn))
 }
+
+func TestPushNoItems(t *testing.T) {
+	pio, err := push(gosn.Session{}, []ItemDiff{})
+	assert.Equal(t, pio, gosn.PutItemsOutput{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no items")
+}
