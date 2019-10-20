@@ -28,7 +28,7 @@ func TestStatusInvalidSession(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func testStatusSetup(home string) (twn tagsWithNotes) {
+func testStatusSetup() (twn tagsWithNotes) {
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
 	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Items{gitconfigNote}}
@@ -65,7 +65,7 @@ func TestStatus(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 
-	twn := testStatusSetup(home)
+	twn := testStatusSetup()
 
 	var diffs []ItemDiff
 	var err error
@@ -131,14 +131,7 @@ func TestStatus1(t *testing.T) {
 }
 
 func TestStatus2(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
-	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
-		}
-	}()
+
 	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
@@ -151,22 +144,33 @@ func TestStatus2(t *testing.T) {
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 4)
-	assert.Len(t, ao.PathsExisting, 0)
-	assert.Len(t, ao.PathsInvalid, 0)
-	var diffs []ItemDiff
+
+	dotfilesTag := createTag("dotfiles")
+	gitconfigNote := createNote(".gitconfig", "git config content")
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Items{gitconfigNote}}
+
+	fruitTag := createTag("dotfiles.fruit")
+	fruitBananaTag := createTag("dotfiles.fruit.banana")
+	appleNote := createNote("apple", "apple content")
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
+
+	yellowNote := createNote("yellow", "yellow content")
+	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Items{yellowNote}}
+
+	premiumNote := createNote("premium", "premium content")
+	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
+	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Items{premiumNote}}
+
+	twn := tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
+
+	var err error
 
 	// delete apple so that a local item is missing
 	err = os.Remove(applePath)
 	assert.NoError(t, err)
 
 	// update yellow content
-	// wait 2 seconds so that update time comparison doesn't fail due to formats
+	// wait so that update time comparison doesn't fail due to formats
 	time.Sleep(2 * time.Second)
 	d1 := []byte("new yellow content")
 	assert.NoError(t, ioutil.WriteFile(yellowPath, d1, 0644))
@@ -176,10 +180,15 @@ func TestStatus2(t *testing.T) {
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
 	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
 	// pause so that remote updated time newer
-	time.Sleep(10 * time.Second)
+	time.Sleep(2 * time.Second)
 	// update premium remote to trigger remote newer condition
-	assert.NoError(t, updateRemoteNote(session, "premium", "new content"))
-	diffs, _, err = Status(session, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, true)
+	newPremiumNote := createNote("premium", "new content")
+	newCarsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Items{newPremiumNote}}
+	twn = tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, newCarsMercedesA250TagWithNotes}
+
+	var diffs []ItemDiff
+
+	diffs, _, err = status(twn, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
 	var pDiff int
@@ -212,33 +221,4 @@ func TestStatus2(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 4, pDiff)
-}
-
-func updateRemoteNote(session gosn.Session, noteTitle, newContent string) error {
-	gii := gosn.GetItemsInput{Session: session}
-	gio, err := gosn.GetItems(gii)
-	if err != nil {
-		return err
-	}
-	eItems := gio.Items
-	eItems.DeDupe()
-	var items gosn.Items
-	items, err = eItems.DecryptAndParse(session.Mk, session.Ak)
-	if err != nil {
-		return err
-	}
-	var uItem gosn.Item
-	for i := range items {
-		if items[i].ContentType == "Note" && items[i].Content.GetTitle() == noteTitle {
-			items[i].Content.SetText(newContent)
-			uItem = items[i]
-			break
-		}
-	}
-	nItems := gosn.Items{uItem}
-	var eNItems gosn.EncryptedItems
-	eNItems, err = nItems.Encrypt(session.Mk, session.Ak)
-	pii := gosn.PutItemsInput{Session: session, Items: eNItems}
-	_, err = gosn.PutItems(pii)
-	return err
 }
