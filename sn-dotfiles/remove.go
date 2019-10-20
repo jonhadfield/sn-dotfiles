@@ -23,6 +23,7 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	yellow := color.New(color.FgYellow).SprintFunc()
 	bold := color.New(color.Bold).SprintFunc()
 	tagsWithNotes, err := get(session)
+
 	if err != nil {
 		return
 	}
@@ -33,11 +34,15 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	}
 
 	var results []string
+
 	var notesToRemove gosn.Items
+
 	for _, path := range paths {
 		homeRelPath, matchingItems := getItemsToRemove(path, home, tagsWithNotes)
 		boldHomeRelPath := bold(stripTrailingSlash(homeRelPath))
+
 		debugPrint(debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
+
 		switch {
 		case len(matchingItems) == 0:
 			results = append(results, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("not tracked")))
@@ -46,7 +51,6 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 			results = append(results, fmt.Sprintf("%s | %s", boldHomeRelPath, green("removed")))
 			notesToRemove = append(notesToRemove, matchingItems...)
 		case len(matchingItems) > 1:
-			// TODO: consider displaying additional items to user, rather than just a number
 			results = append(results, fmt.Sprintf("%s (%d instances) | %s", boldHomeRelPath, len(matchingItems), green("removed")))
 			notesToRemove = append(notesToRemove, matchingItems...)
 		}
@@ -73,25 +77,33 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	if err = remove(session, itemsToRemove, debug); err != nil {
 		return
 	}
+
 	msg = fmt.Sprint(columnize.SimpleFormat(results))
+
 	return len(notesToRemove), len(emptyTags), notTracked, msg, err
 }
 
 func remove(session gosn.Session, items gosn.Items, debug bool) (err error) {
 	var itemsToRemove gosn.Items
+
 	for _, item := range items {
 		item.Deleted = true
 		itemsToRemove = append(itemsToRemove, item)
 	}
+
 	if itemsToRemove == nil {
 		return fmt.Errorf("no items to remove")
 	}
+
 	var pio gosn.PutItemsOutput
+
 	pio, err = putItems(session, itemsToRemove)
 	if err != nil {
 		return
 	}
+
 	debugPrint(debug, fmt.Sprintf("remove | items put: %d", len(pio.ResponseBody.SavedItems)))
+
 	return err
 }
 
@@ -99,5 +111,6 @@ func stripTrailingSlash(in string) string {
 	if strings.HasSuffix(in, "/") {
 		return in[:len(in)-1]
 	}
+
 	return in
 }

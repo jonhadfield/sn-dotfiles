@@ -23,6 +23,7 @@ func addDot(in string) string {
 	if !strings.HasPrefix(in, ".") {
 		return fmt.Sprintf(".%s", in)
 	}
+
 	return in
 }
 
@@ -30,6 +31,7 @@ func stripDot(in string) string {
 	if strings.HasPrefix(in, ".") {
 		return in[1:]
 	}
+
 	return in
 }
 
@@ -37,6 +39,7 @@ func localExists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
+
 	return true
 }
 
@@ -44,6 +47,7 @@ func stripHome(in, home string) string {
 	if home != "" && strings.HasPrefix(in, home) {
 		return in[len(home)+1:]
 	}
+
 	return in
 }
 
@@ -52,6 +56,7 @@ func push(session gosn.Session, itemDiffs []ItemDiff) (pio gosn.PutItemsOutput, 
 	for _, i := range itemDiffs {
 		dItems = append(dItems, i.remote)
 	}
+
 	if dItems == nil {
 		err = errors.New("no items to push")
 		return
@@ -66,11 +71,13 @@ func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Item, found bool) 
 			return x.tag, true
 		}
 	}
+
 	return tag, false
 }
 
 func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newTags gosn.Items, err error) {
 	var fts []string
+
 	ts := strings.Split(pt, ".")
 	for x, t := range ts {
 		switch {
@@ -84,7 +91,9 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newT
 			fts = append(fts, a)
 		}
 	}
+
 	itemsToPush := gosn.Items{}
+
 	for _, f := range fts {
 		_, found := getTagIfExists(f, twn)
 		if !found {
@@ -93,23 +102,28 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newT
 	}
 
 	var pio gosn.PutItemsOutput
+
 	pio, err = putItems(session, itemsToPush)
 	if err != nil {
 		return
 	}
+
 	created := pio.ResponseBody.SavedItems
 	created.DeDupe()
+
 	return created.DecryptAndParse(session.Mk, session.Ak)
 }
 
 func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes) (tagsPushed, notesPushed int, err error) {
 	// create missing tags first to create a new tim
 	itemsToPush := gosn.Items{}
+
 	for potentialTag, notes := range tim {
 		existingTag, found := getTagIfExists(potentialTag, twn)
 		if found {
 			// if tag exists then just add references to the note
 			var newReferences gosn.ItemReferences
+
 			for _, note := range notes {
 				itemsToPush = append(itemsToPush, note)
 				newReferences = append(newReferences, gosn.ItemReference{
@@ -117,6 +131,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 					ContentType: "Note",
 				})
 			}
+
 			existingTag.Content.UpsertReferences(newReferences)
 			itemsToPush = append(itemsToPush, existingTag)
 		} else {
@@ -155,6 +170,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 
 	_, err = putItems(session, itemsToPush)
 	tagsPushed, notesPushed = getItemCounts(itemsToPush)
+
 	return tagsPushed, notesPushed, err
 }
 
@@ -163,10 +179,12 @@ func getItemCounts(items gosn.Items) (tags, notes int) {
 		if item.ContentType == "Note" {
 			notes++
 		}
+
 		if item.ContentType == "Tag" {
 			tags++
 		}
 	}
+
 	return
 }
 
@@ -176,6 +194,7 @@ func createTag(name string) (tag gosn.Item) {
 	dfTagContent.Title = name
 	tag.Content = dfTagContent
 	tag.UUID = gosn.GenUUID()
+
 	return
 }
 
@@ -190,27 +209,32 @@ func pull(itemDiffs []ItemDiff) error {
 		if err != nil {
 			return err
 		}
+
 		_, err = f.WriteString(item.remote.Content.GetText())
 		if err != nil {
 			f.Close()
 			return err
 		}
 	}
+
 	return nil
 }
 
 func getPathType(path string) (res string, err error) {
 	var stat os.FileInfo
+
 	stat, err = os.Stat(path)
 	if err != nil {
 		return
 	}
+
 	switch mode := stat.Mode(); {
 	case mode.IsDir():
 		res = "dir"
 	case mode.IsRegular():
 		res = "file"
 	}
+
 	return
 }
 
@@ -220,6 +244,7 @@ func itemInItems(item gosn.Item, items gosn.Items) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -245,6 +270,7 @@ func getAllTagsWithoutNotes(twn tagsWithNotes, deletedNotes gosn.Items) (tagsWit
 			tagsWithoutNotes = append(tagsWithoutNotes, tn)
 		}
 	}
+
 	return
 }
 
@@ -254,6 +280,7 @@ func removeStringFromSlice(item string, slice []string) (updatedSlice []string) 
 			updatedSlice = append(updatedSlice, slice[i])
 		}
 	}
+
 	return
 }
 
@@ -264,14 +291,17 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 	allTagsChildMap := make(map[string][]string)
 
 	var tagsToRemove []string
+
 	var allDotfileChildTags []string
 	// for each tag, the last item is the child
 	for _, atwn := range twn {
 		if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") {
 			allDotfileChildTags = append(allDotfileChildTags, atwn.tag.Content.GetTitle())
 		}
+
 		tagTitle := atwn.tag.Content.GetTitle()
 		splitTag := strings.Split(tagTitle, ".")
+
 		if strings.Contains(tagTitle, ".") {
 			firstPart := splitTag[:len(splitTag)-1]
 			lastPart := splitTag[len(splitTag)-1:]
@@ -282,6 +312,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 	// remove tags without notes and without children
 	for {
 		var changeMade bool
+
 		for k, v := range allTagsChildMap {
 			for _, i := range v {
 				completeTag := k + "." + i
@@ -296,6 +327,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 				}
 			}
 		}
+
 		if !changeMade {
 			break
 		}
@@ -315,7 +347,9 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 		tagsToRemove = append(tagsToRemove, DotFilesTag)
 		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", DotFilesTag))
 	}
+
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | total to remove: %d", len(tagsToRemove)))
+
 	return tagTitlesToTags(tagsToRemove, twn)
 }
 
@@ -325,6 +359,7 @@ func tagTitlesToTags(tagTitles []string, twn tagsWithNotes) (res gosn.Items) {
 			res = append(res, t.tag)
 		}
 	}
+
 	return
 }
 
@@ -333,16 +368,18 @@ func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 	if err != nil {
 		return
 	}
+
 	var isDir bool
 	if pathType == "dir" {
 		isDir = true
 	}
-	homeRelPath = stripHome(path, home)
 
+	homeRelPath = stripHome(path, home)
 	remoteEquiv := homeRelPath
 
 	// get item tags from remoteEquiv by stripping <DotFilesTag> and filename from remoteEquiv
 	var noteTag, noteTitle string
+
 	if !isDir {
 		// split between tag and title if remote equivalent doesn't contain slash
 		if strings.Contains(remoteEquiv, string(os.PathSeparator)) {
@@ -353,6 +390,7 @@ func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 			noteTag = DotFilesTag
 			noteTitle = remoteEquiv
 		}
+
 		for _, t := range twn {
 			if t.tag.Content.GetTitle() == noteTag {
 				for _, note := range t.notes {
@@ -386,6 +424,7 @@ func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 	if res != nil {
 		res.DeDupe()
 	}
+
 	return homeRelPath, res
 }
 
@@ -399,15 +438,18 @@ func noteWithTagExists(tag, name string, twn tagsWithNotes) (count int) {
 			}
 		}
 	}
+
 	return count
 }
 
 func isSymlink(path string) (res bool, err error) {
 	var f os.FileInfo
 	f, err = os.Lstat(path)
+
 	if err != nil {
 		return
 	}
+
 	return f.Mode()&os.ModeSymlink != 0, err
 }
 
@@ -415,15 +457,20 @@ func dedupe(in []string) []string {
 	if len(in) == 0 {
 		return []string{}
 	}
+
 	sort.Strings(in)
+
 	j := 0
+
 	for i := 1; i < len(in); i++ {
 		if in[j] == in[i] {
 			continue
 		}
 		j++
+
 		in[j] = in[i]
 	}
+
 	return in[:j+1]
 }
 
@@ -432,19 +479,24 @@ func tagTitleToFSDIR(title, home string) (path string, isHome bool, err error) {
 		err = errors.New("tag title required")
 		return
 	}
+
 	if home == "" {
 		err = errors.New("home directory required")
 		return
 	}
+
 	if !strings.HasPrefix(title, DotFilesTag) {
 		return
 	}
+
 	if title == DotFilesTag {
 		return home + string(os.PathSeparator), true, nil
 	}
+
 	a := title[len(DotFilesTag)+1:]
 	b := strings.ReplaceAll(a, ".", string(os.PathSeparator))
 	c := addDot(b)
+
 	return home + string(os.PathSeparator) + c + string(os.PathSeparator), false, err
 }
 
@@ -456,6 +508,7 @@ func pathToTag(homeRelPath string) string {
 	if strings.HasSuffix(r, ".") {
 		return r[:len(r)-1]
 	}
+
 	return r
 }
 
@@ -464,6 +517,7 @@ func isUnencryptedSession(in string) bool {
 	if len(strings.Split(in, ";")) == 5 && re.MatchString(strings.Split(in, ";")[0]) {
 		return true
 	}
+
 	return false
 }
 
@@ -472,6 +526,7 @@ func ParseSessionString(in string) (email string, session gosn.Session, err erro
 		err = errors.New("session invalid, or encrypted and key was not provided")
 		return
 	}
+
 	parts := strings.Split(in, ";")
 	email = parts[0]
 	session = gosn.Session{
@@ -480,6 +535,7 @@ func ParseSessionString(in string) (email string, session gosn.Session, err erro
 		Ak:     parts[3],
 		Server: parts[1],
 	}
+
 	return
 }
 
@@ -491,18 +547,22 @@ func StringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func putItems(session gosn.Session, items gosn.Items) (pio gosn.PutItemsOutput, err error) {
 	var encItemsToPut gosn.EncryptedItems
+
 	encItemsToPut, err = items.Encrypt(session.Mk, session.Ak)
 	if err != nil {
 		return pio, fmt.Errorf("failed to encrypt items to put: %v", err)
 	}
+
 	pii := gosn.PutItemsInput{
 		Items:   encItemsToPut,
 		Session: session,
 	}
+
 	return gosn.PutItems(pii)
 }

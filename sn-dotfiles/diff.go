@@ -27,6 +27,7 @@ func Diff(session gosn.Session, home string, paths []string, debug bool) (diffs 
 	if err != nil {
 		return diffs, msg, err
 	}
+
 	return diff(remote, home, paths, debug)
 }
 
@@ -42,14 +43,17 @@ type ItemDiff struct {
 
 func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("compare | %d remote items", len(twn)))
+
 	err = preflight(twn, paths)
 	if err != nil {
 		return
 	}
+
 	if len(twn) == 0 {
 		msg = "no dotfiles being tracked"
 		return
 	}
+
 	if len(paths) == 0 {
 		debugPrint(debug, fmt.Sprint("diff | calling compare without any Paths"))
 	} else {
@@ -60,10 +64,13 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 	if err != nil {
 		return diffs, msg, err
 	}
+
 	debugPrint(debug, fmt.Sprintf("compare | %d diffs generated", len(diffs)))
+
 	if len(diffs) == 0 {
 		return diffs, msg, err
 	}
+
 	diffBinary := findexec.Find("diff", "")
 	if diffBinary == "" {
 		err = errors.New("failed to find compare binary")
@@ -85,50 +92,61 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 	if !differencesFound {
 		fmt.Println("no differences found")
 	}
+
 	return diffs, msg, err
 }
 
 func processContentDiffs(diffs []ItemDiff, tempDir, diffBinary string) (differencesFound bool, err error) {
 	for _, diff := range diffs {
 		localContent := diff.local
+
 		remoteContent := diff.remote.Content.GetText()
 		if localContent != remoteContent {
 			differencesFound = true
 			// write local and remote content to temporary files
 			var f1, f2 *os.File
+
 			uuid := gosn.GenUUID()
 			f1path := fmt.Sprintf("%ssn-dotfiles-compare-%s-f1", tempDir, uuid)
 			f2path := fmt.Sprintf("%ssn-dotfiles-compare-%s-f2", tempDir, uuid)
+
 			f1, err = os.Create(f1path)
 			if err != nil {
 				return
 			}
+
 			f2, err = os.Create(f2path)
 			if err != nil {
 				return
 			}
+
 			if _, err = f1.WriteString(diff.local); err != nil {
 				return
 			}
+
 			if _, err = f2.WriteString(diff.remote.Content.GetText()); err != nil {
 				return
 			}
+
 			cmd := exec.Command(diffBinary, f1path, f2path)
 			out, oErr := cmd.CombinedOutput()
 
 			if err = os.Remove(f1path); err != nil {
 				return
 			}
+
 			if err = os.Remove(f2path); err != nil {
 				return
 			}
 
 			var exitCode int
+
 			if oErr != nil {
 				if exitError, ok := oErr.(*exec.ExitError); ok {
 					exitCode = exitError.ExitCode()
 				}
 			}
+
 			if exitCode == 2 {
 				panic(fmt.Sprintf("failed to compare: '%s' with '%s'", f1path, f2path))
 			}
@@ -138,6 +156,7 @@ func processContentDiffs(diffs []ItemDiff, tempDir, diffBinary string) (differen
 			fmt.Println(string(out))
 		}
 	}
+
 	return differencesFound, err
 }
 
@@ -147,10 +166,12 @@ func pathIsPrefixOfPaths(path string, paths []string) bool {
 		if inSliceDIR == "" {
 			continue
 		}
+
 		if path == inSliceDIR || strings.HasPrefix(path, inSliceDIR) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -158,22 +179,27 @@ func noteInPaths(note string, paths []string) bool {
 	if note == "" || len(paths) == 0 {
 		return false
 	}
+
 	for i := range paths {
 		if paths[i] == "" {
 			continue
 		}
+
 		if note == paths[i] {
 			return true
 		}
+
 		d, _ := filepath.Split(note)
 		if d == paths[i] {
 			return true
 		}
+
 		rel, err := filepath.Rel(paths[i], note)
 		if err == nil && !strings.HasPrefix(rel, "../") {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -183,6 +209,7 @@ func checkPathsExist(paths []string) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -192,6 +219,7 @@ func tagExists(title string, twn tagsWithNotes) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -199,11 +227,14 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 	// if path is directory, then walk to generate list of additional Paths
 	for _, path := range paths {
 		debugPrint(debug, fmt.Sprintf("compare | diffing path: %s", stripHome(path, home)))
+
 		if StringInSlice(path, existingRemoteEquivalentPaths, true) {
 			continue
 		}
+
 		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 			debugPrint(debug, fmt.Sprintf("compare | walking path: %s", path))
+
 			err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 				// don't check tracked Paths
 				if StringInSlice(p, existingRemoteEquivalentPaths, true) {
@@ -240,5 +271,6 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 			})
 		}
 	}
+
 	return itemDiffs
 }

@@ -26,6 +26,7 @@ func compare(remote tagsWithNotes, home string, paths, exclude []string, debug b
 	}
 
 	var itemDiffs []ItemDiff
+
 	var remotePaths []string
 	// check remotes against local filesystem
 	itemDiffs, remotePaths, err = compareRemoteWithLocalFS(remote, paths, home, debug)
@@ -38,6 +39,7 @@ func compare(remote tagsWithNotes, home string, paths, exclude []string, debug b
 	if len(paths) > 0 {
 		itemDiffs = append(itemDiffs, findUntracked(paths, remotePaths, home, debug)...)
 	}
+
 	return itemDiffs, err
 }
 
@@ -49,11 +51,14 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 	for _, twn := range remote {
 		// only do a compare if path equals translated tag
 		tagTitle := twn.tag.Content.GetTitle()
+
 		var dir string
+
 		dir, _, err = tagTitleToFSDIR(twn.tag.Content.GetTitle(), home)
 		if err != nil {
 			return
 		}
+
 		debugPrint(debug, fmt.Sprintf("compare | tag title: %s is path: <Home>/%s", tagTitle, stripHome(dir, home)))
 		// if Paths were supplied, then check the determined dir is a prefix of one of those
 		if len(paths) > 0 && !pathIsPrefixOfPaths(dir, paths) {
@@ -68,10 +73,12 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 			if len(paths) > 0 && !noteInPaths(dir+d.Content.GetTitle(), paths) {
 				continue
 			}
+
 			if !localExists(fullPath) {
 				// local path matching tag+note doesn't exist so set as 'local missing'
 				debugPrint(debug, fmt.Sprintf("compare | local not found: <Home>/%s", stripHome(fullPath, home)))
 				homeRelPath := stripHome(fullPath, home)
+
 				itemDiffs = append(itemDiffs, ItemDiff{
 					tagTitle:    tagTitle,
 					homeRelPath: homeRelPath,
@@ -88,39 +95,49 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 			}
 		}
 	}
+
 	return itemDiffs, remotePaths, err
 }
 
 func compareNoteWithFile(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff {
 	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <Home>/%s", tagTitle, stripHome(path, home)))
+
 	localStat, err := os.Stat(path)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() {
 		if err := file.Close(); err != nil {
 			fmt.Println("failed to close file:", path)
 		}
 	}()
+
 	localBytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	homeRelPath := stripHome(path, home)
+
 	localStr := string(localBytes)
 	if localStr != remote.Content.GetText() {
 		var remoteUpdated time.Time
+
 		remoteUpdated, err = time.Parse("2006-01-02T15:04:05.000Z", remote.UpdatedAt)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | remote updated UTC): %v", remoteUpdated.UTC()))
 		// if content different and local file was updated more recently
 		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | local updated UTC): %v", localStat.ModTime().UTC().Format("2006-01-02T15:04:05.000Z")))
+
 		if localStat.ModTime().UTC().After(remoteUpdated.UTC()) || localStat.ModTime().UTC() == remoteUpdated.UTC() {
 			return ItemDiff{
 				tagTitle:    tagTitle,

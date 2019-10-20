@@ -18,18 +18,23 @@ func Sync(in SyncInput) (out SyncOutput, err error) {
 	if err = checkPathsExist(in.Exclude); err != nil {
 		return
 	}
+
 	var remote tagsWithNotes
+
 	remote, err = get(in.Session)
 	if err != nil {
 		return
 	}
+
 	err = preflight(remote, in.Paths)
 	if err != nil {
 		return
 	}
+
 	var sOut syncOutput
 	sOut, err = sync(syncInput{session: in.Session, twn: remote, home: in.Home, paths: in.Paths,
 		exclude: in.Exclude, debug: in.Debug})
+
 	return SyncOutput{
 		NoPushed: sOut.noPushed,
 		NoPulled: sOut.noPulled,
@@ -50,16 +55,20 @@ type SyncOutput struct {
 
 func sync(in syncInput) (out syncOutput, err error) {
 	var itemDiffs []ItemDiff
+
 	itemDiffs, err = compare(in.twn, in.home, in.paths, in.exclude, in.debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
 		}
+
 		return
 	}
 
 	var itemsToPush, itemsToPull []ItemDiff
+
 	var itemsToSync bool
+
 	for _, itemDiff := range itemDiffs {
 		// check if itemDiff is for a path to be excluded
 		if matchesPathsToExclude(in.home, itemDiff.homeRelPath, in.exclude) {
@@ -86,6 +95,7 @@ func sync(in syncInput) (out syncOutput, err error) {
 			itemsToSync = true
 		}
 	}
+
 	bold := color.New(color.Bold).SprintFunc()
 
 	// check items to sync
@@ -98,6 +108,7 @@ func sync(in syncInput) (out syncOutput, err error) {
 	if len(itemsToPush) > 0 {
 		_, err = push(in.session, itemsToPush)
 		out.noPushed = len(itemsToPush)
+
 		if err != nil {
 			return
 		}
@@ -117,12 +128,14 @@ func sync(in syncInput) (out syncOutput, err error) {
 	if err = pull(itemsToPull); err != nil {
 		return
 	}
+
 	out.noPulled = len(itemsToPull)
 
 	for _, pullItem := range itemsToPull {
 		line := fmt.Sprintf("%s | %s\n", bold(addDot(pullItem.homeRelPath)), strPulled)
 		res = append(res, line)
 	}
+
 	out.msg = fmt.Sprint(columnize.SimpleFormat(res))
 
 	return out, err
@@ -145,6 +158,7 @@ func ensureTrailingPathSep(in string) string {
 	if strings.HasSuffix(in, string(os.PathSeparator)) {
 		return in
 	}
+
 	return in + string(os.PathSeparator)
 }
 
@@ -160,5 +174,6 @@ func matchesPathsToExclude(home, path string, pathsToExclude []string) bool {
 			return true
 		}
 	}
+
 	return false
 }

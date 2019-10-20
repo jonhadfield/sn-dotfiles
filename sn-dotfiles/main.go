@@ -22,32 +22,43 @@ func get(session gosn.Session) (t tagsWithNotes, err error) {
 		Session:  session,
 		PageSize: 500,
 	}
+
 	var output gosn.GetItemsOutput
 	output, err = gosn.GetItems(getItemsInput)
+
 	if err != nil {
 		return t, err
 	}
+
 	output.Items.DeDupe()
+
 	var dItems gosn.DecryptedItems
 	dItems, err = output.Items.Decrypt(session.Mk, session.Ak)
+
 	if err != nil {
 		return
 	}
+
 	var items gosn.Items
+
 	items, err = dItems.Parse()
 	if err != nil {
 		return
 	}
 	// get all dotfile Tags and notes
+
 	var dotfileTags gosn.Items
+
 	var notes gosn.Items
 
 	rStr := fmt.Sprintf("%s.?.*", DotFilesTag)
 	r := regexp.MustCompile(rStr)
+
 	for _, item := range items {
 		if item.ContentType == "Tag" && item.Content != nil && r.MatchString(item.Content.GetTitle()) {
 			dotfileTags = append(dotfileTags, item)
 		}
+
 		if item.ContentType == "Note" && item.Content != nil {
 			notes = append(notes, item)
 		}
@@ -57,13 +68,16 @@ func get(session gosn.Session) (t tagsWithNotes, err error) {
 		twn := tagWithNotes{
 			tag: dotfileTag,
 		}
+
 		for _, note := range notes {
 			if StringInSlice(note.UUID, getItemNoteRefIds(dotfileTag.Content.References()), false) {
 				twn.notes = append(twn.notes, note)
 			}
 		}
+
 		t = append(t, twn)
 	}
+
 	return t, err
 }
 
@@ -73,6 +87,7 @@ func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 			refIds = append(refIds, ir.UUID)
 		}
 	}
+
 	return refIds
 }
 

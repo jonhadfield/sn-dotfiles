@@ -2,10 +2,11 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/ryanuber/columnize"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/ryanuber/columnize"
 
 	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn"
@@ -22,6 +23,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	}
 
 	var twn tagsWithNotes
+
 	twn, err = get(ai.Session)
 	if err != nil {
 		return
@@ -34,6 +36,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	}
 
 	var tagToItemMap map[string]gosn.Items
+
 	var fsPathsToAdd []string
 
 	// generate list of Paths to add
@@ -43,6 +46,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	}
 
 	var statusLines []string
+
 	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, err = generateTagItemMap(fsPathsToAdd, ai.Home, twn)
 	if err != nil {
 		return
@@ -52,6 +56,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
 	if !tagExists("dotfiles", twn) && !dotFilesTagInTagToItemMap {
 		debugPrint(ai.Debug, "Add | adding missing dotfiles tag")
+
 		tagToItemMap[DotFilesTag] = gosn.Items{}
 	}
 
@@ -62,6 +67,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	if err != nil {
 		return
 	}
+
 	ao.Msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
 	return ao, err
@@ -86,7 +92,9 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	yellow := color.New(color.FgYellow).SprintFunc()
 	bold := color.New(color.Bold).SprintFunc()
 	added := make([]string, len(fsPaths))
+
 	var existing []string
+
 	for i, path := range fsPaths {
 		dir, filename := filepath.Split(path)
 		homeRelPath := stripHome(dir+filename, home)
@@ -100,6 +108,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 		if existingCount == 1 {
 			existing = append(existing, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("already tracked")))
 			pathsExisting = append(pathsExisting, path)
+
 			continue
 		} else if existingCount > 1 {
 			err = fmt.Errorf("duplicate items found with name '%s' and tag '%s'", filename, remoteTagTitle)
@@ -109,14 +118,18 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 		pathsAdded = append(pathsAdded, path)
 
 		var itemToAdd gosn.Item
+
 		itemToAdd, err = createItem(path, filename)
 		if err != nil {
 			return
 		}
+
 		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
 		added[i] = fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked"))
 	}
+
 	statusLines = append(statusLines, existing...)
+
 	statusLines = append(statusLines, added...)
 
 	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
@@ -149,6 +162,7 @@ func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {
 	}
 	// dedupe
 	finalPaths = dedupe(finalPaths)
+
 	return
 }
 
@@ -158,16 +172,20 @@ func createItem(path, title string) (item gosn.Item, err error) {
 	if err != nil {
 		return
 	}
+
 	defer func() {
 		if err := file.Close(); err != nil {
 			fmt.Println("failed to close file:", path)
 		}
 	}()
+
 	var localBytes []byte
+
 	localBytes, err = ioutil.ReadAll(file)
 	if err != nil {
 		return
 	}
+
 	localStr := string(localBytes)
 	// push item
 	item = *gosn.NewNote()
@@ -175,6 +193,7 @@ func createItem(path, title string) (item gosn.Item, err error) {
 	item.Content = itemContent
 	item.Content.SetTitle(title)
 	item.Content.SetText(localStr)
+
 	return
 }
 
@@ -184,9 +203,11 @@ func checkPathValid(path string) bool {
 		fmt.Printf("failed to read path: %q %v\n", path, err)
 		return false
 	}
+
 	if s {
 		fmt.Printf("symlinks not currently supported: %q", path)
 		return false
 	}
+
 	return true
 }

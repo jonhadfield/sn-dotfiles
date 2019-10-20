@@ -3,13 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
+	sndotfiles "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"github.com/jonhadfield/sn-cli/auth"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
@@ -24,22 +24,27 @@ func main() {
 		fmt.Printf("error: %+v\n", err)
 		os.Exit(1)
 	}
+
 	if display && msg != "" {
 		fmt.Println(msg)
 	}
+
 	os.Exit(0)
 }
 
 func startCLI(args []string) (msg string, display bool, err error) {
 	viper.SetEnvPrefix("sn")
+
 	err = viper.BindEnv("email")
 	if err != nil {
 		return "", false, err
 	}
+
 	err = viper.BindEnv("password")
 	if err != nil {
 		return "", false, err
 	}
+
 	err = viper.BindEnv("server")
 	if err != nil {
 		return "", false, err
@@ -379,6 +384,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 	}
 
 	sort.Sort(cli.FlagsByName(app.Flags))
+
 	return msg, display, app.Run(args)
 }
 
@@ -388,6 +394,7 @@ func numTrue(in ...bool) (total int) {
 			total++
 		}
 	}
+
 	return
 }
 
@@ -396,16 +403,20 @@ func stripHome(in, home string) (res string, err error) {
 		err = errors.New("home required")
 		return
 	}
+
 	if in == "" {
 		err = errors.New("path required")
 		return
 	}
+
 	if in == home {
 		return
 	}
+
 	if strings.HasPrefix(in, home) {
 		return in[len(home)+1:], nil
 	}
+
 	return
 }
 
@@ -415,15 +426,19 @@ func getHome() string {
 		fmt.Println("failed to get home directory")
 		panic(err)
 	}
+
 	return home
 }
 
 func isValidDotfilePath(path string) bool {
 	home := getHome()
+
 	dir, filename := filepath.Split(path)
+
 	homeRelPath, err := stripHome(dir+filename, home)
 	if err != nil {
 		return false
 	}
+
 	return strings.HasPrefix(homeRelPath, ".")
 }
