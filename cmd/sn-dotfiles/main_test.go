@@ -249,6 +249,44 @@ func TestSync(t *testing.T) {
 	assert.Len(t, results, 1)
 }
 
+
+func TestDiff(t *testing.T) {
+	viper.SetEnvPrefix("sn")
+	assert.NoError(t, viper.BindEnv("email"))
+	assert.NoError(t, viper.BindEnv("password"))
+	assert.NoError(t, viper.BindEnv("server"))
+
+	home := getHome()
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	serverURL := os.Getenv("SN_SERVER")
+	if serverURL == "" {
+		serverURL = sndotfiles2.SNServerURL
+	}
+	session, _, err := auth.GetSession(false, "", serverURL)
+	defer func() {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NoError(t, err)
+	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	_, err = sndotfiles2.Add(ai, true)
+	assert.NoError(t, err)
+	var msg string
+	var disp bool
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "diff", applePath})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, msg)
+	assert.Contains(t, msg, "no differences")
+	assert.True(t, disp)
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "diff", "~/.does/not/exist"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "does not exist")
+}
+
 func TestSyncExclude(t *testing.T) {
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))

@@ -136,9 +136,10 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
 		added = append(added, fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked")))
 	}
-	statusLines = append(statusLines, existing...)
 
+	statusLines = append(statusLines, existing...)
 	statusLines = append(statusLines, added...)
+
 	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
 }
 

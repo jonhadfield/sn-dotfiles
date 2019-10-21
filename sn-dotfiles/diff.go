@@ -90,7 +90,7 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 	}
 
 	if !differencesFound {
-		fmt.Println("no differences found")
+		msg = "no differences found"
 	}
 
 	return diffs, msg, err
