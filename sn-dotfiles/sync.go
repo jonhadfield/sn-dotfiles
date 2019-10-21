@@ -35,6 +35,10 @@ func Sync(in SyncInput) (out SyncOutput, err error) {
 	sOut, err = sync(syncInput{session: in.Session, twn: remote, home: in.Home, paths: in.Paths,
 		exclude: in.Exclude, debug: in.Debug})
 
+	if err != nil {
+		return
+	}
+
 	return SyncOutput{
 		NoPushed: sOut.noPushed,
 		NoPulled: sOut.noPulled,
