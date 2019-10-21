@@ -25,6 +25,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	var twn tagsWithNotes
 
 	twn, err = get(ai.Session)
+
 	if err != nil {
 		return
 	}
@@ -35,6 +36,12 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 		return
 	}
 
+	ai.Twn = twn
+
+	return add(ai, debug)
+}
+
+func add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	var tagToItemMap map[string]gosn.Items
 
 	var fsPathsToAdd []string
@@ -47,21 +54,21 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 
 	var statusLines []string
 
-	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, err = generateTagItemMap(fsPathsToAdd, ai.Home, twn)
+	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, err = generateTagItemMap(fsPathsToAdd, ai.Home, ai.Twn)
 	if err != nil {
 		return
 	}
 
 	// add DotFilesTag tag if missing
 	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
-	if !tagExists("dotfiles", twn) && !dotFilesTagInTagToItemMap {
+	if !tagExists("dotfiles", ai.Twn) && !dotFilesTagInTagToItemMap {
 		debugPrint(ai.Debug, "Add | adding missing dotfiles tag")
 
 		tagToItemMap[DotFilesTag] = gosn.Items{}
 	}
 
 	// push and tag items
-	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, twn)
+	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, ai.Twn)
 
 	if err != nil {
 		return
@@ -71,7 +78,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 
 	ao.Msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
-	return ao, err
+	return
 }
 
 type AddInput struct {
@@ -79,6 +86,7 @@ type AddInput struct {
 	Home    string
 	Paths   []string
 	Debug   bool
+	Twn     tagsWithNotes
 }
 
 type AddOutput struct {
@@ -92,11 +100,11 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	bold := color.New(color.Bold).SprintFunc()
-	added := make([]string, len(fsPaths))
 
+	var added []string
 	var existing []string
 
-	for i, path := range fsPaths {
+	for _, path := range fsPaths {
 		dir, filename := filepath.Split(path)
 		homeRelPath := stripHome(dir+filename, home)
 		boldHomeRelPath := bold(homeRelPath)
@@ -106,7 +114,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
 
 		existingCount := noteWithTagExists(remoteTagTitle, filename, twn)
-		if existingCount == 1 {
+		if existingCount > 0 {
 			existing = append(existing, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("already tracked")))
 			pathsExisting = append(pathsExisting, path)
 
@@ -126,13 +134,11 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 		}
 
 		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
-		added[i] = fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked"))
+		added = append(added, fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked")))
 	}
-
 	statusLines = append(statusLines, existing...)
 
 	statusLines = append(statusLines, added...)
-
 	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
 }
 

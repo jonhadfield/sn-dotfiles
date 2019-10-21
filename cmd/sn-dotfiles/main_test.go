@@ -80,8 +80,9 @@ func TestAdd(t *testing.T) {
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", applePath})
 	assert.NotEmpty(t, msg)
 	assert.True(t, disp)
-	assert.Contains(t, msg, "1")
 	assert.NoError(t, err)
+	re := regexp.MustCompile("\\.fruit/apple  now tracked")
+	assert.Regexp(t, msg, re)
 }
 
 func TestAddInvalidPath(t *testing.T) {

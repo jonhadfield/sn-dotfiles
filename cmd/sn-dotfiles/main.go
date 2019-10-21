@@ -178,18 +178,18 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
-			var ao sndotfiles.AddOutput
-			ao, err = sndotfiles.Add(ai, c.GlobalBool("debug"))
 
+			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
+
+			var ao sndotfiles.AddOutput
+
+			ao, err = sndotfiles.Add(ai, c.GlobalBool("debug"))
 			if err != nil {
 				return err
 			}
-			if ao.NotesPushed > 0 {
-				msg = fmt.Sprintf("%d files added", ao.NotesPushed)
-			} else {
-				msg = "nothing to do"
-			}
+
+			msg = ao.Msg
+
 			return err
 		},
 	}
