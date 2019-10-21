@@ -62,11 +62,12 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 
 	// push and tag items
 	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, twn)
-	debugPrint(debug, fmt.Sprintf("Add | tags pushed: %d notes pushed %d", ao.TagsPushed, ao.NotesPushed))
 
 	if err != nil {
 		return
 	}
+
+	debugPrint(debug, fmt.Sprintf("Add | tags pushed: %d notes pushed %d", ao.TagsPushed, ao.NotesPushed))
 
 	ao.Msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
