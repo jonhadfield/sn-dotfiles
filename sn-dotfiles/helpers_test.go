@@ -14,24 +14,21 @@ import (
 func TestTagTitleToFSDIR(t *testing.T) {
 	home := getTemporaryHome()
 	// missing Home should return err
-	p, isHome, err := tagTitleToFSDIR(fmt.Sprintf("%s.fruit.lemon", DotFilesTag), "")
+	p, err := tagTitleToFSDIR(fmt.Sprintf("%s.fruit.lemon", DotFilesTag), "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "home directory required")
-	assert.False(t, isHome)
 	assert.Empty(t, p)
 
 	// check result for supplied title and Home
-	p1, isHome1, err := tagTitleToFSDIR(DotFilesTag, home)
+	p, err = tagTitleToFSDIR(DotFilesTag, home)
 	assert.NoError(t, err)
-	assert.True(t, isHome1)
-	assert.Equal(t, fmt.Sprintf("%s/", home), p1)
+	assert.Equal(t, fmt.Sprintf("%s/", home), p)
 
 	// missing title should generate error
-	p2, isHome2, err := tagTitleToFSDIR("", home)
+	p, err = tagTitleToFSDIR("", home)
 	assert.Error(t, err)
-	assert.False(t, isHome2)
 	assert.Contains(t, err.Error(), "tag title required")
-	assert.Equal(t, "", p2)
+	assert.Equal(t, "", p)
 }
 
 func TestDeDupe(t *testing.T) {

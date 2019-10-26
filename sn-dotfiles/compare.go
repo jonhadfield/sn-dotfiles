@@ -54,7 +54,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 
 		var dir string
 
-		dir, _, err = tagTitleToFSDIR(twn.tag.Content.GetTitle(), home)
+		dir, err = tagTitleToFSDIR(twn.tag.Content.GetTitle(), home)
 		if err != nil {
 			return
 		}

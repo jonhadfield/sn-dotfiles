@@ -3,12 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	sndotfiles "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	sndotfiles "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 
 	"github.com/jonhadfield/sn-cli/auth"
 	"github.com/spf13/viper"
@@ -224,15 +225,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			var notesRemoved int
-			notesRemoved, _, _, _, err = sndotfiles.Remove(session, home, c.Args(), c.GlobalBool("debug"))
+			_, _, _, msg, err = sndotfiles.Remove(session, home, c.Args(), c.GlobalBool("debug"))
 			if err != nil {
 				return err
-			}
-			if notesRemoved > 0 {
-				msg = fmt.Sprintf("%d files removed", notesRemoved)
-			} else {
-				msg = fmt.Sprintf("nothing to do")
 			}
 			return err
 		},

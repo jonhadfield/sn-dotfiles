@@ -102,6 +102,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	bold := color.New(color.Bold).SprintFunc()
 
 	var added []string
+
 	var existing []string
 
 	for _, path := range fsPaths {

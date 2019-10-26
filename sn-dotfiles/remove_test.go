@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/jonhadfield/gosn"
@@ -29,7 +30,7 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 
 func TestRemoveInvalidSession(t *testing.T) {
 	home := getTemporaryHome()
-	debugPrint(true, fmt.Sprintf("Test | using temp home: %s", home))
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
 	fwc[gitConfigPath] = "git config content"
@@ -61,7 +62,7 @@ func TestRemoveItems(t *testing.T) {
 		}
 	}()
 	home := getTemporaryHome()
-	debugPrint(true, fmt.Sprintf("Test | using temp home: %s", home))
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -82,13 +83,51 @@ func TestRemoveItems(t *testing.T) {
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
 	assert.Len(t, ao.PathsInvalid, 0)
-	//assert.Contains(t, missing, golfPath)
+
+	// remove single path
 	var notesRemoved, tagsRemoved, noNotTracked int
-	notesRemoved, tagsRemoved, noNotTracked, _, err = Remove(session, home, []string{gitConfigPath, applePath, yellowPath}, true)
+	var msg string
+	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, home, []string{gitConfigPath}, true)
 	assert.NoError(t, err)
-	assert.Equal(t, 3, notesRemoved)
-	assert.Equal(t, 2, tagsRemoved)
+	assert.Equal(t, 1, notesRemoved)
+	assert.Equal(t, 0, tagsRemoved)
 	assert.Equal(t, 0, noNotTracked)
+	assert.NotEmpty(t, msg)
+	re := regexp.MustCompile("\\.gitconfig\\s+removed")
+	assert.True(t, re.MatchString(msg))
+
+	// remove nested path with single item (with trailing slash)
+	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, home, []string{fmt.Sprintf("%s/.cars/", home)}, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, notesRemoved)
+	assert.Equal(t, 3, tagsRemoved)
+	assert.Equal(t, 0, noNotTracked)
+	assert.NotEmpty(t, msg)
+	re = regexp.MustCompile("\\.cars/mercedes/a250/premium\\s+removed")
+	assert.True(t, re.MatchString(msg))
+
+	// remove nested path with single item (without trailing slash)
+	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, home, []string{fmt.Sprintf("%s/.fruit", home)}, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, notesRemoved)
+	assert.Equal(t, 3, tagsRemoved)
+	assert.Equal(t, 0, noNotTracked)
+	assert.NotEmpty(t, msg)
+	re = regexp.MustCompile("\\.fruit/apple\\s+removed")
+	assert.True(t, re.MatchString(msg))
+	re = regexp.MustCompile("\\.fruit/banana/yellow\\s+removed")
+	assert.True(t, re.MatchString(msg))
+
+	// ensure error with missing home
+	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, "",
+		[]string{fmt.Sprintf("%s/.fruit", home)}, true)
+	assert.Error(t, err)
+
+	// ensure error with missing paths
+	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, "home",
+		[]string{""}, true)
+	assert.Error(t, err)
+	fmt.Println(err)
 }
 
 func TestRemoveItemsRecursive(t *testing.T) {
@@ -101,7 +140,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 		}
 	}()
 	home := getTemporaryHome()
-	debugPrint(true, fmt.Sprintf("Test | using temp home: %s", home))
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -144,7 +183,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 		}
 	}()
 	home := getTemporaryHome()
-	debugPrint(true, fmt.Sprintf("Test | using temp home: %s", home))
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -185,7 +224,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 		}
 	}()
 	home := getTemporaryHome()
-	debugPrint(true, fmt.Sprintf("Test | using temp home: %s", home))
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -227,7 +266,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 		}
 	}()
 	home := getTemporaryHome()
-	debugPrint(true, fmt.Sprintf("Test | using temp home: %s", home))
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
@@ -261,7 +300,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 		}
 	}()
 	home := getTemporaryHome()
-	debugPrint(true, fmt.Sprintf("Test | using temp home: %s", home))
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
 	fwc := make(map[string]string)
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)

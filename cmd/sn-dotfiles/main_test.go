@@ -77,7 +77,9 @@ func TestAdd(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	fwc[applePath] = "apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", applePath})
+	var msg string
+	var disp bool
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "add", applePath})
 	assert.NotEmpty(t, msg)
 	assert.True(t, disp)
 	assert.NoError(t, err)
@@ -118,10 +120,12 @@ func TestRemove(t *testing.T) {
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
 	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
-	msg, disp, err := startCLI([]string{"sn-dotfiles", "remove", applePath})
+	var msg string
+	var disp bool
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "remove", fmt.Sprintf("%s/.fruit", home)})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, msg)
-	assert.Contains(t, msg, "1 ")
+	assert.Contains(t, msg, ".fruit/apple  removed")
 	assert.True(t, disp)
 }
 
@@ -248,7 +252,6 @@ func TestSync(t *testing.T) {
 	fmt.Println(len(results))
 	assert.Len(t, results, 1)
 }
-
 
 func TestDiff(t *testing.T) {
 	viper.SetEnvPrefix("sn")

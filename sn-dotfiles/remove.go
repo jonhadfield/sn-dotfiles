@@ -1,6 +1,7 @@
 package sndotfiles
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,18 @@ import (
 
 // Remove stops tracking local Paths by removing the related notes from SN
 func Remove(session gosn.Session, home string, paths []string, debug bool) (notesremoved, tagsRemoved, notTracked int, msg string, err error) {
+	// ensure home is passed
+	if len(home) == 0 {
+		err = errors.New("home undefined")
+		return
+	}
+
+	// ensure home is passed
+	if len(paths) == 0 {
+		err = errors.New("paths undefined")
+		return
+	}
+
 	// remove any duplicate Paths
 	paths = dedupe(paths)
 
@@ -22,7 +35,9 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	bold := color.New(color.Bold).SprintFunc()
-	tagsWithNotes, err := get(session)
+
+	var tagsWithNotes tagsWithNotes
+	tagsWithNotes, err = get(session)
 
 	if err != nil {
 		return
@@ -38,22 +53,24 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	var notesToRemove gosn.Items
 
 	for _, path := range paths {
-		homeRelPath, matchingItems := getItemsToRemove(path, home, tagsWithNotes)
+		homeRelPath, pathsToRemove, matchingItems := getItemsToRemove(path, home, tagsWithNotes)
+
 		boldHomeRelPath := bold(stripTrailingSlash(homeRelPath))
 
 		debugPrint(debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
 
-		switch {
-		case len(matchingItems) == 0:
+		if len(matchingItems) == 0 {
 			results = append(results, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("not tracked")))
 			notTracked++
-		case len(matchingItems) == 1:
-			results = append(results, fmt.Sprintf("%s | %s", boldHomeRelPath, green("removed")))
-			notesToRemove = append(notesToRemove, matchingItems...)
-		case len(matchingItems) > 1:
-			results = append(results, fmt.Sprintf("%s (%d instances) | %s", boldHomeRelPath, len(matchingItems), green("removed")))
-			notesToRemove = append(notesToRemove, matchingItems...)
+
+			continue
 		}
+
+		for _, ptr := range pathsToRemove {
+			results = append(results, fmt.Sprintf("%s | %s", bold(ptr), green("removed")))
+		}
+
+		notesToRemove = append(notesToRemove, matchingItems...)
 	}
 
 	// dedupe any notes to remove
@@ -83,7 +100,9 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	return len(notesToRemove), len(emptyTags), notTracked, msg, err
 }
 
-func remove(session gosn.Session, items gosn.Items, debug bool) (err error) {
+func remove(session gosn.Session, items gosn.Items, debug bool) error {
+	var err error
+
 	var itemsToRemove gosn.Items
 
 	for _, item := range items {
@@ -99,7 +118,7 @@ func remove(session gosn.Session, items gosn.Items, debug bool) (err error) {
 
 	pio, err = putItems(session, itemsToRemove)
 	if err != nil {
-		return
+		return err
 	}
 
 	debugPrint(debug, fmt.Sprintf("remove | items put: %d", len(pio.ResponseBody.SavedItems)))

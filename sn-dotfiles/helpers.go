@@ -363,7 +363,7 @@ func tagTitlesToTags(tagTitles []string, twn tagsWithNotes) (res gosn.Items) {
 	return
 }
 
-func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string, res gosn.Items) {
+func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string, pathsToRemove []string, res gosn.Items) {
 	pathType, err := getPathType(path)
 	if err != nil {
 		return
@@ -391,11 +391,13 @@ func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 			noteTitle = remoteEquiv
 		}
 
+		// check if remote exists
 		for _, t := range twn {
 			if t.tag.Content.GetTitle() == noteTag {
 				for _, note := range t.notes {
 					if note.Content.GetTitle() == noteTitle {
 						res = append(res, note)
+						pathsToRemove = append(pathsToRemove, homeRelPath)
 					}
 				}
 			}
@@ -411,8 +413,17 @@ func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 		noteTag = DotFilesTag + "." + remoteEquiv
 		// find notes matching tag
 		for _, t := range twn {
+			tagTitle := t.tag.Content.GetTitle()
+			var tp string
+			tp, err = tagTitleToFSDIR(tagTitle, home)
+			if err != nil {
+				return
+			}
+			tp = stripHome(tp, home)
+
 			if t.tag.Content.GetTitle() == noteTag || strings.HasPrefix(t.tag.Content.GetTitle(), noteTag+".") {
 				for _, note := range t.notes {
+					pathsToRemove = append(pathsToRemove, fmt.Sprintf("%s%s", tp, note.Content.GetTitle()))
 					{
 						res = append(res, note)
 					}
@@ -425,7 +436,7 @@ func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 		res.DeDupe()
 	}
 
-	return homeRelPath, res
+	return homeRelPath, pathsToRemove, res
 }
 
 func noteWithTagExists(tag, name string, twn tagsWithNotes) (count int) {
@@ -474,7 +485,7 @@ func dedupe(in []string) []string {
 	return in[:j+1]
 }
 
-func tagTitleToFSDIR(title, home string) (path string, isHome bool, err error) {
+func tagTitleToFSDIR(title, home string) (path string, err error) {
 	if title == "" {
 		err = errors.New("tag title required")
 		return
@@ -490,14 +501,14 @@ func tagTitleToFSDIR(title, home string) (path string, isHome bool, err error) {
 	}
 
 	if title == DotFilesTag {
-		return home + string(os.PathSeparator), true, nil
+		return home + string(os.PathSeparator), nil
 	}
 
 	a := title[len(DotFilesTag)+1:]
 	b := strings.ReplaceAll(a, ".", string(os.PathSeparator))
 	c := addDot(b)
 
-	return home + string(os.PathSeparator) + c + string(os.PathSeparator), false, err
+	return home + string(os.PathSeparator) + c + string(os.PathSeparator), err
 }
 
 func pathToTag(homeRelPath string) string {
