@@ -52,6 +52,12 @@ func TestRemoveInvalidPath(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestRemoveNoPaths(t *testing.T) {
+	_, _, _, _, err := Remove(gosn.Session{}, getTemporaryHome(), []string{}, true)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "paths")
+}
+
 func TestRemoveItems(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
