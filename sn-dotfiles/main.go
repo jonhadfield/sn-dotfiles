@@ -57,8 +57,7 @@ func get(session gosn.Session) (t tagsWithNotes, err error) {
 
 	var notes gosn.Items
 
-	rStr := fmt.Sprintf("%s.?.*", DotFilesTag)
-	r := regexp.MustCompile(rStr)
+	r := regexp.MustCompile(fmt.Sprintf("%s.?.*", DotFilesTag))
 
 	for _, item := range items {
 		if item.ContentType == "Tag" && item.Content != nil && r.MatchString(item.Content.GetTitle()) {

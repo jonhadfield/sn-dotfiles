@@ -3,7 +3,6 @@ package sndotfiles
 import (
 	"fmt"
 
-	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
@@ -15,7 +14,9 @@ import (
 // - local items that are untracked (if Paths specified)
 // - identical local and remote items
 func Status(session gosn.Session, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
-	remote, err := get(session)
+	var remote tagsWithNotes
+
+	remote, err = get(session)
 	if err != nil {
 		return diffs, msg, err
 	}
@@ -35,8 +36,6 @@ func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs [
 		msg = "no dotfiles being tracked"
 		return
 	}
-
-	bold := color.New(color.Bold).SprintFunc()
 
 	diffs, err = compare(twn, home, paths, []string{}, debug)
 	if err != nil {

@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fatih/color"
-
 	"github.com/jonhadfield/findexec"
 	"github.com/jonhadfield/gosn"
 )
@@ -153,7 +151,6 @@ func processContentDiffs(diffs []ItemDiff, tempDir, diffBinary string) (differen
 				panic(fmt.Sprintf("failed to compare: '%s' with '%s'", f1path, f2path))
 			}
 
-			bold := color.New(color.Bold).SprintFunc()
 			fmt.Println(bold(diff.remote.Content.GetTitle()))
 			fmt.Println(string(out))
 		}
