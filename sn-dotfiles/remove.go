@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
@@ -32,10 +31,6 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 		return
 	}
 
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	bold := color.New(color.Bold).SprintFunc()
-
 	var tagsWithNotes tagsWithNotes
 	tagsWithNotes, err = get(session)
 
@@ -55,11 +50,10 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	for _, path := range paths {
 		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, home, tagsWithNotes)
 
-		boldHomeRelPath := bold(stripTrailingSlash(homeRelPath))
-
 		debugPrint(debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
 
 		if len(matchingItems) == 0 {
+			boldHomeRelPath := bold(stripTrailingSlash(homeRelPath))
 			results = append(results, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("not tracked")))
 			notTracked++
 

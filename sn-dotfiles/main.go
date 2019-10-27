@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/fatih/color"
+
 	"github.com/jonhadfield/gosn"
 )
 
@@ -12,9 +14,13 @@ const (
 	SNServerURL = "https://sync.standardnotes.org"
 	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
 	DotFilesTag = "dotfiles"
-	// KeyringApplicationName defines the name of the application the Session is stored against
-	KeyringApplicationName = "session"
-	KeyringService         = "StandardNotesCLI"
+)
+
+var (
+	bold   = color.New(color.Bold).SprintFunc()
+	red    = color.New(color.FgRed).SprintFunc()
+	green  = color.New(color.FgGreen).SprintFunc()
+	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
 func get(session gosn.Session) (t tagsWithNotes, err error) {

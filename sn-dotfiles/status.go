@@ -61,10 +61,6 @@ func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs [
 }
 
 func colourDiff(diff string) string {
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
-
 	switch diff {
 	case identical:
 		return green(diff)

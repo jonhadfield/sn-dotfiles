@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
@@ -100,8 +99,6 @@ func sync(in syncInput) (out syncOutput, err error) {
 		}
 	}
 
-	bold := color.New(color.Bold).SprintFunc()
-
 	// check items to sync
 	if !itemsToSync {
 		out.msg = fmt.Sprint(bold("nothing to do"))
@@ -119,7 +116,6 @@ func sync(in syncInput) (out syncOutput, err error) {
 	}
 
 	res := make([]string, len(itemsToPush))
-	green := color.New(color.FgGreen).SprintFunc()
 	strPushed := green("pushed")
 	strPulled := green("pulled")
 

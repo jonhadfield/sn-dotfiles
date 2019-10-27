@@ -8,7 +8,6 @@ import (
 
 	"github.com/ryanuber/columnize"
 
-	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn"
 )
 
@@ -78,7 +77,7 @@ func add(ai AddInput, debug bool) (ao AddOutput, err error) {
 
 	ao.Msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
-	return
+	return ao, err
 }
 
 type AddInput struct {
@@ -97,9 +96,6 @@ type AddOutput struct {
 
 func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string, tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
 	tagToItemMap = make(map[string]gosn.Items)
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	bold := color.New(color.Bold).SprintFunc()
 
 	var added []string
 
