@@ -53,7 +53,7 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	var notesToRemove gosn.Items
 
 	for _, path := range paths {
-		homeRelPath, pathsToRemove, matchingItems := getItemsToRemove(path, home, tagsWithNotes)
+		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, home, tagsWithNotes)
 
 		boldHomeRelPath := bold(stripTrailingSlash(homeRelPath))
 

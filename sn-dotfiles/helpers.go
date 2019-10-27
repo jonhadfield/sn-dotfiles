@@ -363,7 +363,7 @@ func tagTitlesToTags(tagTitles []string, twn tagsWithNotes) (res gosn.Items) {
 	return
 }
 
-func getItemsToRemove(path, home string, twn tagsWithNotes) (homeRelPath string, pathsToRemove []string, res gosn.Items) {
+func getNotesToRemove(path, home string, twn tagsWithNotes) (homeRelPath string, pathsToRemove []string, res gosn.Items) {
 	pathType, err := getPathType(path)
 	if err != nil {
 		return
