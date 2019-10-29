@@ -5,21 +5,46 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ryanuber/columnize"
 
 	"github.com/jonhadfield/gosn"
 )
 
+func discoverDotfiles(home string) (paths []string, err error) {
+	var homeEntries []os.FileInfo
+
+	homeEntries, err = ioutil.ReadDir(home)
+	if err != nil {
+		return
+	}
+
+	for _, f := range homeEntries {
+		if strings.HasPrefix(f.Name(), ".") {
+			var afp string
+			afp, err = filepath.Abs(home + string(os.PathSeparator) + f.Name())
+			paths = append(paths, afp)
+		}
+	}
+
+	return
+}
+
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
 func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
+	if ai.All {
+		ai.Paths, err = discoverDotfiles(ai.Home)
+	}
+
 	// remove any duplicate Paths
 	ai.Paths = dedupe(ai.Paths)
-	debugPrint(debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
 
 	if err = checkPathsExist(ai.Paths); err != nil {
 		return
 	}
+
+	debugPrint(debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
 
 	var twn tagsWithNotes
 
@@ -84,6 +109,7 @@ type AddInput struct {
 	Session gosn.Session
 	Home    string
 	Paths   []string
+	All     bool
 	Debug   bool
 	Twn     tagsWithNotes
 }
@@ -94,7 +120,8 @@ type AddOutput struct {
 	Msg                                     string
 }
 
-func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string, tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
+func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string,
+	tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
 	tagToItemMap = make(map[string]gosn.Items)
 
 	var added []string

@@ -95,6 +95,22 @@ func TestAddInvalidPath(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAddAllAndPath(t *testing.T) {
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", "--all", "/invalid"})
+	assert.NotEmpty(t, msg)
+	assert.True(t, disp)
+	assert.Contains(t, msg, "error: specifying --all and paths does not make sense")
+	assert.NoError(t, err)
+}
+
+func TestAddNoArgs(t *testing.T) {
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "add"})
+	assert.NotEmpty(t, msg)
+	assert.True(t, disp)
+	assert.Contains(t, msg, "error: either specify paths to add or --all to add everything")
+	assert.NoError(t, err)
+}
+
 func TestRemove(t *testing.T) {
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))

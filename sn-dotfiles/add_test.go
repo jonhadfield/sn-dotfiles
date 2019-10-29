@@ -52,8 +52,6 @@ func TestAddInvalidPath(t *testing.T) {
 	duffPath := fmt.Sprintf("%s/.invalid/dodgy", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
-	// add item
-	//var added, existing, missing []string
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, duffPath}, Debug: true}
 	var ao AddOutput
 	ao, err = Add(ai, true)
@@ -151,6 +149,36 @@ func TestAddRecursive(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	ai := AddInput{Session: session, Home: home, Paths: []string{fruitPath, carsPath}, Debug: true}
+	var ao AddOutput
+	ao, err = Add(ai, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(ao.PathsAdded))
+	assert.Contains(t, ao.PathsAdded, applePath)
+	assert.Equal(t, 0, len(ao.PathsExisting))
+	assert.Equal(t, 0, len(ao.PathsInvalid))
+}
+
+func TestAddAllRecursive(t *testing.T) {
+	session, err := GetTestSession()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, session.Token)
+	defer func() {
+		if _, err := WipeTheLot(session); err != nil {
+			fmt.Println("failed to WipeTheLot")
+		}
+	}()
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+	yellowPath := fmt.Sprintf("%s/.fruit/banana/yellow", home)
+	fwc[yellowPath] = "yellow content"
+	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
+	fwc[premiumPath] = "premium content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+	// add item
+	ai := AddInput{Session: session, Home: home, All: true, Debug: true}
 	var ao AddOutput
 	ao, err = Add(ai, true)
 	assert.NoError(t, err)

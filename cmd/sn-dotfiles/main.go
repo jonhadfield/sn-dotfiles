@@ -155,19 +155,41 @@ func startCLI(args []string) (msg string, display bool, err error) {
 	addCmd := cli.Command{
 		Name:  "add",
 		Usage: "start tracking file(s)",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "all",
+				Usage: "add all dotfiles discovered in home directory",
+			},
+		},
 		Action: func(c *cli.Context) error {
-			if len(c.Args()) == 0 {
-				_ = cli.ShowCommandHelp(c, "add")
-				return nil
-			}
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
+
+			if !c.Bool("all") && len(c.Args()) == 0 {
+				msg = "error: either specify paths to add or --all to add everything"
+				_ = cli.ShowCommandHelp(c, "add")
+				return nil
+			}
+
+			if c.Bool("all") && len(c.Args()) > 0 {
+				msg = "error: specifying --all and paths does not make sense"
+				_ = cli.ShowCommandHelp(c, "add")
+				return nil
+			}
+
+			var absPaths []string
 			for _, path := range c.Args() {
-				if !isValidDotfilePath(path) {
+				var ap string
+				ap, err = filepath.Abs(path)
+				if err != nil {
+					return err
+				}
+				if !isValidDotfilePath(ap) {
 					msg = fmt.Sprintf("\"%s\" is not a valid dotfile path", path)
 					return nil
 				}
+				absPaths = append(absPaths, ap)
 			}
 
 			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
@@ -180,7 +202,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				home = getHome()
 			}
 
-			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: c.Args(), Debug: c.GlobalBool("debug")}
+			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: absPaths,
+				All: c.Bool("all"), Debug: c.GlobalBool("debug")}
 
 			var ao sndotfiles.AddOutput
 
