@@ -56,6 +56,7 @@ func pathValid(path string) (valid bool, err error) {
 			err = fmt.Errorf("file too large: %s", path)
 			return false, err
 		}
+
 		return true, nil
 	case mode&os.ModeSymlink != 0:
 		return false, fmt.Errorf("symlink not supported: %s", path)

@@ -13,6 +13,7 @@ func checkFSPaths(paths []string) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
