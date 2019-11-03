@@ -170,7 +170,9 @@ func TestWipe(t *testing.T) {
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
 	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
-	msg, disp, err := startCLI([]string{"sn-dotfiles", "wipe", "--force"})
+	var msg string
+	var disp bool
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "3 ")
 	assert.True(t, disp)

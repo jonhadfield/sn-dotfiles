@@ -12,73 +12,6 @@ import (
 	"github.com/jonhadfield/gosn"
 )
 
-func discoverDotfilesInHome(home string, debug bool) (paths []string, err error) {
-	debugPrint(debug, fmt.Sprintf("discoverDotfilesInHome | checking home: %s", home))
-
-	var homeEntries []os.FileInfo
-
-	homeEntries, err = ioutil.ReadDir(home)
-	if err != nil {
-		return
-	}
-
-	for _, f := range homeEntries {
-		if strings.HasPrefix(f.Name(), ".") {
-			var afp string
-
-			afp, err = filepath.Abs(home + string(os.PathSeparator) + f.Name())
-			if err != nil {
-				return
-			}
-
-			if f.Mode().IsRegular() {
-				paths = append(paths, afp)
-			}
-		}
-	}
-
-	return
-}
-
-func pathValid(path string) (valid bool, err error) {
-	var mode os.FileMode
-
-	var pSize int64
-
-	mode, pSize, err = pathInfo(path)
-	if err != nil {
-		return
-	}
-
-	switch {
-	case mode.IsRegular():
-		if pSize > 10240000 {
-			err = fmt.Errorf("file too large: %s", path)
-			return false, err
-		}
-
-		return true, nil
-	case mode&os.ModeSymlink != 0:
-		return false, fmt.Errorf("symlink not supported: %s", path)
-	case mode.IsDir():
-		return true, nil
-	case mode&os.ModeSocket != 0:
-		return false, fmt.Errorf("sockets not supported: %s", path)
-	case mode&os.ModeCharDevice != 0:
-		return false, fmt.Errorf("char device file not supported: %s", path)
-	case mode&os.ModeDevice != 0:
-		return false, fmt.Errorf("device file not supported: %s", path)
-	case mode&os.ModeNamedPipe != 0:
-		return false, fmt.Errorf("named pipe not supported: %s", path)
-	case mode&os.ModeTemporary != 0:
-		return false, fmt.Errorf("temporary file not supported: %s", path)
-	case mode&os.ModeIrregular != 0:
-		return false, fmt.Errorf("irregular file not supported: %s", path)
-	default:
-		return false, fmt.Errorf("unknown file type: %s", path)
-	}
-}
-
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
 func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	var noRecurse bool
@@ -117,6 +50,21 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	ai.Twn = twn
 
 	return add(ai, noRecurse, debug)
+}
+
+type AddInput struct {
+	Session gosn.Session
+	Home    string
+	Paths   []string
+	All     bool
+	Debug   bool
+	Twn     tagsWithNotes
+}
+
+type AddOutput struct {
+	TagsPushed, NotesPushed                 int
+	PathsAdded, PathsExisting, PathsInvalid []string
+	Msg                                     string
 }
 
 func add(ai AddInput, noRecurse, debug bool) (ao AddOutput, err error) {
@@ -159,21 +107,6 @@ func add(ai AddInput, noRecurse, debug bool) (ao AddOutput, err error) {
 	ao.Msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
 	return ao, err
-}
-
-type AddInput struct {
-	Session gosn.Session
-	Home    string
-	Paths   []string
-	All     bool
-	Debug   bool
-	Twn     tagsWithNotes
-}
-
-type AddOutput struct {
-	TagsPushed, NotesPushed                 int
-	PathsAdded, PathsExisting, PathsInvalid []string
-	Msg                                     string
 }
 
 func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string,
@@ -323,4 +256,71 @@ func pathInfo(path string) (mode os.FileMode, pathSize int64, err error) {
 	}
 
 	return
+}
+
+func discoverDotfilesInHome(home string, debug bool) (paths []string, err error) {
+	debugPrint(debug, fmt.Sprintf("discoverDotfilesInHome | checking home: %s", home))
+
+	var homeEntries []os.FileInfo
+
+	homeEntries, err = ioutil.ReadDir(home)
+	if err != nil {
+		return
+	}
+
+	for _, f := range homeEntries {
+		if strings.HasPrefix(f.Name(), ".") {
+			var afp string
+
+			afp, err = filepath.Abs(home + string(os.PathSeparator) + f.Name())
+			if err != nil {
+				return
+			}
+
+			if f.Mode().IsRegular() {
+				paths = append(paths, afp)
+			}
+		}
+	}
+
+	return
+}
+
+func pathValid(path string) (valid bool, err error) {
+	var mode os.FileMode
+
+	var pSize int64
+
+	mode, pSize, err = pathInfo(path)
+	if err != nil {
+		return
+	}
+
+	switch {
+	case mode.IsRegular():
+		if pSize > 10240000 {
+			err = fmt.Errorf("file too large: %s", path)
+			return false, err
+		}
+
+		return true, nil
+	case mode&os.ModeSymlink != 0:
+		return false, fmt.Errorf("symlink not supported: %s", path)
+	case mode.IsDir():
+		return true, nil
+	case mode&os.ModeSocket != 0:
+		return false, fmt.Errorf("sockets not supported: %s", path)
+	case mode&os.ModeCharDevice != 0:
+		return false, fmt.Errorf("char device file not supported: %s", path)
+	case mode&os.ModeDevice != 0:
+		return false, fmt.Errorf("device file not supported: %s", path)
+	case mode&os.ModeNamedPipe != 0:
+		return false, fmt.Errorf("named pipe not supported: %s", path)
+	case mode&os.ModeTemporary != 0:
+		return false, fmt.Errorf("temporary file not supported: %s", path)
+	case mode&os.ModeIrregular != 0:
+		return false, fmt.Errorf("irregular file not supported: %s", path)
+	default:
+		return false, fmt.Errorf("unknown file type: %s", path)
+	}
 }

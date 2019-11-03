@@ -108,7 +108,9 @@ func compareNoteWithFile(tagTitle, path, home string, remote gosn.Item, debug bo
 		log.Fatal(err)
 	}
 
-	file, err := os.Open(path)
+	var file *os.File
+
+	file, err = os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +121,9 @@ func compareNoteWithFile(tagTitle, path, home string, remote gosn.Item, debug bo
 		}
 	}()
 
-	localBytes, err := ioutil.ReadAll(file)
+	var localBytes []byte
+
+	localBytes, err = ioutil.ReadAll(file)
 	if err != nil {
 		log.Fatal(err)
 	}
