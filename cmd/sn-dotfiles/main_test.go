@@ -331,7 +331,9 @@ func TestSyncExclude(t *testing.T) {
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
 	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
-	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
+	var msg string
+	var disp bool
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "nothing to do")
 	assert.True(t, disp)
