@@ -27,7 +27,7 @@ func Status(session gosn.Session, home string, paths []string, debug bool) (diff
 func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("status | %d remote items", len(twn)))
 
-	err = preflight(twn, paths)
+	err = checkNoteTagConflicts(twn)
 	if err != nil {
 		return
 	}

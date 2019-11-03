@@ -21,6 +21,8 @@ const (
 )
 
 func Diff(session gosn.Session, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
+	debugPrint(debug, fmt.Sprintf("Diff | %d paths", len(paths)))
+
 	var remote tagsWithNotes
 
 	remote, err = get(session)
@@ -42,9 +44,9 @@ type ItemDiff struct {
 }
 
 func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
-	debugPrint(debug, fmt.Sprintf("compare | %d remote items", len(twn)))
+	debugPrint(debug, fmt.Sprintf("diff | %d remote items", len(twn)))
 
-	err = preflight(twn, paths)
+	err = checkNoteTagConflicts(twn)
 	if err != nil {
 		return
 	}
@@ -205,7 +207,7 @@ func noteInPaths(note string, paths []string) bool {
 func checkPathsExist(paths []string) error {
 	for _, p := range paths {
 		if _, err := os.Stat(p); err != nil || os.IsNotExist(err) {
-			return err
+			return fmt.Errorf("failed to read path: %s", p)
 		}
 	}
 
@@ -244,8 +246,8 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 					return err
 				}
 				// ensure walked path is valid
-				if !checkPathValid(p) {
-					return nil
+				if v, err := pathValid(p); !v {
+					return err
 				}
 				// add file as untracked
 				if stat, err := os.Stat(p); err == nil && !stat.IsDir() {
@@ -259,6 +261,9 @@ func findUntracked(paths, existingRemoteEquivalentPaths []string, home string, d
 				}
 				return nil
 			})
+			if err != nil {
+				return
+			}
 		} else {
 			homeRelPath := stripHome(path, home)
 			debugPrint(debug, fmt.Sprintf("compare | file is untracked: %s", path))

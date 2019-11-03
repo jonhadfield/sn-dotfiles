@@ -12,7 +12,9 @@ import (
 	"github.com/jonhadfield/gosn"
 )
 
-func discoverDotfiles(home string) (paths []string, err error) {
+func discoverDotfilesInHome(home string, debug bool) (paths []string, err error) {
+	debugPrint(debug, fmt.Sprintf("discoverDotfilesInHome | checking home: %s", home))
+
 	var homeEntries []os.FileInfo
 
 	homeEntries, err = ioutil.ReadDir(home)
@@ -23,24 +25,76 @@ func discoverDotfiles(home string) (paths []string, err error) {
 	for _, f := range homeEntries {
 		if strings.HasPrefix(f.Name(), ".") {
 			var afp string
+
 			afp, err = filepath.Abs(home + string(os.PathSeparator) + f.Name())
-			paths = append(paths, afp)
+			if err != nil {
+				return
+			}
+
+			if f.Mode().IsRegular() {
+				paths = append(paths, afp)
+			}
 		}
 	}
 
 	return
 }
 
-// Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
-func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
-	if ai.All {
-		ai.Paths, err = discoverDotfiles(ai.Home)
+func pathValid(path string) (valid bool, err error) {
+	var mode os.FileMode
+
+	var pSize int64
+
+	mode, pSize, err = pathInfo(path)
+	if err != nil {
+		return
 	}
 
-	// remove any duplicate Paths
+	switch {
+	case mode.IsRegular():
+		if pSize > 10240000 {
+			err = fmt.Errorf("file too large: %s", path)
+			return false, err
+		}
+		return true, nil
+	case mode&os.ModeSymlink != 0:
+		return false, fmt.Errorf("symlink not supported: %s", path)
+	case mode.IsDir():
+		return true, nil
+	case mode&os.ModeSocket != 0:
+		return false, fmt.Errorf("sockets not supported: %s", path)
+	case mode&os.ModeCharDevice != 0:
+		return false, fmt.Errorf("char device file not supported: %s", path)
+	case mode&os.ModeDevice != 0:
+		return false, fmt.Errorf("device file not supported: %s", path)
+	case mode&os.ModeNamedPipe != 0:
+		return false, fmt.Errorf("named pipe not supported: %s", path)
+	case mode&os.ModeTemporary != 0:
+		return false, fmt.Errorf("temporary file not supported: %s", path)
+	case mode&os.ModeIrregular != 0:
+		return false, fmt.Errorf("irregular file not supported: %s", path)
+	default:
+		return false, fmt.Errorf("unknown file type: %s", path)
+	}
+}
+
+// Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
+func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
+	var noRecurse bool
+	if ai.All {
+		noRecurse = true
+
+		ai.Paths, err = discoverDotfilesInHome(ai.Home, debug)
+		if err != nil {
+			return
+		}
+	}
+
+	// remove any duplicate paths
 	ai.Paths = dedupe(ai.Paths)
 
-	if err = checkPathsExist(ai.Paths); err != nil {
+	// check paths are valid
+	if err = checkFSPaths(ai.Paths); err != nil {
 		return
 	}
 
@@ -49,29 +103,32 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	var twn tagsWithNotes
 
 	twn, err = get(ai.Session)
-
 	if err != nil {
 		return
 	}
 
 	// run pre-checks
-	err = preflight(twn, ai.Paths)
+	err = checkNoteTagConflicts(twn)
 	if err != nil {
 		return
 	}
 
 	ai.Twn = twn
 
-	return add(ai, debug)
+	return add(ai, noRecurse, debug)
 }
 
-func add(ai AddInput, debug bool) (ao AddOutput, err error) {
+func add(ai AddInput, noRecurse, debug bool) (ao AddOutput, err error) {
 	var tagToItemMap map[string]gosn.Items
 
 	var fsPathsToAdd []string
 
 	// generate list of Paths to add
-	fsPathsToAdd, ao.PathsInvalid = getLocalFSPathsToAdd(ai.Paths)
+	fsPathsToAdd, err = getLocalFSPathsToAdd(ai.Paths, noRecurse)
+	if err != nil {
+		return
+	}
+
 	if len(fsPathsToAdd) == 0 {
 		return
 	}
@@ -82,7 +139,6 @@ func add(ai AddInput, debug bool) (ao AddOutput, err error) {
 	if err != nil {
 		return
 	}
-
 	// add DotFilesTag tag if missing
 	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
 	if !tagExists("dotfiles", ai.Twn) && !dotFilesTagInTagToItemMap {
@@ -90,7 +146,6 @@ func add(ai AddInput, debug bool) (ao AddOutput, err error) {
 
 		tagToItemMap[DotFilesTag] = gosn.Items{}
 	}
-
 	// push and tag items
 	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, ai.Twn)
 
@@ -167,40 +222,64 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
 }
 
-func getLocalFSPathsToAdd(paths []string) (finalPaths, pathsInvalid []string) {
+func getLocalFSPathsToAdd(paths []string, noRecurse bool) (finalPaths []string, err error) {
 	// check for directories
 	for _, path := range paths {
 		// if path is directory, then walk to generate list of additional Paths
-		if stat, err := os.Stat(path); err == nil && stat.IsDir() {
+		var stat os.FileInfo
+		if stat, err = os.Stat(path); err == nil && stat.IsDir() && !noRecurse {
 			err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
-					pathsInvalid = append(pathsInvalid, path)
 					return fmt.Errorf("failed to read path %q: %v", path, err)
 				}
-				// ensure walked path is valid
-				if !checkPathValid(path) {
-					pathsInvalid = append(pathsInvalid, path)
+				stat, err = os.Stat(path)
+				if err != nil {
+					return err
+				}
+				// if it's a dir, then carry on
+				if stat.IsDir() {
 					return nil
 				}
 
-				if stat, err := os.Stat(path); err == nil && !stat.IsDir() {
+				// if file is valid, then add
+				var valid bool
+				valid, err = pathValid(path)
+				if err != nil {
+					return err
+				}
+				if valid {
 					finalPaths = append(finalPaths, path)
+					return err
 				}
 				return nil
 			})
+			// return if we failed to walk the dir
+			if err != nil {
+				return
+			}
 		} else {
-			finalPaths = append(finalPaths, path)
+			// path is file
+			var valid bool
+			valid, err = pathValid(path)
+			if err != nil {
+				return
+			}
+			if valid {
+				finalPaths = append(finalPaths, path)
+			}
 		}
 	}
 	// dedupe
 	finalPaths = dedupe(finalPaths)
 
-	return
+	return finalPaths, err
 }
 
 func createItem(path, title string) (item gosn.Item, err error) {
 	// read file content
-	file, err := os.Open(path)
+	var file *os.File
+
+	file, err = os.Open(path)
 	if err != nil {
 		return
 	}
@@ -226,20 +305,21 @@ func createItem(path, title string) (item gosn.Item, err error) {
 	item.Content.SetTitle(title)
 	item.Content.SetText(localStr)
 
-	return
+	return item, err
 }
 
-func checkPathValid(path string) bool {
-	s, err := isSymlink(path)
+func pathInfo(path string) (mode os.FileMode, pathSize int64, err error) {
+	var fi os.FileInfo
+
+	fi, err = os.Lstat(path)
 	if err != nil {
-		fmt.Printf("failed to read path: %q %v\n", path, err)
-		return false
+		return
 	}
 
-	if s {
-		fmt.Printf("symlinks not currently supported: %q", path)
-		return false
+	mode = fi.Mode()
+	if mode.IsRegular() {
+		pathSize = fi.Size()
 	}
 
-	return true
+	return
 }

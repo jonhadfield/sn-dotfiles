@@ -113,7 +113,7 @@ func TestCompare1(t *testing.T) {
 	// existing remote and missing local
 	_, err = compare(twn, home, []string{"missing-file"}, []string{}, true)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no such file")
+	assert.Contains(t, err.Error(), "failed to read")
 
 	// valid local, valid remote, grape not compare'd as not specified in path
 	applePath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)

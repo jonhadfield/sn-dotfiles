@@ -100,7 +100,8 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 }
 
 func compareNoteWithFile(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff {
-	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <Home>/%s", tagTitle, stripHome(path, home)))
+	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <Home>/%s",
+		tagTitle, stripHome(path, home)))
 
 	localStat, err := os.Stat(path)
 	if err != nil {

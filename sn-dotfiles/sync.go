@@ -25,7 +25,7 @@ func Sync(in SyncInput) (out SyncOutput, err error) {
 		return
 	}
 
-	err = preflight(remote, in.Paths)
+	err = checkNoteTagConflicts(remote)
 	if err != nil {
 		return
 	}

@@ -10,12 +10,8 @@ import (
 
 func TestPreflightInvalidPaths(t *testing.T) {
 	home := getTemporaryHome()
-	fwc := make(map[string]string)
-	applePath := fmt.Sprintf("%s/.apple", home)
-	fwc[applePath] = "apple content"
 	duffPath := fmt.Sprintf("%s/.invalid/dodgy", home)
-	twn := tagsWithNotes{}
-	assert.Error(t, preflight(twn, []string{applePath, duffPath}))
+	assert.Error(t, checkFSPaths([]string{duffPath}))
 
 }
 func TestPreflightOverlaps(t *testing.T) {
@@ -27,7 +23,7 @@ func TestPreflightOverlaps(t *testing.T) {
 		tagWithNotes{createTag("something.else"),
 			gosn.Items{noteOne}},
 	}
-	err := preflight(twn, []string{})
+	err := checkNoteTagConflicts(twn)
 	assert.Error(t, err)
 }
 
@@ -40,6 +36,6 @@ func TestPreflightOverlaps1(t *testing.T) {
 		tagWithNotes{createTag("something.else"),
 			gosn.Items{noteOne}},
 	}
-	err := preflight(twn, []string{})
+	err := checkNoteTagConflicts(twn)
 	assert.NoError(t, err)
 }

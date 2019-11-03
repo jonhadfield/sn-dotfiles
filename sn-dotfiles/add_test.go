@@ -52,9 +52,11 @@ func TestAddInvalidPath(t *testing.T) {
 	duffPath := fmt.Sprintf("%s/.invalid/dodgy", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
+
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, duffPath}, Debug: true}
 	var ao AddOutput
 	ao, err = Add(ai, true)
+
 	assert.Error(t, err)
 	assert.Equal(t, 0, len(ao.PathsAdded))
 	assert.Equal(t, 0, len(ao.PathsExisting))
@@ -158,7 +160,7 @@ func TestAddRecursive(t *testing.T) {
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
 
-func TestAddAllRecursive(t *testing.T) {
+func TestAddAll(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
@@ -170,20 +172,22 @@ func TestAddAllRecursive(t *testing.T) {
 	home := getTemporaryHome()
 
 	fwc := make(map[string]string)
-	applePath := fmt.Sprintf("%s/.fruit/apple", home)
-	fwc[applePath] = "apple content"
-	yellowPath := fmt.Sprintf("%s/.fruit/banana/yellow", home)
-	fwc[yellowPath] = "yellow content"
-	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
-	fwc[premiumPath] = "premium content"
+	file1Path := fmt.Sprintf("%s/.file1", home)
+	fwc[file1Path] = "file1 content"
+	file2Path := fmt.Sprintf("%s/.file2", home)
+	fwc[file2Path] = "yellow content"
+	file3Path := fmt.Sprintf("%s/file3", home)
+	fwc[file3Path] = "file3 content"
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	ai := AddInput{Session: session, Home: home, All: true, Debug: true}
 	var ao AddOutput
 	ao, err = Add(ai, true)
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(ao.PathsAdded))
-	assert.Contains(t, ao.PathsAdded, applePath)
+	assert.Equal(t, 2, len(ao.PathsAdded))
+	assert.Contains(t, ao.PathsAdded, file1Path)
+	assert.Contains(t, ao.PathsAdded, file2Path)
+	assert.NotContains(t, ao.PathsAdded, file3Path)
 	assert.Equal(t, 0, len(ao.PathsExisting))
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
@@ -194,15 +198,15 @@ func TestCheckPathValid(t *testing.T) {
 	filePath := home + "test"
 	symLinkPath := home + "test_sym"
 	assert.NoError(t, ioutil.WriteFile(filePath, d1, 0644))
-	fmt.Println(1)
-	assert.True(t, checkPathValid(filePath))
-	fmt.Println(2)
+	v, err := pathValid(filePath)
+	assert.True(t, v)
+	assert.NoError(t, err)
 	assert.NoError(t, os.Symlink(filePath, symLinkPath))
-	fmt.Println(3)
-	assert.False(t, checkPathValid(symLinkPath))
-	fmt.Println(4)
+	v, err = pathValid(symLinkPath)
+	assert.False(t, v)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "symlink")
 	assert.False(t, false)
-	fmt.Println(5)
 }
 
 func TestCreateItemInvalidPath(t *testing.T) {

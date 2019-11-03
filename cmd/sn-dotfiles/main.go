@@ -158,7 +158,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "all",
-				Usage: "add all dotfiles discovered in home directory",
+				Usage: "add all dotfiles (non-recursive)",
 			},
 		},
 		Action: func(c *cli.Context) error {

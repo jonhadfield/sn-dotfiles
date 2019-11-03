@@ -296,14 +296,14 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
-	msg, disp, err = startCLI([]string{"sn-dotfiles", "diff", applePath})
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "diff", applePath})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, msg)
 	assert.Contains(t, msg, "no differences")
 	assert.True(t, disp)
-	msg, disp, err = startCLI([]string{"sn-dotfiles", "diff", "~/.does/not/exist"})
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "diff", "~/.does/not/exist"})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "does not exist")
+	assert.Contains(t, err.Error(), "failed to read")
 }
 
 func TestSyncExclude(t *testing.T) {

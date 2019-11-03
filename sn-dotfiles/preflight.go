@@ -7,14 +7,16 @@ import (
 	"github.com/fatih/set"
 )
 
-func preflight(twn tagsWithNotes, paths []string) error {
-	// check all provided Paths are valid
+func checkFSPaths(paths []string) error {
 	for i := range paths {
-		if !checkPathValid(paths[i]) {
-			return fmt.Errorf("path \"%s\" does not exist", paths[i])
+		if v, err := pathValid(paths[i]); !v {
+			return err
 		}
 	}
+	return nil
+}
 
+func checkNoteTagConflicts(twn tagsWithNotes) error {
 	// check for path conflict where tag and note overlap
 	tagPaths := set.New(set.NonThreadSafe)
 	notePaths := set.New(set.NonThreadSafe)

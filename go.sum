@@ -65,8 +65,6 @@ github.com/jonhadfield/gosn v0.0.0-20190826130620-d7f407206ce9 h1:7CugeYNB7ybDrg
 github.com/jonhadfield/gosn v0.0.0-20190826130620-d7f407206ce9/go.mod h1:4ylR+BtTGcjOG8VRU6suAsn/P1ro9X1ZknXF0+bPEZ4=
 github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46 h1:2mnXOpSPmJ8wnOHqD9TjsFYNhhHnWFq5vEJzk3MwMxE=
 github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46/go.mod h1:s/C+F1Np2mlCvzHNinGQqz+IedNX2Eu+6PMT50I6bac=
-github.com/jonhadfield/sn-cli v0.0.0-20191007184646-e64f3116ed7d h1:XyHWhPOGIGu/ju3XY/kvSndtVb+JSS5BkD/u4V4e6Dk=
-github.com/jonhadfield/sn-cli v0.0.0-20191007184646-e64f3116ed7d/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
 github.com/jonhadfield/sn-cli v0.0.0-20191007185125-a34a3027899b h1:zLGKSBtGvPxOqUHaJefg4Xv7jJPcPIHf8vXPVMYaYRk=
 github.com/jonhadfield/sn-cli v0.0.0-20191007185125-a34a3027899b/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=

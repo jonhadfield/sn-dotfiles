@@ -38,7 +38,7 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 		return
 	}
 
-	err = preflight(tagsWithNotes, paths)
+	err = checkNoteTagConflicts(tagsWithNotes)
 	if err != nil {
 		return
 	}

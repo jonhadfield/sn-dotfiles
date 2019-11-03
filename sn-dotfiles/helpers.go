@@ -453,17 +453,6 @@ func noteWithTagExists(tag, name string, twn tagsWithNotes) (count int) {
 	return count
 }
 
-func isSymlink(path string) (res bool, err error) {
-	var f os.FileInfo
-	f, err = os.Lstat(path)
-
-	if err != nil {
-		return
-	}
-
-	return f.Mode()&os.ModeSymlink != 0, err
-}
-
 func dedupe(in []string) []string {
 	if len(in) == 0 {
 		return []string{}
