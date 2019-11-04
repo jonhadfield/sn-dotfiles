@@ -415,7 +415,7 @@ func getNotesToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 		for _, t := range twn {
 			tagTitle := t.tag.Content.GetTitle()
 			var tp string
-			tp, err = tagTitleToFSDIR(tagTitle, home)
+			tp, err = tagTitleToFSDir(tagTitle, home)
 			if err != nil {
 				return
 			}
@@ -474,7 +474,7 @@ func dedupe(in []string) []string {
 	return in[:j+1]
 }
 
-func tagTitleToFSDIR(title, home string) (path string, err error) {
+func tagTitleToFSDir(title, home string) (path string, err error) {
 	if title == "" {
 		err = errors.New("tag title required")
 		return
@@ -565,6 +565,14 @@ func putItems(session gosn.Session, items gosn.Items) (pio gosn.PutItemsOutput, 
 	}
 
 	return gosn.PutItems(pii)
+}
+
+func stripTrailingSlash(in string) string {
+	if strings.HasSuffix(in, "/") {
+		return in[:len(in)-1]
+	}
+
+	return in
 }
 
 func colourDiff(diff string) string {
