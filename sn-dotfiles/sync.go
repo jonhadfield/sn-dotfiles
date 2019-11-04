@@ -13,14 +13,14 @@ import (
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
-func Sync(in SyncInput) (out SyncOutput, err error) {
-	if err = checkPathsExist(in.Exclude); err != nil {
+func Sync(si SyncInput) (so SyncOutput, err error) {
+	if err = checkPathsExist(si.Exclude); err != nil {
 		return
 	}
 
 	var remote tagsWithNotes
 
-	remote, err = get(in.Session)
+	remote, err = get(si.Session)
 	if err != nil {
 		return
 	}
@@ -31,8 +31,8 @@ func Sync(in SyncInput) (out SyncOutput, err error) {
 	}
 
 	var sOut syncOutput
-	sOut, err = sync(syncInput{session: in.Session, twn: remote, home: in.Home, paths: in.Paths,
-		exclude: in.Exclude, debug: in.Debug})
+	sOut, err = sync(syncInput{session: si.Session, twn: remote, home: si.Home, paths: si.Paths,
+		exclude: si.Exclude, debug: si.Debug})
 
 	if err != nil {
 		return
@@ -56,10 +56,10 @@ type SyncOutput struct {
 	Msg                string
 }
 
-func sync(in syncInput) (out syncOutput, err error) {
+func sync(si syncInput) (so syncOutput, err error) {
 	var itemDiffs []ItemDiff
 
-	itemDiffs, err = compare(in.twn, in.home, in.paths, in.exclude, in.debug)
+	itemDiffs, err = compare(si.twn, si.home, si.paths, si.exclude, si.debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
@@ -74,26 +74,26 @@ func sync(in syncInput) (out syncOutput, err error) {
 
 	for _, itemDiff := range itemDiffs {
 		// check if itemDiff is for a path to be excluded
-		if matchesPathsToExclude(in.home, itemDiff.homeRelPath, in.exclude) {
-			debugPrint(in.debug, fmt.Sprintf("sync | excluding: %s", itemDiff.homeRelPath))
+		if matchesPathsToExclude(si.home, itemDiff.homeRelPath, si.exclude) {
+			debugPrint(si.debug, fmt.Sprintf("sync | excluding: %s", itemDiff.homeRelPath))
 			continue
 		}
 
 		switch itemDiff.diff {
 		case localNewer:
 			//push
-			debugPrint(in.debug, fmt.Sprintf("sync | local %s is newer", itemDiff.homeRelPath))
+			debugPrint(si.debug, fmt.Sprintf("sync | local %s is newer", itemDiff.homeRelPath))
 			itemDiff.remote.Content.SetText(itemDiff.local)
 			itemsToPush = append(itemsToPush, itemDiff)
 			itemsToSync = true
 		case localMissing:
 			// pull
-			debugPrint(in.debug, fmt.Sprintf("sync | %s is missing", itemDiff.homeRelPath))
+			debugPrint(si.debug, fmt.Sprintf("sync | %s is missing", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		case remoteNewer:
 			// pull
-			debugPrint(in.debug, fmt.Sprintf("sync | remote %s is newer", itemDiff.homeRelPath))
+			debugPrint(si.debug, fmt.Sprintf("sync | remote %s is newer", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		}
@@ -101,14 +101,14 @@ func sync(in syncInput) (out syncOutput, err error) {
 
 	// check items to sync
 	if !itemsToSync {
-		out.msg = fmt.Sprint(bold("nothing to do"))
+		so.msg = fmt.Sprint(bold("nothing to do"))
 		return
 	}
 
 	// push
 	if len(itemsToPush) > 0 {
-		_, err = push(in.session, itemsToPush)
-		out.noPushed = len(itemsToPush)
+		_, err = push(si.session, itemsToPush)
+		so.noPushed = len(itemsToPush)
 
 		if err != nil {
 			return
@@ -129,16 +129,16 @@ func sync(in syncInput) (out syncOutput, err error) {
 		return
 	}
 
-	out.noPulled = len(itemsToPull)
+	so.noPulled = len(itemsToPull)
 
 	for _, pullItem := range itemsToPull {
 		line := fmt.Sprintf("%s | %s\n", bold(addDot(pullItem.homeRelPath)), strPulled)
 		res = append(res, line)
 	}
 
-	out.msg = fmt.Sprint(columnize.SimpleFormat(res))
+	so.msg = fmt.Sprint(columnize.SimpleFormat(res))
 
-	return out, err
+	return so, err
 }
 
 type syncInput struct {

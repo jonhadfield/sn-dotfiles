@@ -19,6 +19,7 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 	tag := gosn.NewTag()
 	tagContent := gosn.NewTagContent()
 	tagContent.SetTitle("newTag")
+
 	err := remove(gosn.Session{
 		Token:  "invalid",
 		Mk:     "invalid",
@@ -36,24 +37,44 @@ func TestRemoveInvalidSession(t *testing.T) {
 	fwc[gitConfigPath] = "git config content"
 
 	assert.NoError(t, createTemporaryFiles(fwc))
-	_, _, _, _, err := Remove(gosn.Session{
-		Token:  "invalid",
-		Mk:     "invalid",
-		Ak:     "invalid",
-		Server: "invalid",
-	}, home, []string{gitConfigPath}, true)
+
+	ri := RemoveInput{
+		Session: gosn.Session{
+			Token:  "invalid",
+			Mk:     "invalid",
+			Ak:     "invalid",
+			Server: "invalid",
+		},
+		Home:  home,
+		Paths: []string{gitConfigPath},
+		Debug: true,
+	}
+
+	_, err := Remove(ri)
 	assert.Error(t, err)
 }
 
 func TestRemoveInvalidPath(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
-	_, _, _, _, err = Remove(session, getTemporaryHome(), []string{"/invalid"}, true)
+	ri := RemoveInput{
+		Session: session,
+		Home:    getTemporaryHome(),
+		Paths:   []string{"/invalid"},
+		Debug:   true,
+	}
+	_, err = Remove(ri)
 	assert.Error(t, err)
 }
 
 func TestRemoveNoPaths(t *testing.T) {
-	_, _, _, _, err := Remove(gosn.Session{}, getTemporaryHome(), []string{}, true)
+	ri := RemoveInput{
+		Session: gosn.Session{},
+		Home:    getTemporaryHome(),
+		Paths:   nil,
+		Debug:   true,
+	}
+	_, err := Remove(ri)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "paths")
 }
@@ -91,49 +112,82 @@ func TestRemoveItems(t *testing.T) {
 	assert.Len(t, ao.PathsInvalid, 0)
 
 	// remove single path
-	var notesRemoved, tagsRemoved, noNotTracked int
-	var msg string
-	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, home, []string{gitConfigPath}, true)
+	ri := RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{gitConfigPath},
+		Debug:   true,
+	}
+
+	var ro RemoveOutput
+	ro, err = Remove(ri)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, notesRemoved)
-	assert.Equal(t, 0, tagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
-	assert.NotEmpty(t, msg)
+	assert.Equal(t, 1, ro.NotesRemoved)
+	assert.Equal(t, 0, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
+	assert.NotEmpty(t, ro.Msg)
 	re := regexp.MustCompile("\\.gitconfig\\s+removed")
-	assert.True(t, re.MatchString(msg))
+	assert.True(t, re.MatchString(ro.Msg))
 
 	// remove nested path with single item (with trailing slash)
-	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, home, []string{fmt.Sprintf("%s/.cars/", home)}, true)
+	ri = RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{fmt.Sprintf("%s/.cars/", home)},
+		Debug:   true,
+	}
+
+	ro, err = Remove(ri)
+
 	assert.NoError(t, err)
-	assert.Equal(t, 1, notesRemoved)
-	assert.Equal(t, 3, tagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
-	assert.NotEmpty(t, msg)
+	assert.Equal(t, 1, ro.NotesRemoved)
+	assert.Equal(t, 3, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
+	assert.NotEmpty(t, ro.Msg)
 	re = regexp.MustCompile("\\.cars/mercedes/a250/premium\\s+removed")
-	assert.True(t, re.MatchString(msg))
+	assert.True(t, re.MatchString(ro.Msg))
 
 	// remove nested path with single item (without trailing slash)
-	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, home, []string{fmt.Sprintf("%s/.fruit", home)}, true)
+	ri = RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{fmt.Sprintf("%s/.fruit", home)},
+		Debug:   true,
+	}
+
+	ro, err = Remove(ri)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, notesRemoved)
-	assert.Equal(t, 3, tagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
-	assert.NotEmpty(t, msg)
+	assert.Equal(t, 2, ro.NotesRemoved)
+	assert.Equal(t, 3, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
+	assert.NotEmpty(t, ro.Msg)
 	re = regexp.MustCompile("\\.fruit/apple\\s+removed")
-	assert.True(t, re.MatchString(msg))
+	assert.True(t, re.MatchString(ro.Msg))
 	re = regexp.MustCompile("\\.fruit/banana/yellow\\s+removed")
-	assert.True(t, re.MatchString(msg))
+	assert.True(t, re.MatchString(ro.Msg))
 
 	// ensure error with missing home
-	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, "",
-		[]string{fmt.Sprintf("%s/.fruit", home)}, true)
+	ri = RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{fmt.Sprintf("%s/.fruit", home)},
+		Debug:   true,
+	}
+
+	ro, err = Remove(ri)
+
 	assert.Error(t, err)
 
 	// ensure error with missing paths
-	notesRemoved, tagsRemoved, noNotTracked, msg, err = Remove(session, "home",
-		[]string{""}, true)
+	ri = RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{""},
+		Debug:   true,
+	}
+
+	ro, err = Remove(ri)
 	assert.Error(t, err)
-	fmt.Println(err)
 }
 
 func TestRemoveItemsRecursive(t *testing.T) {
@@ -170,13 +224,21 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
-	var noRemoved, noTagsRemoved, noNotTracked int
 	// try removing overlapping path and note in specified path
-	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{yellowPath, fruitPath, fruitPathDupe}, true)
+
+	ri := RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{yellowPath, fruitPath, fruitPathDupe},
+		Debug:   true,
+	}
+
+	var ro RemoveOutput
+	ro, err = Remove(ri)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, noRemoved)
-	assert.Equal(t, 2, noTagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
+	assert.Equal(t, 2, ro.NotesRemoved)
+	assert.Equal(t, 2, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
 }
 
 func TestRemoveItemsRecursiveTwo(t *testing.T) {
@@ -201,7 +263,6 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
 	// path to recursively remove
-	//removebananaPath := fmt.Sprintf("%s/.fruit/banana/", Home)
 	fruitPath := fmt.Sprintf("%s/.fruit", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
@@ -212,12 +273,20 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
-	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{fruitPath}, true)
+
+	ri := RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{fruitPath},
+		Debug:   true,
+	}
+
+	var ro RemoveOutput
+	ro, err = Remove(ri)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, noRemoved)
-	assert.Equal(t, 2, noTagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
+	assert.Equal(t, 2, ro.NotesRemoved)
+	assert.Equal(t, 2, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
 }
 
 func TestRemoveItemsRecursiveThree(t *testing.T) {
@@ -254,12 +323,21 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
-	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{fruitPath, lokiPath}, true)
+
+	ri := RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{fruitPath, lokiPath},
+		Debug:   true,
+	}
+
+	var ro RemoveOutput
+	ro, err = Remove(ri)
+
 	assert.NoError(t, err)
-	assert.Equal(t, 2, noRemoved)
-	assert.Equal(t, 2, noTagsRemoved)
-	assert.Equal(t, 1, noNotTracked)
+	assert.Equal(t, 2, ro.NotesRemoved)
+	assert.Equal(t, 2, ro.TagsRemoved)
+	assert.Equal(t, 1, ro.NotTracked)
 }
 
 func TestRemoveAndCheckRemoved(t *testing.T) {
@@ -286,12 +364,21 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 1)
 	assert.Len(t, ao.PathsExisting, 0)
-	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{gitConfigPath}, true)
+
+	ri := RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{gitConfigPath},
+		Debug:   true,
+	}
+
+	var ro RemoveOutput
+	ro, err = Remove(ri)
+
 	assert.NoError(t, err)
-	assert.Equal(t, 1, noRemoved)
-	assert.Equal(t, 1, noTagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
+	assert.Equal(t, 1, ro.NotesRemoved)
+	assert.Equal(t, 1, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
 	twn, _ := get(session)
 	assert.Len(t, twn, 0)
 }
@@ -325,12 +412,21 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	// dotfiles tag, .gitconfig, and acmeConfig should exist
 	assert.Len(t, ao.PathsAdded, 3)
 	assert.Len(t, ao.PathsExisting, 0)
-	var noRemoved, noTagsRemoved, noNotTracked int
-	noRemoved, noTagsRemoved, noNotTracked, _, err = Remove(session, home, []string{gitConfigPath, acmeConfigPath}, true)
+
+	ri := RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{gitConfigPath, acmeConfigPath},
+		Debug:   true,
+	}
+
+	var ro RemoveOutput
+	ro, err = Remove(ri)
+
 	assert.NoError(t, err)
-	assert.Equal(t, 2, noRemoved)
-	assert.Equal(t, 1, noTagsRemoved)
-	assert.Equal(t, 0, noNotTracked)
+	assert.Equal(t, 2, ro.NotesRemoved)
+	assert.Equal(t, 1, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
 	twn, _ := get(session)
 	// dotfiles tag and .gitconfig note should exist
 	assert.Len(t, twn, 2)

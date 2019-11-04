@@ -9,30 +9,42 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
+type RemoveInput struct {
+	Session gosn.Session
+	Home    string
+	Paths   []string
+	Debug   bool
+}
+
+type RemoveOutput struct {
+	NotesRemoved, TagsRemoved, NotTracked int
+	Msg                                   string
+}
+
 // Remove stops tracking local Paths by removing the related notes from SN
-func Remove(session gosn.Session, home string, paths []string, debug bool) (notesremoved, tagsRemoved, notTracked int, msg string, err error) {
+func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	// ensure home is passed
-	if len(home) == 0 {
+	if len(ri.Home) == 0 {
 		err = errors.New("home undefined")
 		return
 	}
 
 	// ensure home is passed
-	if len(paths) == 0 {
+	if len(ri.Paths) == 0 {
 		err = errors.New("paths undefined")
 		return
 	}
 
 	// remove any duplicate Paths
-	paths = dedupe(paths)
+	ri.Paths = dedupe(ri.Paths)
 
 	// verify Paths before delete
-	if err = checkPathsExist(paths); err != nil {
+	if err = checkPathsExist(ri.Paths); err != nil {
 		return
 	}
 
 	var tagsWithNotes tagsWithNotes
-	tagsWithNotes, err = get(session)
+	tagsWithNotes, err = get(ri.Session)
 
 	if err != nil {
 		return
@@ -47,15 +59,15 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 
 	var notesToRemove gosn.Items
 
-	for _, path := range paths {
-		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, home, tagsWithNotes)
+	for _, path := range ri.Paths {
+		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, tagsWithNotes)
 
-		debugPrint(debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
 
 		if len(matchingItems) == 0 {
 			boldHomeRelPath := bold(stripTrailingSlash(homeRelPath))
 			results = append(results, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("not tracked")))
-			notTracked++
+			ro.NotTracked++
 
 			continue
 		}
@@ -73,7 +85,7 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	}
 
 	// find any empty tags to delete
-	emptyTags := findEmptyTags(tagsWithNotes, notesToRemove, debug)
+	emptyTags := findEmptyTags(tagsWithNotes, notesToRemove, ri.Debug)
 
 	// dedupe any tags to remove
 	if emptyTags != nil {
@@ -83,15 +95,17 @@ func Remove(session gosn.Session, home string, paths []string, debug bool) (note
 	// add empty tags to list of items to remove
 	itemsToRemove := append(notesToRemove, emptyTags...)
 
-	debugPrint(debug, fmt.Sprintf("Remove | items to remove: %d", len(itemsToRemove)))
+	debugPrint(ri.Debug, fmt.Sprintf("Remove | items to remove: %d", len(itemsToRemove)))
 
-	if err = remove(session, itemsToRemove, debug); err != nil {
+	if err = remove(ri.Session, itemsToRemove, ri.Debug); err != nil {
 		return
 	}
 
-	msg = fmt.Sprint(columnize.SimpleFormat(results))
+	ro.Msg = fmt.Sprint(columnize.SimpleFormat(results))
+	ro.NotesRemoved = len(notesToRemove)
+	ro.TagsRemoved = len(emptyTags)
 
-	return len(notesToRemove), len(emptyTags), notTracked, msg, err
+	return ro, err
 }
 
 func remove(session gosn.Session, items gosn.Items, debug bool) error {

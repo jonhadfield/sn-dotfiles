@@ -566,3 +566,20 @@ func putItems(session gosn.Session, items gosn.Items) (pio gosn.PutItemsOutput, 
 
 	return gosn.PutItems(pii)
 }
+
+func colourDiff(diff string) string {
+	switch diff {
+	case identical:
+		return green(diff)
+	case localMissing:
+		return red(diff)
+	case localNewer:
+		return yellow(diff)
+	case untracked:
+		return yellow(diff)
+	case remoteNewer:
+		return yellow(diff)
+	default:
+		return diff
+	}
+}

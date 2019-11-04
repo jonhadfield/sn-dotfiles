@@ -248,10 +248,21 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			_, _, _, msg, err = sndotfiles.Remove(session, home, c.Args(), c.GlobalBool("debug"))
+			ri := sndotfiles.RemoveInput{
+				Session: session,
+				Home:    home,
+				Paths:   c.Args(),
+				Debug:   c.GlobalBool("debug"),
+			}
+
+			var ro sndotfiles.RemoveOutput
+
+			ro, err = sndotfiles.Remove(ri)
 			if err != nil {
 				return err
 			}
+			msg = ro.Msg
+
 			return err
 		},
 	}

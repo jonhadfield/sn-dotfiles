@@ -1,14 +1,12 @@
 package sndotfiles
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/jonhadfield/gosn"
 )
 
 func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
-	gosn.SetErrorLogger(log.Println)
-
 	twns, err := get(session)
 	if err != nil {
 		return 0, err
@@ -25,6 +23,8 @@ func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
 			itemsToRemove = append(itemsToRemove, n)
 		}
 	}
+
+	debugPrint(debug, fmt.Sprintf("WipeDotfileTagsAndNotes | removing %d items", len(itemsToRemove)))
 
 	var eItemsToDel gosn.EncryptedItems
 

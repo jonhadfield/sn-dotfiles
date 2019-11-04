@@ -58,20 +58,3 @@ func status(twn tagsWithNotes, home string, paths []string, debug bool) (diffs [
 
 	return diffs, msg, err
 }
-
-func colourDiff(diff string) string {
-	switch diff {
-	case identical:
-		return green(diff)
-	case localMissing:
-		return red(diff)
-	case localNewer:
-		return yellow(diff)
-	case untracked:
-		return yellow(diff)
-	case remoteNewer:
-		return yellow(diff)
-	default:
-		return diff
-	}
-}
