@@ -3,8 +3,6 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
@@ -27,6 +25,10 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	if len(ri.Home) == 0 {
 		err = errors.New("home undefined")
 		return
+	}
+
+	if StringInSlice(ri.Home, []string{"/", "/home"}, true) {
+		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ri.Home))
 	}
 
 	// ensure home is passed
@@ -132,12 +134,4 @@ func remove(session gosn.Session, items gosn.Items, debug bool) error {
 	debugPrint(debug, fmt.Sprintf("remove | items put: %d", len(pio.ResponseBody.SavedItems)))
 
 	return err
-}
-
-func stripTrailingSlash(in string) string {
-	if strings.HasSuffix(in, "/") {
-		return in[:len(in)-1]
-	}
-
-	return in
 }
