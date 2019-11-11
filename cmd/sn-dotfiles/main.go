@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/gosn"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,7 +12,6 @@ import (
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 
-	"github.com/jonhadfield/sn-cli/auth"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 )
@@ -92,7 +92,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
+			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -126,7 +126,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
+			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -192,7 +192,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				absPaths = append(absPaths, ap)
 			}
 
-			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
+			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -239,7 +239,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if invalidPaths {
 				return nil
 			}
-			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
+			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -274,7 +274,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := auth.GetSession(c.GlobalBool("use-session"),
+			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
@@ -335,15 +335,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				os.Exit(1)
 			}
 			if sAdd {
-				msg, err = auth.AddSession(c.GlobalString("server"), sessKey, nil)
+				msg, err = gosn.AddSession(c.GlobalString("server"), sessKey, nil)
 				return err
 			}
 			if sRemove {
-				msg = auth.RemoveSession(nil)
+				msg = gosn.RemoveSession(nil)
 				return nil
 			}
 			if sStatus {
-				msg, err = auth.SessionStatus(sessKey, nil)
+				msg, err = gosn.SessionStatus(sessKey, nil)
 			}
 			return err
 		},
@@ -372,7 +372,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, email, err := auth.GetSession(c.GlobalBool("use-session"),
+			session, email, err := gosn.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {
 				return err
