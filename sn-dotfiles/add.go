@@ -2,11 +2,12 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/ryanuber/columnize"
 
@@ -23,6 +24,7 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 
 	if StringInSlice(ai.Home, []string{"/", "/home"}, true) {
 		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ai.Home))
+		return
 	}
 
 	var noRecurse bool

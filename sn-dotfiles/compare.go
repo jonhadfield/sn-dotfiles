@@ -18,10 +18,11 @@ func compare(remote tagsWithNotes, home string, paths, exclude []string, debug b
 	if len(remote) == 0 {
 		return nil, fmt.Errorf("tags with notes not supplied")
 	}
-	// if Paths specified, check all of them exist before continuing
+
+	// check paths provided
 	if len(paths) > 0 {
-		if err := checkPathsExist(paths); err != nil {
-			return nil, err
+		if err = checkFSPaths(paths); err != nil {
+			return
 		}
 	}
 

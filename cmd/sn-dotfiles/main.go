@@ -3,12 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/gosn"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/jonhadfield/gosn"
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 

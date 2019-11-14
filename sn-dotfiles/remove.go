@@ -3,6 +3,7 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+
 	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
@@ -28,7 +29,8 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	}
 
 	if StringInSlice(ri.Home, []string{"/", "/home"}, true) {
-		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ri.Home))
+		err = fmt.Errorf("not a good idea to use '%s' as home dir", ri.Home)
+		return
 	}
 
 	// check paths defined
