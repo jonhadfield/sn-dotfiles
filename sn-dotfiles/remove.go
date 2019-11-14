@@ -41,7 +41,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	// remove any duplicate paths
 	ri.Paths = dedupe(ri.Paths)
 
-	debugPrint(ri.Debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ri.Paths)))
+	debugPrint(ri.Debug, fmt.Sprintf("Remove | paths after dedupe: %d", len(ri.Paths)))
 
 	// check paths are valid
 	if err = checkFSPaths(ri.Paths); err != nil {
