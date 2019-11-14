@@ -13,6 +13,7 @@ require (
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
+	github.com/pkg/errors v0.8.0
 	github.com/ryanuber/columnize v2.1.0+incompatible
 	github.com/spf13/viper v1.5.0
 	github.com/stretchr/testify v1.4.0

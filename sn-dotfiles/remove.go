@@ -31,17 +31,18 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ri.Home))
 	}
 
-	// ensure home is passed
+	// check paths defined
 	if len(ri.Paths) == 0 {
-		err = errors.New("paths undefined")
-		return
+		return ro, errors.New("paths not defined")
 	}
 
-	// remove any duplicate Paths
+	// remove any duplicate paths
 	ri.Paths = dedupe(ri.Paths)
 
-	// verify Paths before delete
-	if err = checkPathsExist(ri.Paths); err != nil {
+	debugPrint(ri.Debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ri.Paths)))
+
+	// check paths are valid
+	if err = checkFSPaths(ri.Paths); err != nil {
 		return
 	}
 
