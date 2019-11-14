@@ -105,7 +105,7 @@ func TestRemoveItems(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -220,7 +220,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -269,7 +269,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -319,7 +319,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -360,7 +360,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 1)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -404,10 +404,9 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	fwc[acmeConfigPath] = "acme config"
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	// TODO: return notes/files added AND tags added?
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, awsConfigPath, acmeConfigPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	// dotfiles tag, .gitconfig, and acmeConfig should exist
 	assert.Len(t, ao.PathsAdded, 3)
