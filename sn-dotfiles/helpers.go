@@ -369,18 +369,13 @@ func getNotesToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 		return
 	}
 
-	var isDir bool
-	if pathType == "dir" {
-		isDir = true
-	}
-
 	homeRelPath = stripHome(path, home)
 	remoteEquiv := homeRelPath
 
 	// get item tags from remoteEquiv by stripping <DotFilesTag> and filename from remoteEquiv
 	var noteTag, noteTitle string
 
-	if !isDir {
+	if pathType != "dir" {
 		// split between tag and title if remote equivalent doesn't contain slash
 		if strings.Contains(remoteEquiv, string(os.PathSeparator)) {
 			remoteEquiv = stripDot(remoteEquiv)

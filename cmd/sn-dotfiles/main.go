@@ -207,7 +207,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			var ao sndotfiles.AddOutput
 
-			ao, err = sndotfiles.Add(ai, c.GlobalBool("debug"))
+			ao, err = sndotfiles.Add(ai)
 			if err != nil {
 				return err
 			}
@@ -229,16 +229,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			var invalidPaths bool
-			for _, path := range c.Args() {
-				if !isValidDotfilePath(path) {
-					invalidPaths = true
-					fmt.Printf("\"%s\" is not a valid dotfile path\n", path)
-				}
-			}
-			if invalidPaths {
+
+			if len(c.Args()) == 0 {
+				msg = "error: paths not specified"
+				_ = cli.ShowCommandHelp(c, "add")
 				return nil
 			}
+
 			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"))
 			if err != nil {

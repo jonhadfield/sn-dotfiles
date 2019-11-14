@@ -13,9 +13,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	fmt.Println("RUNNING TEST MAIN")
+	session, err := GetTestSession()
+	if err != nil {
+		fmt.Println("failed to get session:", err)
+		os.Exit(1)
+	}
+	if _, err := WipeTheLot(session); err != nil {
+		fmt.Println("failed to wipe:", err)
+		os.Exit(1)
+	}
+	os.Exit(m.Run())
+}
+
 func getTemporaryHome() string {
 	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
 	return strings.ReplaceAll(home, "//", "/")
+}
+
+func TestAddNoPaths(t *testing.T) {
+	ai := AddInput{
+		Session: gosn.Session{},
+		Home:    getTemporaryHome(),
+		Paths:   nil,
+		Debug:   true,
+	}
+	_, err := Add(ai)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "paths")
 }
 
 func TestAddInvalidSession(t *testing.T) {
@@ -31,7 +58,7 @@ func TestAddInvalidSession(t *testing.T) {
 		Ak:     "invalid",
 		Server: "invalid",
 	}, Home: home, Paths: []string{gitConfigPath}, Debug: true}
-	_, err := Add(ai, true)
+	_, err := Add(ai)
 	assert.Error(t, err)
 }
 
@@ -55,7 +82,7 @@ func TestAddInvalidPath(t *testing.T) {
 
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, duffPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 
 	assert.Error(t, err)
 	assert.Equal(t, 0, len(ao.PathsAdded))
@@ -82,7 +109,7 @@ func TestAddOne(t *testing.T) {
 	// add item
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(ao.PathsAdded))
 	assert.Equal(t, applePath, ao.PathsAdded[0])
@@ -113,7 +140,7 @@ func TestAddTwoSameTag(t *testing.T) {
 	// add item
 	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, vwPath, bananaPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(ao.PathsAdded))
 	assert.Contains(t, ao.PathsAdded, applePath)
@@ -152,7 +179,7 @@ func TestAddRecursive(t *testing.T) {
 	// add item
 	ai := AddInput{Session: session, Home: home, Paths: []string{fruitPath, carsPath}, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(ao.PathsAdded))
 	assert.Contains(t, ao.PathsAdded, applePath)
@@ -182,7 +209,7 @@ func TestAddAll(t *testing.T) {
 	// add item
 	ai := AddInput{Session: session, Home: home, All: true, Debug: true}
 	var ao AddOutput
-	ao, err = Add(ai, true)
+	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(ao.PathsAdded))
 	assert.Contains(t, ao.PathsAdded, file1Path)
