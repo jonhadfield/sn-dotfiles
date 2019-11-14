@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn"
 	"index/suffixarray"
 	"os"
 	"os/exec"
@@ -10,6 +9,8 @@ import (
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/jonhadfield/gosn"
 
 	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"github.com/spf13/viper"
@@ -319,7 +320,7 @@ func TestDiff(t *testing.T) {
 	assert.True(t, disp)
 	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "diff", "~/.does/not/exist"})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to read")
+	assert.Contains(t, err.Error(), "no such file")
 }
 
 func TestSyncExclude(t *testing.T) {
