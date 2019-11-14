@@ -17,6 +17,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+	viper.SetEnvPrefix("sn")
+	_ = viper.BindEnv("email")
+	_ = viper.BindEnv("password")
+	_ = viper.BindEnv("server")
+	session, _, err := gosn.GetSession(false, "", os.Getenv("SN_SERVER"))
+	if _, err = sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		fmt.Println("failed to wipe:", err)
+		os.Exit(1)
+	}
+
+	os.Exit(m.Run())
+}
+
 func TestCLIInvalidCommand(t *testing.T) {
 	// Run the crashing code when FLAG is set
 	if os.Getenv("FLAG") == "1" {
@@ -134,7 +148,7 @@ func TestRemove(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai, true)
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -168,7 +182,7 @@ func TestWipe(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai, true)
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -201,7 +215,7 @@ func TestStatus(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai, true)
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "status", applePath})
 	assert.NoError(t, err)
@@ -234,7 +248,7 @@ func TestSync(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath, lemonPath}, Debug: true}
-	_, err = sndotfiles2.Add(ai, true)
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
@@ -294,7 +308,7 @@ func TestDiff(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai, true)
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -331,7 +345,7 @@ func TestSyncExclude(t *testing.T) {
 	}()
 	assert.NoError(t, err)
 	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai, true)
+	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool

@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,15 +14,30 @@ import (
 )
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
-func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
+func Add(ai AddInput) (ao AddOutput, err error) {
+	// ensure home is passed
+	if len(ai.Home) == 0 {
+		err = errors.New("home undefined")
+		return
+	}
+
+	if StringInSlice(ai.Home, []string{"/", "/home"}, true) {
+		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ai.Home))
+	}
+
 	var noRecurse bool
 	if ai.All {
 		noRecurse = true
 
-		ai.Paths, err = discoverDotfilesInHome(ai.Home, debug)
+		ai.Paths, err = discoverDotfilesInHome(ai.Home, ai.Debug)
 		if err != nil {
 			return
 		}
+	}
+
+	// check paths defined
+	if len(ai.Paths) == 0 {
+		return ao, errors.New("paths not defined")
 	}
 
 	// remove any duplicate paths
@@ -32,7 +48,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 		return
 	}
 
-	debugPrint(debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
+	debugPrint(ai.Debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
 
 	var twn tagsWithNotes
 
@@ -49,7 +65,7 @@ func Add(ai AddInput, debug bool) (ao AddOutput, err error) {
 
 	ai.Twn = twn
 
-	return add(ai, noRecurse, debug)
+	return add(ai, noRecurse, ai.Debug)
 }
 
 type AddInput struct {
@@ -73,7 +89,7 @@ func add(ai AddInput, noRecurse, debug bool) (ao AddOutput, err error) {
 	var fsPathsToAdd []string
 
 	// generate list of Paths to add
-	fsPathsToAdd, err = getLocalFSPathsToAdd(ai.Paths, noRecurse)
+	fsPathsToAdd, err = getLocalFSPaths(ai.Paths, noRecurse)
 	if err != nil {
 		return
 	}
@@ -156,7 +172,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
 }
 
-func getLocalFSPathsToAdd(paths []string, noRecurse bool) (finalPaths []string, err error) {
+func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err error) {
 	// check for directories
 	for _, path := range paths {
 		// if path is directory, then walk to generate list of additional Paths
