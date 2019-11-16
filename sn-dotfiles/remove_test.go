@@ -158,7 +158,7 @@ func TestRemoveItems(t *testing.T) {
 	ro, err = Remove(ri)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, ro.NotesRemoved)
-	assert.Equal(t, 3, ro.TagsRemoved)
+	assert.Equal(t, 2, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
 	assert.NotEmpty(t, ro.Msg)
 	re = regexp.MustCompile("\\.fruit/apple\\s+removed")
@@ -312,22 +312,25 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	fwc[premiumPath] = "premium content"
 	lokiPath := fmt.Sprintf("%s/.dogs/labrador/loki", home)
 	fwc[lokiPath] = "chicken please content"
-	// path to recursively remove
+	housePath := fmt.Sprintf("%s/.house/flat", home)
+	fwc[housePath] = "flat description"
+	// paths to recursively remove
 	fruitPath := fmt.Sprintf("%s/.fruit/", home)
+	labradorPath := fmt.Sprintf("%s/.dogs/labrador", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}, Debug: true}
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath, labradorPath}, Debug: true}
 	var ao AddOutput
 	ao, err = Add(ai)
 	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 4)
+	assert.Len(t, ao.PathsAdded, 5)
 	assert.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
 		Session: session,
 		Home:    home,
-		Paths:   []string{fruitPath, lokiPath},
+		Paths:   []string{fruitPath, labradorPath, housePath},
 		Debug:   true,
 	}
 
@@ -335,8 +338,8 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	ro, err = Remove(ri)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 2, ro.NotesRemoved)
-	assert.Equal(t, 2, ro.TagsRemoved)
+	assert.Equal(t, 3, ro.NotesRemoved)
+	assert.Equal(t, 4, ro.TagsRemoved)
 	assert.Equal(t, 1, ro.NotTracked)
 }
 

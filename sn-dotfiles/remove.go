@@ -40,7 +40,6 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 
 	// remove any duplicate paths
 	ri.Paths = dedupe(ri.Paths)
-
 	debugPrint(ri.Debug, fmt.Sprintf("Remove | paths after dedupe: %d", len(ri.Paths)))
 
 	// check paths are valid
@@ -65,7 +64,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	var notesToRemove gosn.Items
 
 	for _, path := range ri.Paths {
-		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, tagsWithNotes)
+		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, tagsWithNotes, ri.Debug)
 
 		debugPrint(ri.Debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
 
@@ -101,6 +100,10 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	itemsToRemove := append(notesToRemove, emptyTags...)
 
 	debugPrint(ri.Debug, fmt.Sprintf("Remove | items to remove: %d", len(itemsToRemove)))
+
+	for _, i := range itemsToRemove {
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | item to remove: %s: %s", i.ContentType, i.Content.GetTitle()))
+	}
 
 	if err = remove(ri.Session, itemsToRemove, ri.Debug); err != nil {
 		return

@@ -15,7 +15,6 @@ import (
 
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
-	fmt.Println("RUNNING TEST MAIN")
 	session, err := GetTestSession()
 	if err != nil {
 		fmt.Println("failed to get session:", err)

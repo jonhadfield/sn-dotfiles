@@ -11,6 +11,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetAllTagsWithoutNotes(t *testing.T) {
+	fiestaNote := gosn.NewNote()
+	fiestaNoteContent := gosn.NewNoteContent()
+	fiestaNoteContent.SetTitle("fiesta")
+	fiestaNote.Content = fiestaNoteContent
+
+	focusNote := gosn.NewNote()
+	focusNoteContent := gosn.NewNoteContent()
+	focusNoteContent.SetTitle("focus")
+	focusNote.Content = focusNoteContent
+
+	carsTagContent := gosn.NewTagContent()
+	carsTag := gosn.NewTag()
+	carsTagContent.SetTitle("cars")
+	carsTag.Content = carsTagContent
+
+	carsFordTagContent := gosn.NewTagContent()
+	carsFordTag := gosn.NewTag()
+	carsFordTagContent.SetTitle("cars.ford")
+	carsFordTag.Content = carsTagContent
+
+	twn := tagsWithNotes{
+		tagWithNotes{tag: *carsFordTag, notes: []gosn.Item{*fiestaNote, *focusNote}},
+	}
+	tagsWithoutNotes := getAllTagsWithoutNotes(twn, gosn.Items{*focusNote}, true)
+	// should be zero as cars.ford tag still has fiesta note remaining
+	assert.Len(t, tagsWithoutNotes, 0)
+	tagsWithoutNotes = getAllTagsWithoutNotes(twn, gosn.Items{*focusNote, *fiestaNote}, true)
+	// should be one as cars.ford tag no longer has notes (function doesn't check if cars tag is empty)
+	assert.Len(t, tagsWithoutNotes, 1)
+}
+
 func TestTagTitleToFSDIR(t *testing.T) {
 	home := getTemporaryHome()
 	// missing Home should return err

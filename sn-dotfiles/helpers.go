@@ -248,7 +248,9 @@ func itemInItems(item gosn.Item, items gosn.Items) bool {
 	return false
 }
 
-func getAllTagsWithoutNotes(twn tagsWithNotes, deletedNotes gosn.Items) (tagsWithoutNotes []string) {
+// getAllTagsWithoutNotes finds all tags that no longer have notes
+// (doesn't check tags that are empty after child tag(s) removed)
+func getAllTagsWithoutNotes(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) (tagsWithoutNotes []string) {
 	// get a map of all tags and notes, minus the notes to delete
 	res := make(map[string]int)
 	// initialise map with 0 count
@@ -257,6 +259,8 @@ func getAllTagsWithoutNotes(twn tagsWithNotes, deletedNotes gosn.Items) (tagsWit
 	}
 	// get a count of notes for each tag
 	for _, t := range twn {
+		debugPrint(debug, fmt.Sprintf("getAllTagsWithoutNotes | tag: %s", t.tag.Content.GetTitle()))
+
 		// generate list of tags to reduce later
 		for _, n := range t.notes {
 			if !itemInItems(n, deletedNotes) {
@@ -267,6 +271,7 @@ func getAllTagsWithoutNotes(twn tagsWithNotes, deletedNotes gosn.Items) (tagsWit
 	// create list of tags without notes
 	for tn, count := range res {
 		if count == 0 {
+			debugPrint(debug, fmt.Sprintf("getAllTagsWithoutNotes | tag: %s has no notes", tn))
 			tagsWithoutNotes = append(tagsWithoutNotes, tn)
 		}
 	}
@@ -284,8 +289,11 @@ func removeStringFromSlice(item string, slice []string) (updatedSlice []string) 
 	return
 }
 
+// findEmptyTags takes a set of tags with notes and a list of notes being deleted
+// in order to find all tags that are already empty or will be empty once the notes are deleted
 func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.Items {
-	allTagsWithoutNotes := getAllTagsWithoutNotes(twn, deletedNotes)
+	// get a list of tags without notes (including those that have just become noteless)
+	allTagsWithoutNotes := getAllTagsWithoutNotes(twn, deletedNotes, debug)
 
 	// generate a map of tag child counts
 	allTagsChildMap := make(map[string][]string)
@@ -295,7 +303,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 	var allDotfileChildTags []string
 	// for each tag, the last item is the child
 	for _, atwn := range twn {
-		if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") {
+		if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") || atwn.tag.Content.GetTitle() == DotFilesTag {
 			allDotfileChildTags = append(allDotfileChildTags, atwn.tag.Content.GetTitle())
 		}
 
@@ -309,18 +317,30 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 		}
 	}
 
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsWithoutNotes: %s", allTagsWithoutNotes))
+
 	// remove tags without notes and without children
 	for {
 		var changeMade bool
 
+		// loop through all tags and children looking for those without child tags
 		for k, v := range allTagsChildMap {
+			debugPrint(debug, fmt.Sprintf("findEmptyTags | tag: %s children: %s", k, v))
+
 			for _, i := range v {
 				completeTag := k + "." + i
 				// check if noteless tag exists
+				debugPrint(debug, fmt.Sprintf("findEmptyTags | completeTag: %s", completeTag))
+
 				if StringInSlice(completeTag, allTagsWithoutNotes, true) {
+					debugPrint(debug, fmt.Sprintf("findEmptyTags | completeTag: %s exists in: %s", completeTag, allTagsWithoutNotes))
+
 					// check if tag still has children
 					if len(allTagsChildMap[completeTag]) == 0 {
+						debugPrint(debug, fmt.Sprintf("findEmptyTags | removing: %s from %s", i, v))
 						allTagsChildMap[k] = removeStringFromSlice(i, v)
+						debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsChildMap is now: %s", allTagsChildMap))
+
 						tagsToRemove = append(tagsToRemove, k+"."+i)
 						changeMade = true
 					}
@@ -332,15 +352,9 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 			break
 		}
 	}
-	// now remove tags without children
-	for k, v := range allTagsChildMap {
-		if len(v) == 0 {
-			delete(allTagsChildMap, k)
-			tagsToRemove = append(tagsToRemove, k)
-		}
-	}
 
 	tagsToRemove = dedupe(tagsToRemove)
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | tags to remove (deduped): %s", tagsToRemove))
 
 	// now remove dotfiles tag if it has no children
 	if len(tagsToRemove) == len(allDotfileChildTags) {
@@ -363,7 +377,7 @@ func tagTitlesToTags(tagTitles []string, twn tagsWithNotes) (res gosn.Items) {
 	return
 }
 
-func getNotesToRemove(path, home string, twn tagsWithNotes) (homeRelPath string, pathsToRemove []string, res gosn.Items) {
+func getNotesToRemove(path, home string, twn tagsWithNotes, debug bool) (homeRelPath string, pathsToRemove []string, res gosn.Items) {
 	pathType, err := getPathType(path)
 	if err != nil {
 		return
@@ -372,8 +386,12 @@ func getNotesToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 	homeRelPath = stripHome(path, home)
 	remoteEquiv := homeRelPath
 
+	debugPrint(debug, fmt.Sprintf("getNotesToRemove | path: '%s': %s", path, remoteEquiv))
+
 	// get item tags from remoteEquiv by stripping <DotFilesTag> and filename from remoteEquiv
 	var noteTag, noteTitle string
+
+	debugPrint(debug, fmt.Sprintf("getNotesToRemove | path type: %s", pathType))
 
 	if pathType != "dir" {
 		// split between tag and title if remote equivalent doesn't contain slash
@@ -400,12 +418,19 @@ func getNotesToRemove(path, home string, twn tagsWithNotes) (homeRelPath string,
 	} else {
 		// tag specified so find all notes matching tag and tags underneath
 		remoteEquiv = stripDot(remoteEquiv)
+		debugPrint(debug, fmt.Sprintf("getNotesToRemove | remoteEquiv: %s", remoteEquiv))
 
 		// strip trailing slash if provided
 		if strings.HasSuffix(remoteEquiv, string(os.PathSeparator)) {
 			remoteEquiv = remoteEquiv[:len(remoteEquiv)-1]
 		}
+
+		// replace path separatators with dots
+		remoteEquiv = strings.ReplaceAll(remoteEquiv, string(os.PathSeparator), ".")
+
 		noteTag = DotFilesTag + "." + remoteEquiv
+		debugPrint(debug, fmt.Sprintf("getNotesToRemove | find notes matching tag: %s", noteTag))
+
 		// find notes matching tag
 		for _, t := range twn {
 			tagTitle := t.tag.Content.GetTitle()
