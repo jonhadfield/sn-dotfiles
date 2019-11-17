@@ -96,6 +96,10 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		emptyTags.DeDupe()
 	}
 
+	for x, et := range emptyTags {
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | tags to remove: [%d] %s", x, et.Content.GetTitle()))
+	}
+
 	// add empty tags to list of items to remove
 	itemsToRemove := append(notesToRemove, emptyTags...)
 

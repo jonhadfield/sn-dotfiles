@@ -294,6 +294,7 @@ func removeStringFromSlice(item string, slice []string) (updatedSlice []string) 
 func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.Items {
 	// get a list of tags without notes (including those that have just become noteless)
 	allTagsWithoutNotes := getAllTagsWithoutNotes(twn, deletedNotes, debug)
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsWithoutNotes: %s", allTagsWithoutNotes))
 
 	// generate a map of tag child counts
 	allTagsChildMap := make(map[string][]string)
@@ -301,9 +302,11 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 	var tagsToRemove []string
 
 	var allDotfileChildTags []string
+	// loop through all identified tags with their associated notes and generate a map of them
 	// for each tag, the last item is the child
 	for _, atwn := range twn {
-		if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") || atwn.tag.Content.GetTitle() == DotFilesTag {
+		//if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") || atwn.tag.Content.GetTitle() == DotFilesTag {
+		if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") {
 			allDotfileChildTags = append(allDotfileChildTags, atwn.tag.Content.GetTitle())
 		}
 
@@ -317,6 +320,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 		}
 	}
 
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsChildMap: %s", allTagsChildMap))
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsWithoutNotes: %s", allTagsWithoutNotes))
 
 	// remove tags without notes and without children
@@ -354,13 +358,17 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Items, debug bool) gosn.
 	}
 
 	tagsToRemove = dedupe(tagsToRemove)
-	debugPrint(debug, fmt.Sprintf("findEmptyTags | tags to remove (deduped): %s", tagsToRemove))
 
 	// now remove dotfiles tag if it has no children
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | tagsToRemove: %s", tagsToRemove))
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | allDotfileChildTags: %s", allDotfileChildTags))
+
 	if len(tagsToRemove) == len(allDotfileChildTags) {
 		tagsToRemove = append(tagsToRemove, DotFilesTag)
 		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", DotFilesTag))
 	}
+
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | tags to remove (deduped): %s", tagsToRemove))
 
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | total to remove: %d", len(tagsToRemove)))
 

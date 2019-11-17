@@ -158,7 +158,7 @@ func TestRemoveItems(t *testing.T) {
 	ro, err = Remove(ri)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, ro.NotesRemoved)
-	assert.Equal(t, 2, ro.TagsRemoved)
+	assert.Equal(t, 3, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
 	assert.NotEmpty(t, ro.Msg)
 	re = regexp.MustCompile("\\.fruit/apple\\s+removed")
