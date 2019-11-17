@@ -68,6 +68,8 @@ github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46 h1:2mnXOpSPmJ8wnO
 github.com/jonhadfield/gosn v0.0.0-20190930203833-c213d8289d46/go.mod h1:s/C+F1Np2mlCvzHNinGQqz+IedNX2Eu+6PMT50I6bac=
 github.com/jonhadfield/gosn v0.0.0-20191111215415-15b083b40a06 h1:SnwKq+taki0jt6LkbYJMVS2fjhSg23DdmU8BFgOrCCc=
 github.com/jonhadfield/gosn v0.0.0-20191111215415-15b083b40a06/go.mod h1:53CKd85DjIBMpb1QiyT7DWWZDwpyclxj/xnoylSUEHw=
+github.com/jonhadfield/gosn v0.0.0-20191117154634-cb40a7d4a748 h1:V+EAEUhNYxN2D2Mwf5u+IXo37hN6pI63kQH/I6pAKh0=
+github.com/jonhadfield/gosn v0.0.0-20191117154634-cb40a7d4a748/go.mod h1:53CKd85DjIBMpb1QiyT7DWWZDwpyclxj/xnoylSUEHw=
 github.com/jonhadfield/sn-cli v0.0.0-20191011204026-5245c8ce5e18 h1:SuEm34/olwxnWW/NsucOmUWxytOd2WAxWrU7ImuHFe4=
 github.com/jonhadfield/sn-cli v0.0.0-20191011204026-5245c8ce5e18/go.mod h1:lGm6T5WQXuicIzc3BXv+SHyA/tllTTRf6LUIGfkBfTE=
 github.com/jonhadfield/sn-cli v0.0.0-20191111220039-59bccb866f1b h1:/p3l50joVgqBwPgLVvxPN+w1YWIEmXFlWZ/QQSOLyyU=
@@ -187,6 +189,8 @@ golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf h1:fnPsqIDRbCSgumaMCRpoIo
 golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20191111213947-16651526fdb4 h1:AGVXd+IAyeAb3FuQvYDYQ9+WR2JHm0+C0oYJaU1C4rs=
 golang.org/x/crypto v0.0.0-20191111213947-16651526fdb4/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
+golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f h1:kz4KIr+xcPUsI3VMoqWfPMvtnJ6MGfiVwsWSVzphMO4=
+golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=
 golang.org/x/net v0.0.0-20180826012351-8a410e7b638d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
@@ -217,6 +221,8 @@ golang.org/x/sys v0.0.0-20191029155521-f43be2a4598c h1:S/FtSvpNLtFBgjTqcKsRpsa6a
 golang.org/x/sys v0.0.0-20191029155521-f43be2a4598c/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191110163157-d32e6e3b99c4 h1:Hynbrlo6LbYI3H1IqXpkVDOcX/3HiPdhVEuyj5a59RM=
 golang.org/x/sys v0.0.0-20191110163157-d32e6e3b99c4/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20191115151921-52ab43148777 h1:wejkGHRTr38uaKRqECZlsCsJ1/TGxIyFbH32x5zUdu4=
+golang.org/x/sys v0.0.0-20191115151921-52ab43148777/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2 h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=
