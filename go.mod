@@ -8,7 +8,7 @@ require (
 	github.com/fatih/set v0.2.1
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
-	github.com/jonhadfield/gosn v0.0.0-20191117154634-cb40a7d4a748
+	github.com/jonhadfield/gosn v0.0.0-20191118090134-2469794cb59a
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
@@ -22,9 +22,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/urfave/cli v1.22.1
 	golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f // indirect
-	golang.org/x/sys v0.0.0-20191115151921-52ab43148777 // indirect
+	golang.org/x/sys v0.0.0-20191118073850-2f86c98f3482 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/yaml.v2 v2.2.5 // indirect
 )
-
-// replace github.com/jonhadfield/sn-cli => ../sn-cli
