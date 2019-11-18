@@ -61,8 +61,7 @@ github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T
 github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22gdxWY5EU2bo=
 github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77 h1:U1mtIepXhvIq0cLDLO6z1hZYS80lDXzmsZJwMgzwaf8=
 github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77/go.mod h1:9Q9pFtVLzvgKEi8++fNhmSR7HpD9+9+dPy/SECsNB6k=
-github.com/jonhadfield/gosn v0.0.0-20191117154634-cb40a7d4a748 h1:V+EAEUhNYxN2D2Mwf5u+IXo37hN6pI63kQH/I6pAKh0=
-github.com/jonhadfield/gosn v0.0.0-20191117154634-cb40a7d4a748/go.mod h1:53CKd85DjIBMpb1QiyT7DWWZDwpyclxj/xnoylSUEHw=
+github.com/jonhadfield/gosn v0.0.0-20191118090134-2469794cb59a h1:gi7M/PwYR7QzCITiF/WlKTqLWPXphh/hvstiQ6kEVN4=
 github.com/jonhadfield/gosn v0.0.0-20191118090134-2469794cb59a/go.mod h1:53CKd85DjIBMpb1QiyT7DWWZDwpyclxj/xnoylSUEHw=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
@@ -193,8 +192,6 @@ golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a h1:aYOabOQFp6Vj6W1F80affTUvO9UxmJRx8K0gsfABByQ=
 golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20191115151921-52ab43148777 h1:wejkGHRTr38uaKRqECZlsCsJ1/TGxIyFbH32x5zUdu4=
-golang.org/x/sys v0.0.0-20191115151921-52ab43148777/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191118073850-2f86c98f3482 h1:KvDjb4ikxgXnSGcAoMgJ0YUuIE44iDyT6cSRQ5vZQMs=
 golang.org/x/sys v0.0.0-20191118073850-2f86c98f3482/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
