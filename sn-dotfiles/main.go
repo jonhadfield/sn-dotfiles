@@ -26,7 +26,7 @@ var (
 func get(session gosn.Session) (t tagsWithNotes, err error) {
 	getItemsInput := gosn.GetItemsInput{
 		Session:  session,
-		PageSize: 500,
+		PageSize: 100,
 	}
 
 	var output gosn.GetItemsOutput
