@@ -60,7 +60,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 			return
 		}
 
-		debugPrint(debug, fmt.Sprintf("compare | tag title: %s is path: <Home>/%s", tagTitle, stripHome(dir, home)))
+		debugPrint(debug, fmt.Sprintf("compare | tag title: %s is path: <home>/%s", tagTitle, stripHome(dir, home)))
 		// if Paths were supplied, then check the determined dir is a prefix of one of those
 		if len(paths) > 0 && !pathIsPrefixOfPaths(dir, paths) {
 			continue
@@ -77,7 +77,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 
 			if !localExists(fullPath) {
 				// local path matching tag+note doesn't exist so set as 'local missing'
-				debugPrint(debug, fmt.Sprintf("compare | local not found: <Home>/%s", stripHome(fullPath, home)))
+				debugPrint(debug, fmt.Sprintf("compare | local not found: <home>/%s", stripHome(fullPath, home)))
 				homeRelPath := stripHome(fullPath, home)
 
 				itemDiffs = append(itemDiffs, ItemDiff{
@@ -90,7 +90,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 				})
 			} else {
 				// local does exist, so compareNoteWithFile and store generated compare
-				debugPrint(debug, fmt.Sprintf("compare | local found: <Home>/%s", stripHome(fullPath, home)))
+				debugPrint(debug, fmt.Sprintf("compare | local found: <home>/%s", stripHome(fullPath, home)))
 				remotePaths = append(remotePaths, fullPath)
 				itemDiffs = append(itemDiffs, compareNoteWithFile(tagTitle, fullPath, home, d, debug))
 			}
@@ -101,7 +101,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 }
 
 func compareNoteWithFile(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff {
-	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <Home>/%s",
+	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <home>/%s",
 		tagTitle, stripHome(path, home)))
 
 	localStat, err := os.Stat(path)

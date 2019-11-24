@@ -13,6 +13,6 @@ func TestGet(t *testing.T) {
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	})
+	}, true)
 	assert.Error(t, err)
 }

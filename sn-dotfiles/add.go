@@ -54,7 +54,7 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 
 	var twn tagsWithNotes
 
-	twn, err = get(ai.Session)
+	twn, err = get(ai.Session, ai.Debug)
 	if err != nil {
 		return
 	}
@@ -114,7 +114,7 @@ func add(ai AddInput, noRecurse, debug bool) (ao AddOutput, err error) {
 		tagToItemMap[DotFilesTag] = gosn.Items{}
 	}
 	// push and tag items
-	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, ai.Twn)
+	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, ai.Twn, debug)
 
 	if err != nil {
 		return

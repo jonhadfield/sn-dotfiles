@@ -51,7 +51,7 @@ func stripHome(in, home string) string {
 	return in
 }
 
-func push(session gosn.Session, itemDiffs []ItemDiff) (pio gosn.PutItemsOutput, err error) {
+func push(session gosn.Session, itemDiffs []ItemDiff, debug bool) (pio gosn.PutItemsOutput, err error) {
 	var dItems gosn.Items
 	for _, i := range itemDiffs {
 		dItems = append(dItems, i.remote)
@@ -62,7 +62,7 @@ func push(session gosn.Session, itemDiffs []ItemDiff) (pio gosn.PutItemsOutput, 
 		return
 	}
 
-	return putItems(session, dItems)
+	return putItems(session, dItems, debug)
 }
 
 func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Item, found bool) {
@@ -75,7 +75,7 @@ func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Item, found bool) 
 	return tag, false
 }
 
-func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newTags gosn.Items, err error) {
+func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes, debug bool) (newTags gosn.Items, err error) {
 	var fts []string
 
 	ts := strings.Split(pt, ".")
@@ -103,7 +103,7 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newT
 
 	var pio gosn.PutItemsOutput
 
-	pio, err = putItems(session, itemsToPush)
+	pio, err = putItems(session, itemsToPush, debug)
 	if err != nil {
 		return
 	}
@@ -111,10 +111,10 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes) (newT
 	created := pio.ResponseBody.SavedItems
 	created.DeDupe()
 
-	return created.DecryptAndParse(session.Mk, session.Ak)
+	return created.DecryptAndParse(session.Mk, session.Ak, debug)
 }
 
-func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes) (tagsPushed, notesPushed int, err error) {
+func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes, debug bool) (tagsPushed, notesPushed int, err error) {
 	// create missing tags first to create a new tim
 	itemsToPush := gosn.Items{}
 
@@ -137,7 +137,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 		} else {
 			// need to create tag
 			var newTags gosn.Items
-			newTags, err = createMissingTags(session, potentialTag, twn)
+			newTags, err = createMissingTags(session, potentialTag, twn, debug)
 			if err != nil {
 				return
 			}
@@ -168,7 +168,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 		}
 	}
 
-	_, err = putItems(session, itemsToPush)
+	_, err = putItems(session, itemsToPush, debug)
 	tagsPushed, notesPushed = getItemCounts(itemsToPush)
 
 	return tagsPushed, notesPushed, err
@@ -579,10 +579,10 @@ func StringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 	return false
 }
 
-func putItems(session gosn.Session, items gosn.Items) (pio gosn.PutItemsOutput, err error) {
+func putItems(session gosn.Session, items gosn.Items, debug bool) (pio gosn.PutItemsOutput, err error) {
 	var encItemsToPut gosn.EncryptedItems
 
-	encItemsToPut, err = items.Encrypt(session.Mk, session.Ak)
+	encItemsToPut, err = items.Encrypt(session.Mk, session.Ak, debug)
 	if err != nil {
 		return pio, fmt.Errorf("failed to encrypt items to put: %v", err)
 	}
@@ -590,6 +590,7 @@ func putItems(session gosn.Session, items gosn.Items) (pio gosn.PutItemsOutput, 
 	pii := gosn.PutItemsInput{
 		Items:   encItemsToPut,
 		Session: session,
+		Debug: debug,
 	}
 
 	return gosn.PutItems(pii)

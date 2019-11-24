@@ -25,7 +25,7 @@ func Diff(session gosn.Session, home string, paths []string, debug bool) (diffs 
 
 	var remote tagsWithNotes
 
-	remote, err = get(session)
+	remote, err = get(session, debug)
 	if err != nil {
 		return diffs, msg, err
 	}

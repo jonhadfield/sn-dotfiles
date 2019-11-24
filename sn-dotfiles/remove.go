@@ -48,7 +48,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	}
 
 	var tagsWithNotes tagsWithNotes
-	tagsWithNotes, err = get(ri.Session)
+	tagsWithNotes, err = get(ri.Session, ri.Debug)
 
 	if err != nil {
 		return
@@ -136,7 +136,7 @@ func remove(session gosn.Session, items gosn.Items, debug bool) error {
 
 	var pio gosn.PutItemsOutput
 
-	pio, err = putItems(session, itemsToRemove)
+	pio, err = putItems(session, itemsToRemove, debug)
 	if err != nil {
 		return err
 	}

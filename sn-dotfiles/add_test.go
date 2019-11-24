@@ -148,7 +148,7 @@ func TestAddTwoSameTag(t *testing.T) {
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 
 	var twn tagsWithNotes
-	twn, err = get(session)
+	twn, err = get(session, true)
 	assert.NoError(t, err)
 	tagCount := len(twn)
 	assert.Equal(t, 3, tagCount)
@@ -250,6 +250,7 @@ func GetTestSession() (gosn.Session, error) {
 func WipeTheLot(session gosn.Session) (int, error) {
 	getItemsInput := gosn.GetItemsInput{
 		Session: session,
+		Debug:   true,
 	}
 	var err error
 	// get all existing Tags and Notes and mark for deletion
@@ -260,7 +261,7 @@ func WipeTheLot(session gosn.Session) (int, error) {
 	}
 	output.Items.DeDupe()
 	var pi gosn.Items
-	pi, err = output.Items.DecryptAndParse(session.Mk, session.Ak)
+	pi, err = output.Items.DecryptAndParse(session.Mk, session.Ak, true)
 	if err != nil {
 		return 0, err
 	}
@@ -282,7 +283,7 @@ func WipeTheLot(session gosn.Session) (int, error) {
 		}
 	}
 
-	_, err = putItems(session, itemsToDel)
+	_, err = putItems(session, itemsToDel, true)
 	if err != nil {
 		return 0, err
 	}

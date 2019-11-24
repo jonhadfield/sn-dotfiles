@@ -3,6 +3,7 @@ package sndotfiles
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/fatih/color"
 
@@ -23,14 +24,18 @@ var (
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
-func get(session gosn.Session) (t tagsWithNotes, err error) {
+func get(session gosn.Session, debug bool) (t tagsWithNotes, err error) {
 	getItemsInput := gosn.GetItemsInput{
 		Session:  session,
 		PageSize: 100,
+		Debug:    debug,
 	}
 
 	var output gosn.GetItemsOutput
+	start := time.Now()
 	output, err = gosn.GetItems(getItemsInput)
+	elapsed := time.Since(start)
+	debugPrint(debug, fmt.Sprintf("get | get took: %v", elapsed))
 
 	if err != nil {
 		return t, err
@@ -39,7 +44,7 @@ func get(session gosn.Session) (t tagsWithNotes, err error) {
 	output.Items.DeDupe()
 
 	var dItems gosn.DecryptedItems
-	dItems, err = output.Items.Decrypt(session.Mk, session.Ak)
+	dItems, err = output.Items.Decrypt(session.Mk, session.Ak, debug)
 
 	if err != nil {
 		return

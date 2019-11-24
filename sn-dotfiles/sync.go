@@ -20,7 +20,7 @@ func Sync(si SyncInput) (so SyncOutput, err error) {
 
 	var remote tagsWithNotes
 
-	remote, err = get(si.Session)
+	remote, err = get(si.Session, si.Debug)
 	if err != nil {
 		return
 	}
@@ -107,7 +107,7 @@ func sync(si syncInput) (so syncOutput, err error) {
 
 	// push
 	if len(itemsToPush) > 0 {
-		_, err = push(si.session, itemsToPush)
+		_, err = push(si.session, itemsToPush, si.debug)
 		so.noPushed = len(itemsToPush)
 
 		if err != nil {

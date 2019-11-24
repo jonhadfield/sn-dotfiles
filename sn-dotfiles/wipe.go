@@ -7,7 +7,7 @@ import (
 )
 
 func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
-	twns, err := get(session)
+	twns, err := get(session, debug)
 	if err != nil {
 		return 0, err
 	}
@@ -32,7 +32,7 @@ func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
 		return 0, nil
 	}
 
-	eItemsToDel, err = itemsToRemove.Encrypt(session.Mk, session.Ak)
+	eItemsToDel, err = itemsToRemove.Encrypt(session.Mk, session.Ak, debug)
 	if err != nil {
 		return 0, err
 	}
@@ -40,6 +40,7 @@ func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
 	putItemsInput := gosn.PutItemsInput{
 		Session: session,
 		Items:   eItemsToDel,
+		Debug:   true,
 	}
 
 	_, err = gosn.PutItems(putItemsInput)

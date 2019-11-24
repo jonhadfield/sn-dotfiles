@@ -382,7 +382,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.Equal(t, 1, ro.NotesRemoved)
 	assert.Equal(t, 1, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
-	twn, _ := get(session)
+	twn, _ := get(session, true)
 	assert.Len(t, twn, 0)
 }
 
@@ -429,7 +429,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.Equal(t, 2, ro.NotesRemoved)
 	assert.Equal(t, 1, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
-	twn, _ := get(session)
+	twn, _ := get(session, true)
 	// dotfiles tag and .gitconfig note should exist
 	assert.Len(t, twn, 2)
 }
