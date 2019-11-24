@@ -27,7 +27,7 @@ var (
 func get(session gosn.Session, debug bool) (t tagsWithNotes, err error) {
 	getItemsInput := gosn.GetItemsInput{
 		Session:  session,
-		PageSize: 100,
+		PageSize: 500,
 		Debug:    debug,
 	}
 
