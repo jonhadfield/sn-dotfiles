@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	_ = viper.BindEnv("password")
 	_ = viper.BindEnv("server")
 	session, _, err := gosn.GetSession(false, "", os.Getenv("SN_SERVER"))
-	if _, err = sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+	if _, err = sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 		fmt.Println("failed to wipe:", err)
 		os.Exit(1)
 	}
@@ -83,7 +83,7 @@ func TestAdd(t *testing.T) {
 	}
 	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -143,7 +143,7 @@ func TestRemove(t *testing.T) {
 	}
 	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -177,7 +177,7 @@ func TestWipe(t *testing.T) {
 	}
 	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -210,7 +210,7 @@ func TestStatus(t *testing.T) {
 	}
 	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -243,7 +243,7 @@ func TestSync(t *testing.T) {
 	}
 	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -303,7 +303,7 @@ func TestDiff(t *testing.T) {
 	}
 	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -340,7 +340,7 @@ func TestSyncExclude(t *testing.T) {
 	}
 	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()

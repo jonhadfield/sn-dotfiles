@@ -54,7 +54,7 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 
 	var twn tagsWithNotes
 
-	twn, err = get(ai.Session, ai.Debug)
+	twn, err = get(ai.Session, ai.PageSize, ai.Debug)
 	if err != nil {
 		return
 	}
@@ -71,12 +71,13 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 }
 
 type AddInput struct {
-	Session gosn.Session
-	Home    string
-	Paths   []string
-	All     bool
-	Debug   bool
-	Twn     tagsWithNotes
+	Session  gosn.Session
+	Home     string
+	Paths    []string
+	All      bool
+	Debug    bool
+	Twn      tagsWithNotes
+	PageSize int
 }
 
 type AddOutput struct {

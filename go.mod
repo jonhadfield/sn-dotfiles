@@ -27,4 +27,4 @@ require (
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
 
-// replace github.com/jonhadfield/gosn => ../gosn
+replace github.com/jonhadfield/gosn => ../gosn

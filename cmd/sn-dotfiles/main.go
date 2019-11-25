@@ -80,6 +80,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.StringFlag{Name: "home-dir"},
 		cli.BoolFlag{Name: "use-session"},
 		cli.StringFlag{Name: "session-key"},
+		cli.IntFlag{Name: "page-size", Hidden: true, Value: sndotfiles.DefaultPageSize},
 		cli.BoolFlag{Name: "quiet"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
@@ -103,7 +104,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			_, msg, err = sndotfiles.Status(session, home, c.Args(), c.GlobalBool("debug"))
+			_, msg, err = sndotfiles.Status(session, home, c.Args(),
+				c.GlobalInt("page-size"), c.GlobalBool("debug"))
 			return err
 		},
 	}
@@ -139,11 +141,12 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			var so sndotfiles.SyncOutput
 			so, err = sndotfiles.Sync(sndotfiles.SyncInput{
-				Session: session,
-				Home:    home,
-				Paths:   c.Args(),
-				Exclude: c.StringSlice("exclude"),
-				Debug:   c.GlobalBool("debug"),
+				Session:  session,
+				Home:     home,
+				Paths:    c.Args(),
+				Exclude:  c.StringSlice("exclude"),
+				PageSize: c.GlobalInt("page-size"),
+				Debug:    c.GlobalBool("debug"),
 			})
 			if err != nil {
 				return err
@@ -204,7 +207,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 
 			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: absPaths,
-				All: c.Bool("all"), Debug: c.GlobalBool("debug")}
+				PageSize: c.GlobalInt("page-size"), All: c.Bool("all"), Debug: c.GlobalBool("debug")}
 
 			var ao sndotfiles.AddOutput
 
@@ -247,10 +250,11 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				home = getHome()
 			}
 			ri := sndotfiles.RemoveInput{
-				Session: session,
-				Home:    home,
-				Paths:   c.Args(),
-				Debug:   c.GlobalBool("debug"),
+				Session:  session,
+				Home:     home,
+				Paths:    c.Args(),
+				PageSize: c.GlobalInt("page-size"),
+				Debug:    c.GlobalBool("debug"),
 			}
 
 			var ro sndotfiles.RemoveOutput
@@ -281,7 +285,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if home == "" {
 				home = getHome()
 			}
-			_, msg, err = sndotfiles.Diff(session, home, c.Args(), c.GlobalBool("debug"))
+			_, msg, err = sndotfiles.Diff(session, home, c.Args(), c.GlobalInt("page-size"),
+				c.GlobalBool("debug"))
 			return err
 		},
 	}
@@ -388,7 +393,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(session, c.GlobalBool("quiet"))
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(session, c.GlobalInt("page-size"),
+					c.GlobalBool("quiet"))
 				if err != nil {
 					return err
 				}

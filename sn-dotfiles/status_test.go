@@ -24,7 +24,7 @@ func TestStatusInvalidSession(t *testing.T) {
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	}, getTemporaryHome(), []string{}, true)
+	}, getTemporaryHome(), []string{}, DefaultPageSize, true)
 	assert.Error(t, err)
 }
 

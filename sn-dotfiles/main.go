@@ -15,6 +15,8 @@ const (
 	SNServerURL = "https://sync.standardnotes.org"
 	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
 	DotFilesTag = "dotfiles"
+	// DefaultPageSize defines the number of items to attempt to sync per request
+	DefaultPageSize = 500
 )
 
 var (
@@ -24,14 +26,15 @@ var (
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
-func get(session gosn.Session, debug bool) (t tagsWithNotes, err error) {
+func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err error) {
 	getItemsInput := gosn.GetItemsInput{
 		Session:  session,
-		PageSize: 500,
+		PageSize: pageSize,
 		Debug:    debug,
 	}
 
 	var output gosn.GetItemsOutput
+
 	start := time.Now()
 	output, err = gosn.GetItems(getItemsInput)
 	elapsed := time.Since(start)

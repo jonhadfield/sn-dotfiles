@@ -590,7 +590,7 @@ func putItems(session gosn.Session, items gosn.Items, debug bool) (pio gosn.PutI
 	pii := gosn.PutItemsInput{
 		Items:   encItemsToPut,
 		Session: session,
-		Debug: debug,
+		Debug:   debug,
 	}
 
 	return gosn.PutItems(pii)

@@ -9,10 +9,11 @@ import (
 )
 
 type RemoveInput struct {
-	Session gosn.Session
-	Home    string
-	Paths   []string
-	Debug   bool
+	Session  gosn.Session
+	Home     string
+	Paths    []string
+	PageSize int
+	Debug    bool
 }
 
 type RemoveOutput struct {
@@ -48,7 +49,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	}
 
 	var tagsWithNotes tagsWithNotes
-	tagsWithNotes, err = get(ri.Session, ri.Debug)
+	tagsWithNotes, err = get(ri.Session, ri.PageSize, ri.Debug)
 
 	if err != nil {
 		return

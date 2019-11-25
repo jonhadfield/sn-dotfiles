@@ -6,8 +6,8 @@ import (
 	"github.com/jonhadfield/gosn"
 )
 
-func WipeDotfileTagsAndNotes(session gosn.Session, debug bool) (int, error) {
-	twns, err := get(session, debug)
+func WipeDotfileTagsAndNotes(session gosn.Session, pageSize int, debug bool) (int, error) {
+	twns, err := get(session, pageSize, debug)
 	if err != nil {
 		return 0, err
 	}

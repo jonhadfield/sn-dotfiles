@@ -13,7 +13,7 @@ func TestWipeInvalidSession(t *testing.T) {
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	}, true)
+	}, DefaultPageSize, true)
 	assert.Zero(t, n)
 	assert.Error(t, err)
 }

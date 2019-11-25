@@ -84,7 +84,7 @@ func TestRemoveItems(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
 			fmt.Println("failed to WipeTheLot")
 		}
 	}()
@@ -195,7 +195,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
 			fmt.Println("failed to WipeTheLot")
 		}
 	}()
@@ -246,7 +246,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
 			fmt.Println("failed to WipeTheLot")
 		}
 	}()
@@ -294,7 +294,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
 			fmt.Println("failed to WipeTheLot")
 		}
 	}()
@@ -348,7 +348,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
 			fmt.Println("failed to WipeTheLot")
 		}
 	}()
@@ -382,7 +382,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.Equal(t, 1, ro.NotesRemoved)
 	assert.Equal(t, 1, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
-	twn, _ := get(session, true)
+	twn, _ := get(session, DefaultPageSize, true)
 	assert.Len(t, twn, 0)
 }
 
@@ -391,7 +391,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, true); err != nil {
+		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
 			fmt.Println("failed to WipeTheLot")
 		}
 	}()
@@ -429,7 +429,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.Equal(t, 2, ro.NotesRemoved)
 	assert.Equal(t, 1, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
-	twn, _ := get(session, true)
+	twn, _ := get(session, DefaultPageSize, true)
 	// dotfiles tag and .gitconfig note should exist
 	assert.Len(t, twn, 2)
 }

@@ -148,7 +148,7 @@ func TestAddTwoSameTag(t *testing.T) {
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 
 	var twn tagsWithNotes
-	twn, err = get(session, true)
+	twn, err = get(session, DefaultPageSize, true)
 	assert.NoError(t, err)
 	tagCount := len(twn)
 	assert.Equal(t, 3, tagCount)

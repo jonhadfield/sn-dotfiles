@@ -20,12 +20,12 @@ const (
 	identical    = "identical"
 )
 
-func Diff(session gosn.Session, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
+func Diff(session gosn.Session, home string, paths []string, pageSize int, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("Diff | %d paths", len(paths)))
 
 	var remote tagsWithNotes
 
-	remote, err = get(session, debug)
+	remote, err = get(session, pageSize, debug)
 	if err != nil {
 		return diffs, msg, err
 	}

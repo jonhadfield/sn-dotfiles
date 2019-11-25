@@ -13,10 +13,10 @@ import (
 // - remote items that are newer
 // - local items that are untracked (if Paths specified)
 // - identical local and remote items
-func Status(session gosn.Session, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
+func Status(session gosn.Session, home string, paths []string, pageSize int, debug bool) (diffs []ItemDiff, msg string, err error) {
 	var remote tagsWithNotes
 
-	remote, err = get(session, debug)
+	remote, err = get(session, pageSize, debug)
 	if err != nil {
 		return diffs, msg, err
 	}

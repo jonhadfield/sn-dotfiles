@@ -20,7 +20,7 @@ func Sync(si SyncInput) (so SyncOutput, err error) {
 
 	var remote tagsWithNotes
 
-	remote, err = get(si.Session, si.Debug)
+	remote, err = get(si.Session, si.PageSize, si.Debug)
 	if err != nil {
 		return
 	}
@@ -49,6 +49,7 @@ type SyncInput struct {
 	Session        gosn.Session
 	Home           string
 	Paths, Exclude []string
+	PageSize       int
 	Debug          bool
 }
 type SyncOutput struct {
