@@ -24,7 +24,8 @@ require (
 	golang.org/x/crypto v0.0.0-20191122220453-ac88ee75c92c // indirect
 	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
 	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/tools v0.0.0-20191125202709-59b2cd78f8f2 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
 
-replace github.com/jonhadfield/gosn => ../gosn
+// replace github.com/jonhadfield/gosn => ../gosn
