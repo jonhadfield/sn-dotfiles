@@ -153,7 +153,7 @@ func processContentDiffs(diffs []ItemDiff, tempDir, diffBinary string) (differen
 				panic(fmt.Sprintf("failed to compare: '%s' with '%s'", f1path, f2path))
 			}
 
-			fmt.Println(bold(diff.remote.Content.GetTitle()))
+			fmt.Println(bold(diff.homeRelPath))
 			fmt.Println(string(out))
 		}
 	}
