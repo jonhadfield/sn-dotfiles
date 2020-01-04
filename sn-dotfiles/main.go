@@ -7,7 +7,7 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/jonhadfield/gosn"
+	"github.com/jonhadfield/gosn-v2"
 )
 
 const (
@@ -33,7 +33,7 @@ func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err e
 		Debug:    debug,
 	}
 
-	var output gosn.GetItemsOutput
+	var output gosn.SyncOutput
 
 	start := time.Now()
 	output, err = gosn.GetItems(getItemsInput)
