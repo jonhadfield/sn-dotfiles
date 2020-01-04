@@ -8,6 +8,7 @@ require (
 	github.com/fatih/set v0.2.1
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
+	github.com/jonhadfield/gosn v0.0.2
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
