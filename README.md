@@ -16,14 +16,14 @@ I wanted a simple way of securely storing, managing, and syncing my dotfiles acr
 ### macOS
 
 ```
-$ curl -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_darwin_amd64  
+$ curl -L -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_darwin_amd64  
 $ install ./sn-dotfiles_darwin_amd64 /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles_darwin_amd64
 ```
 
 ### Linux
 
 ```
-$ curl -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_linux_amd64  
+$ curl -L -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_linux_amd64  
 $ sudo install ./sn-dotfiles_linux_amd64 /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles_linux_amd64
 ``` 
 
