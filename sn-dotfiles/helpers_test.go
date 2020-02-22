@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonhadfield/gosn"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,30 +13,30 @@ func TestGetAllTagsWithoutNotes(t *testing.T) {
 	fiestaNote := gosn.NewNote()
 	fiestaNoteContent := gosn.NewNoteContent()
 	fiestaNoteContent.SetTitle("fiesta")
-	fiestaNote.Content = fiestaNoteContent
+	fiestaNote.Content = *fiestaNoteContent
 
 	focusNote := gosn.NewNote()
 	focusNoteContent := gosn.NewNoteContent()
 	focusNoteContent.SetTitle("focus")
-	focusNote.Content = focusNoteContent
+	focusNote.Content = *focusNoteContent
 
 	carsTagContent := gosn.NewTagContent()
 	carsTag := gosn.NewTag()
 	carsTagContent.SetTitle("cars")
-	carsTag.Content = carsTagContent
+	carsTag.Content = *carsTagContent
 
 	carsFordTagContent := gosn.NewTagContent()
 	carsFordTag := gosn.NewTag()
 	carsFordTagContent.SetTitle("cars.ford")
-	carsFordTag.Content = carsTagContent
+	carsFordTag.Content = *carsTagContent
 
 	twn := tagsWithNotes{
-		tagWithNotes{tag: *carsFordTag, notes: []gosn.Item{*fiestaNote, *focusNote}},
+		tagWithNotes{tag: carsFordTag, notes: gosn.Notes{fiestaNote, focusNote}},
 	}
-	tagsWithoutNotes := getAllTagsWithoutNotes(twn, gosn.Items{*focusNote}, true)
+	tagsWithoutNotes := getAllTagsWithoutNotes(twn, gosn.Notes{focusNote}, true)
 	// should be zero as cars.ford tag still has fiesta note remaining
 	assert.Len(t, tagsWithoutNotes, 0)
-	tagsWithoutNotes = getAllTagsWithoutNotes(twn, gosn.Items{*focusNote, *fiestaNote}, true)
+	tagsWithoutNotes = getAllTagsWithoutNotes(twn, gosn.Notes{focusNote, fiestaNote}, true)
 	// should be one as cars.ford tag no longer has notes (function doesn't check if cars tag is empty)
 	assert.Len(t, tagsWithoutNotes, 1)
 }
@@ -207,20 +205,20 @@ func TestNoteWithTagExists(t *testing.T) {
 	note := gosn.NewNote()
 	nContent := gosn.NewNoteContent()
 	nContent.SetTitle("apple")
-	note.Content = nContent
+	note.Content = *nContent
 	tContent := gosn.NewTagContent()
 	tag := gosn.NewTag()
 	tContent.SetTitle("fruit")
-	tag.Content = tContent
+	tag.Content = *tContent
 	twn := tagsWithNotes{
-		tagWithNotes{tag: *tag, notes: []gosn.Item{*note}},
+		tagWithNotes{tag: tag, notes: gosn.Notes{note}},
 	}
 	assert.Equal(t, 1, noteWithTagExists("fruit", "apple", twn))
 }
 
 func TestPushNoItems(t *testing.T) {
 	pio, err := push(gosn.Session{}, []ItemDiff{}, true)
-	assert.Equal(t, pio, gosn.PutItemsOutput{})
+	assert.Equal(t, pio, gosn.SyncOutput{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no items")
 }

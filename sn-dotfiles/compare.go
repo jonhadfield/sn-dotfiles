@@ -2,12 +2,11 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"io/ioutil"
 	"log"
 	"os"
 	"time"
-
-	"github.com/jonhadfield/gosn"
 )
 
 func compare(remote tagsWithNotes, home string, paths, exclude []string, debug bool) (diffs []ItemDiff, err error) {
@@ -100,7 +99,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 	return itemDiffs, remotePaths, err
 }
 
-func compareNoteWithFile(tagTitle, path, home string, remote gosn.Item, debug bool) ItemDiff {
+func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bool) ItemDiff {
 	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <home>/%s",
 		tagTitle, stripHome(path, home)))
 

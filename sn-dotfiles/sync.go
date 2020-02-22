@@ -3,10 +3,10 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"os"
 	"strings"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"index/suffixarray"
 	"os"
 	"os/exec"
@@ -9,8 +10,6 @@ import (
 	"regexp"
 	"testing"
 	"time"
-
-	"github.com/jonhadfield/gosn"
 
 	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"github.com/spf13/viper"

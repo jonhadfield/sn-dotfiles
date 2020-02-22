@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +20,7 @@ func TestPreflightOverlaps(t *testing.T) {
 		tag: createTag("something.else.noteOne"),
 	},
 		tagWithNotes{createTag("something.else"),
-			gosn.Items{noteOne}},
+			gosn.Notes{noteOne}},
 	}
 	err := checkNoteTagConflicts(twn)
 	assert.Error(t, err)
@@ -34,7 +33,7 @@ func TestPreflightOverlaps1(t *testing.T) {
 		tag: createTag("something.else.noteOne"),
 	},
 		tagWithNotes{createTag("something.else"),
-			gosn.Items{noteOne}},
+			gosn.Notes{noteOne}},
 	}
 	err := checkNoteTagConflicts(twn)
 	assert.NoError(t, err)

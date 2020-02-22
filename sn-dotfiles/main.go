@@ -2,12 +2,11 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"regexp"
 	"time"
 
 	"github.com/fatih/color"
-
-	"github.com/jonhadfield/gosn"
 )
 
 const (
@@ -26,17 +25,27 @@ var (
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
+func removeImposters(i gosn.EncryptedItems) (o gosn.EncryptedItems) {
+	for _, x := range i {
+		if StringInSlice(x.ContentType, []string{"Note", "Tag"}, false) {
+			o = append(o, x)
+		}
+	}
+
+	return o
+}
+
 func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err error) {
-	getItemsInput := gosn.GetItemsInput{
+	si := gosn.SyncInput{
 		Session:  session,
 		PageSize: pageSize,
 		Debug:    debug,
 	}
 
-	var output gosn.GetItemsOutput
+	var so gosn.SyncOutput
 
 	start := time.Now()
-	output, err = gosn.GetItems(getItemsInput)
+	so, err = gosn.Sync(si)
 	elapsed := time.Since(start)
 	debugPrint(debug, fmt.Sprintf("get | get took: %v", elapsed))
 
@@ -44,11 +53,12 @@ func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err e
 		return t, err
 	}
 
-	output.Items.DeDupe()
+	so.Items = removeImposters(so.Items)
+	so.Items.DeDupe()
 
 	var dItems gosn.DecryptedItems
-	dItems, err = output.Items.Decrypt(session.Mk, session.Ak, debug)
 
+	dItems, err = so.Items.Decrypt(session.Mk, session.Ak, debug)
 	if err != nil {
 		return
 	}
@@ -56,24 +66,26 @@ func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err e
 	var items gosn.Items
 
 	items, err = dItems.Parse()
+
 	if err != nil {
 		return
 	}
-	// get all dotfile Tags and notes
 
-	var dotfileTags gosn.Items
+	var dotfileTags gosn.Tags
 
-	var notes gosn.Items
+	var notes gosn.Notes
 
 	r := regexp.MustCompile(fmt.Sprintf("%s.?.*", DotFilesTag))
 
 	for _, item := range items {
-		if item.ContentType == "Tag" && item.Content != nil && r.MatchString(item.Content.GetTitle()) {
-			dotfileTags = append(dotfileTags, item)
+		if item.GetContent() != nil && item.GetContentType() == "Tag" && r.MatchString(item.GetContent().(*gosn.TagContent).Title) {
+			tt := item.(*gosn.Tag)
+			dotfileTags = append(dotfileTags, *tt)
 		}
 
-		if item.ContentType == "Note" && item.Content != nil {
-			notes = append(notes, item)
+		if item.GetContentType() == "Note" && item.GetContent() != nil {
+			n := item.(*gosn.Note)
+			notes = append(notes, *n)
 		}
 	}
 
@@ -83,7 +95,7 @@ func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err e
 		}
 
 		for _, note := range notes {
-			if StringInSlice(note.UUID, getItemNoteRefIds(dotfileTag.Content.References()), false) {
+			if StringInSlice(note.GetUUID(), getItemNoteRefIds(dotfileTag.GetContent().References()), false) {
 				twn.notes = append(twn.notes, note)
 			}
 		}
@@ -105,8 +117,8 @@ func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 }
 
 type tagWithNotes struct {
-	tag   gosn.Item
-	notes gosn.Items
+	tag   gosn.Tag
+	notes gosn.Notes
 }
 
 type tagsWithNotes []tagWithNotes

@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonhadfield/gosn"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,21 +29,21 @@ func TestStatusInvalidSession(t *testing.T) {
 func testStatusSetup() (twn tagsWithNotes) {
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
-	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Items{gitconfigNote}}
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
 
 	fruitTag := createTag("dotfiles.fruit")
 	fruitBananaTag := createTag("dotfiles.fruit.banana")
 	appleNote := createNote("apple", "apple content")
 	lemonNote := createNote("lemon", "lemon content")
 	grapeNote := createNote("grape", "grape content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote, lemonNote, grapeNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote, lemonNote, grapeNote}}
 
 	yellowNote := createNote("yellow", "yellow content")
-	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Items{yellowNote}}
+	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Notes{yellowNote}}
 
 	premiumNote := createNote("premium", "premium content")
 	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
-	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Items{premiumNote}}
+	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{premiumNote}}
 
 	twn = tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
 	return
@@ -114,11 +112,11 @@ func TestStatus1(t *testing.T) {
 
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
-	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Items{gitconfigNote}}
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
 
 	awsTag := createTag("dotfiles.aws")
 	awsConfigNote := createNote("config", "aws config content")
-	awsTagWithNotes := tagWithNotes{tag: awsTag, notes: gosn.Items{awsConfigNote}}
+	awsTagWithNotes := tagWithNotes{tag: awsTag, notes: gosn.Notes{awsConfigNote}}
 
 	twn := tagsWithNotes{dotfilesTagWithNote, awsTagWithNotes}
 
@@ -147,19 +145,19 @@ func TestStatus2(t *testing.T) {
 
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
-	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Items{gitconfigNote}}
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
 
 	fruitTag := createTag("dotfiles.fruit")
 	fruitBananaTag := createTag("dotfiles.fruit.banana")
 	appleNote := createNote("apple", "apple content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
 
 	yellowNote := createNote("yellow", "yellow content")
-	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Items{yellowNote}}
+	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Notes{yellowNote}}
 
 	premiumNote := createNote("premium", "premium content")
 	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
-	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Items{premiumNote}}
+	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{premiumNote}}
 
 	twn := tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
 
@@ -183,7 +181,7 @@ func TestStatus2(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	// update premium remote to trigger remote newer condition
 	newPremiumNote := createNote("premium", "new content")
-	newCarsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Items{newPremiumNote}}
+	newCarsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{newPremiumNote}}
 	twn = tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, newCarsMercedesA250TagWithNotes}
 
 	var diffs []ItemDiff

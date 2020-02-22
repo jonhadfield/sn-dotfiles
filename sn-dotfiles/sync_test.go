@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,12 +66,12 @@ func TestSync(t *testing.T) {
 	golfNote := createNote("golf.txt", "golf content")
 	premiumNote := createNote("premium", "premium content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
-	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Items{}}
-	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Items{yellowNote}}
-	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Items{golfNote}}
-	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Items{}}
-	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Items{premiumNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
+	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Notes{}}
+	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Notes{yellowNote}}
+	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Notes{golfNote}}
+	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Notes{}}
+	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Notes{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
 	fwc := make(map[string]string)
@@ -127,7 +126,7 @@ func TestSync(t *testing.T) {
 	var uTwn tagsWithNotes
 	for _, x := range twn {
 		if x.tag.Content.GetTitle() == "dotfiles.fruit" {
-			var nnotes gosn.Items
+			var nnotes gosn.Notes
 			for _, note := range x.notes {
 				if note.Content.GetTitle() == "apple" {
 					note.Content.SetText("new note content")
@@ -191,12 +190,12 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 	golfNote := createNote("golf.txt", "golf content")
 	premiumNote := createNote("premium", "premium content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
-	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Items{}}
-	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Items{yellowNote}}
-	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Items{golfNote}}
-	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Items{}}
-	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Items{premiumNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
+	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Notes{}}
+	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Notes{yellowNote}}
+	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Notes{golfNote}}
+	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Notes{}}
+	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Notes{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
 	debugPrint(true, "test | sync with three changes to pull based on exclusion of golf path")
@@ -238,12 +237,12 @@ func TestSyncWithExcludeParentPaths(t *testing.T) {
 	golfNote := createNote("golf.txt", "golf content")
 	premiumNote := createNote("premium", "premium content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
-	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Items{}}
-	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Items{yellowNote}}
-	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Items{golfNote}}
-	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Items{}}
-	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Items{premiumNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
+	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Notes{}}
+	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Notes{yellowNote}}
+	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Notes{golfNote}}
+	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Notes{}}
+	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Notes{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
 	debugPrint(true, "test | sync with two changes to pull based on exclusion of cars path")

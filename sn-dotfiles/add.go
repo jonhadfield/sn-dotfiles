@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,8 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/ryanuber/columnize"
-
-	"github.com/jonhadfield/gosn"
 )
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
@@ -158,14 +157,14 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 		// now add
 		pathsAdded = append(pathsAdded, path)
 
-		var itemToAdd gosn.Item
+		var itemToAdd gosn.Note
 
 		itemToAdd, err = createItem(path, filename)
 		if err != nil {
 			return
 		}
 
-		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], itemToAdd)
+		tagToItemMap[remoteTagTitle] = append(tagToItemMap[remoteTagTitle], &itemToAdd)
 		added = append(added, fmt.Sprintf("%s | %s", boldHomeRelPath, green("now tracked")))
 	}
 
@@ -228,7 +227,7 @@ func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err e
 	return finalPaths, err
 }
 
-func createItem(path, title string) (item gosn.Item, err error) {
+func createItem(path, title string) (item gosn.Note, err error) {
 	// read file content
 	var file *os.File
 
@@ -252,9 +251,9 @@ func createItem(path, title string) (item gosn.Item, err error) {
 
 	localStr := string(localBytes)
 	// push item
-	item = *gosn.NewNote()
+	item = gosn.NewNote()
 	itemContent := gosn.NewNoteContent()
-	item.Content = itemContent
+	item.Content = *itemContent
 	item.Content.SetTitle(title)
 	item.Content.SetText(localStr)
 

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +40,7 @@ func testCompareSetup1and2(home string) (twn tagsWithNotes, fwc map[string]strin
 	appleNote := createNote("apple", "apple content")
 	lemonNote := createNote("lemon", "lemon content")
 	grapeNote := createNote("grape", "grape content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote, lemonNote, grapeNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote, lemonNote, grapeNote}}
 	twn = tagsWithNotes{fruitTagWithNotes}
 
 	fwc = make(map[string]string)
@@ -54,10 +53,10 @@ func TestTagExists(t *testing.T) {
 	tag1Content := gosn.NewTagContent()
 	tag1Content.Title = "rod"
 	tag1 := gosn.NewTag()
-	tag1.Content = tag1Content
+	tag1.Content = *tag1Content
 	twn := tagsWithNotes{
 		tagWithNotes{
-			tag:   *tag1,
+			tag:   tag1,
 			notes: nil,
 		},
 	}
@@ -225,7 +224,7 @@ func TestCompare3(t *testing.T) {
 	home := getTemporaryHome()
 	fruitTag := createTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
 	twn := tagsWithNotes{fruitTagWithNotes}
 
 	fwc := make(map[string]string)
@@ -265,7 +264,7 @@ func TestCompare4(t *testing.T) {
 	fruitTag := createTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Items{appleNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
 	twn := tagsWithNotes{fruitTagWithNotes}
 
 	fwc := make(map[string]string)
@@ -303,14 +302,14 @@ func TestCompare4(t *testing.T) {
 }
 
 // helpers
-func createNote(title, content string) gosn.Item {
+func createNote(title, content string) gosn.Note {
 	noteContent := gosn.NewNoteContent()
 	noteContent.Title = title
 	noteContent.Text = content
 	note := gosn.NewNote()
-	note.Content = noteContent
+	note.Content = *noteContent
 	note.ContentType = "Note"
-	return *note
+	return note
 }
 
 func createTemporaryFiles(fwc map[string]string) error {

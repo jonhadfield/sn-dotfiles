@@ -2,8 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
 

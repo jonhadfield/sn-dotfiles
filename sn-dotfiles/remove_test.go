@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/jonhadfield/gosn"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +23,7 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	}, gosn.Items{*tag}, true)
+	}, gosn.Items{&tag}, true)
 	assert.Error(t, err)
 }
 

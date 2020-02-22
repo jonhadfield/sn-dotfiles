@@ -3,7 +3,6 @@ package sndotfiles
 import (
 	"testing"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
 )
 

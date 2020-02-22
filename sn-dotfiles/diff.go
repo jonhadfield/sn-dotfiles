@@ -3,13 +3,13 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/jonhadfield/findexec"
-	"github.com/jonhadfield/gosn"
 )
 
 const (
@@ -39,7 +39,7 @@ type ItemDiff struct {
 	path        string
 	homeRelPath string
 	diff        string
-	remote      gosn.Item
+	remote      gosn.Note
 	local       string
 }
 

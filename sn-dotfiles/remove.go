@@ -3,8 +3,8 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/ryanuber/columnize"
 )
 
@@ -62,7 +62,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 
 	var results []string
 
-	var notesToRemove gosn.Items
+	var notesToRemove gosn.Notes
 
 	for _, path := range ri.Paths {
 		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, tagsWithNotes, ri.Debug)
@@ -101,16 +101,17 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		debugPrint(ri.Debug, fmt.Sprintf("Remove | tags to remove: [%d] %s", x, et.Content.GetTitle()))
 	}
 
-	// add empty tags to list of items to remove
-	itemsToRemove := append(notesToRemove, emptyTags...)
-
-	debugPrint(ri.Debug, fmt.Sprintf("Remove | items to remove: %d", len(itemsToRemove)))
-
-	for _, i := range itemsToRemove {
-		debugPrint(ri.Debug, fmt.Sprintf("Remove | item to remove: %s: %s", i.ContentType, i.Content.GetTitle()))
+	var a gosn.Items
+	for _, n := range notesToRemove {
+		a = append(a, &n)
 	}
 
-	if err = remove(ri.Session, itemsToRemove, ri.Debug); err != nil {
+	for _, t := range emptyTags {
+		a = append(a, &t)
+	}
+
+	x := removeInput{items: a, session: ri.Session, debug: ri.Debug}
+	if err = remove(x); err != nil {
 		return
 	}
 
@@ -121,28 +122,44 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	return ro, err
 }
 
-func remove(session gosn.Session, items gosn.Items, debug bool) error {
+type removeInput struct {
+	session gosn.Session
+	items   gosn.Items
+	debug   bool
+}
+
+func remove(input removeInput) error {
 	var err error
 
-	var itemsToRemove gosn.Items
+	var items gosn.Items
 
-	for _, item := range items {
-		item.Deleted = true
-		itemsToRemove = append(itemsToRemove, item)
+	for _, i := range input.items {
+		i.SetDeleted(true)
+		items = append(items, i)
 	}
 
-	if itemsToRemove == nil {
+	if items == nil {
 		return fmt.Errorf("no items to remove")
 	}
 
-	var pio gosn.PutItemsOutput
+	var pio gosn.SyncOutput
 
-	pio, err = putItems(session, itemsToRemove, debug)
+	pio, err = putItems(putItemsInput{
+		session: input.session,
+		items:   items,
+		debug:   input.debug,
+	})
 	if err != nil {
 		return err
 	}
 
-	debugPrint(debug, fmt.Sprintf("remove | items put: %d", len(pio.ResponseBody.SavedItems)))
+	debugPrint(input.debug, fmt.Sprintf("remove | items put: %d", len(pio.SavedItems)))
 
 	return err
+}
+
+type putItemsInput struct {
+	items   gosn.Items
+	session gosn.Session
+	debug   bool
 }

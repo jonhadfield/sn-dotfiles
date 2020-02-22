@@ -2,8 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
-
-	"github.com/jonhadfield/gosn"
+	"github.com/jonhadfield/gosn-v2"
 )
 
 func WipeDotfileTagsAndNotes(session gosn.Session, pageSize int, debug bool) (int, error) {
@@ -16,11 +15,11 @@ func WipeDotfileTagsAndNotes(session gosn.Session, pageSize int, debug bool) (in
 
 	for _, twn := range twns {
 		twn.tag.Deleted = true
-		itemsToRemove = append(itemsToRemove, twn.tag)
+		itemsToRemove = append(itemsToRemove, &twn.tag)
 
 		for _, n := range twn.notes {
 			n.Deleted = true
-			itemsToRemove = append(itemsToRemove, n)
+			itemsToRemove = append(itemsToRemove, &n)
 		}
 	}
 
@@ -37,13 +36,13 @@ func WipeDotfileTagsAndNotes(session gosn.Session, pageSize int, debug bool) (in
 		return 0, err
 	}
 
-	putItemsInput := gosn.PutItemsInput{
+	putItemsInput := gosn.SyncInput{
 		Session: session,
 		Items:   eItemsToDel,
 		Debug:   true,
 	}
 
-	_, err = gosn.PutItems(putItemsInput)
+	_, err = gosn.Sync(putItemsInput)
 	if err != nil {
 		return 0, err
 	}

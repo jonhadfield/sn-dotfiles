@@ -9,7 +9,6 @@ import (
 
 	"github.com/lithammer/shortuuid"
 
-	"github.com/jonhadfield/gosn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -248,14 +247,14 @@ func GetTestSession() (gosn.Session, error) {
 }
 
 func WipeTheLot(session gosn.Session) (int, error) {
-	getItemsInput := gosn.GetItemsInput{
+	getItemsInput := gosn.SyncInput{
 		Session: session,
 		Debug:   true,
 	}
 	var err error
 	// get all existing Tags and Notes and mark for deletion
-	var output gosn.GetItemsOutput
-	output, err = gosn.GetItems(getItemsInput)
+	var output gosn.SyncOutput
+	output, err = gosn.Sync(getItemsInput)
 	if err != nil {
 		return 0, err
 	}
@@ -267,18 +266,18 @@ func WipeTheLot(session gosn.Session) (int, error) {
 	}
 	var itemsToDel gosn.Items
 	for _, item := range pi {
-		if item.Deleted {
+		if item.IsDeleted() {
 			continue
 		}
 
 		switch {
-		case item.ContentType == "Tag":
-			item.Deleted = true
-			item.Content = gosn.NewTagContent()
+		case item.GetContentType() == "Tag":
+			item.SetDeleted(true)
+			item.SetContent(gosn.NewTagContent())
 			itemsToDel = append(itemsToDel, item)
-		case item.ContentType == "Note":
-			item.Deleted = true
-			item.Content = gosn.NewNoteContent()
+		case item.GetContentType() == "Note":
+			item.SetDeleted(true)
+			item.SetContent(gosn.NewNoteContent())
 			itemsToDel = append(itemsToDel, item)
 		}
 	}
