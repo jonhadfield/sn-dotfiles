@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -266,23 +267,23 @@ func WipeTheLot(session gosn.Session) (int, error) {
 	}
 	var itemsToDel gosn.Items
 	for _, item := range pi {
-		if item.IsDeleted() {
+		if item == nil || item.IsDeleted() {
 			continue
 		}
 
 		switch {
 		case item.GetContentType() == "Tag":
 			item.SetDeleted(true)
-			item.SetContent(gosn.NewTagContent())
+			item.SetContent(*gosn.NewTagContent())
 			itemsToDel = append(itemsToDel, item)
 		case item.GetContentType() == "Note":
 			item.SetDeleted(true)
-			item.SetContent(gosn.NewNoteContent())
+			item.SetContent(*gosn.NewNoteContent())
 			itemsToDel = append(itemsToDel, item)
 		}
 	}
 
-	_, err = putItems(session, itemsToDel, true)
+	_, err = putItems(putItemsInput{session: session, items: itemsToDel, debug: true})
 	if err != nil {
 		return 0, err
 	}

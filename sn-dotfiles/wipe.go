@@ -15,11 +15,12 @@ func WipeDotfileTagsAndNotes(session gosn.Session, pageSize int, debug bool) (in
 
 	for _, twn := range twns {
 		twn.tag.Deleted = true
-		itemsToRemove = append(itemsToRemove, &twn.tag)
+		t := twn.tag
+		itemsToRemove = append(itemsToRemove, &t)
 
-		for _, n := range twn.notes {
-			n.Deleted = true
-			itemsToRemove = append(itemsToRemove, &n)
+		for n := range twn.notes {
+			twn.notes[n].Deleted = true
+			itemsToRemove = append(itemsToRemove, &twn.notes[n])
 		}
 	}
 

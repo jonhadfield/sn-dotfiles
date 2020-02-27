@@ -88,6 +88,9 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	if notesToRemove != nil {
 		notesToRemove.DeDupe()
 	}
+	for _, n := range notesToRemove {
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | remove note: %s", n.Content.Title))
+	}
 
 	// find any empty tags to delete
 	emptyTags := findEmptyTags(tagsWithNotes, notesToRemove, ri.Debug)
@@ -101,13 +104,19 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		debugPrint(ri.Debug, fmt.Sprintf("Remove | tags to remove: [%d] %s", x, et.Content.GetTitle()))
 	}
 
-	var a gosn.Items
-	for _, n := range notesToRemove {
-		a = append(a, &n)
+	for x, n := range notesToRemove {
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | notes to remove: [%d] %s", x, n.Content.GetTitle()))
 	}
 
-	for _, t := range emptyTags {
-		a = append(a, &t)
+	var a gosn.Items
+
+	for i := range notesToRemove {
+		a = append(a, &notesToRemove[i])
+	}
+
+
+	for i := range emptyTags {
+		a = append(a, &emptyTags[i])
 	}
 
 	x := removeInput{items: a, session: ri.Session, debug: ri.Debug}
@@ -134,6 +143,7 @@ func remove(input removeInput) error {
 	var items gosn.Items
 
 	for _, i := range input.items {
+		debugPrint(true, fmt.Sprintf("Setting %s %v to be deleted", i.GetContentType(), i.GetContent()))
 		i.SetDeleted(true)
 		items = append(items, i)
 	}

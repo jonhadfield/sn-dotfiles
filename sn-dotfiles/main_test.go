@@ -1,6 +1,7 @@
 package sndotfiles
 
 import (
+	"github.com/jonhadfield/gosn-v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

@@ -2,14 +2,15 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
+	"github.com/stretchr/testify/assert"
+	"log"
 	"regexp"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRemoveNoItems(t *testing.T) {
-	err := remove(gosn.Session{}, gosn.Items{}, true)
+	err := remove(removeInput{session: gosn.Session{}, items: gosn.Items{}, debug: true})
 	assert.Error(t, err)
 }
 
@@ -18,12 +19,13 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 	tagContent := gosn.NewTagContent()
 	tagContent.SetTitle("newTag")
 
-	err := remove(gosn.Session{
+	err := remove(removeInput{session: gosn.Session{
 		Token:  "invalid",
 		Mk:     "invalid",
 		Ak:     "invalid",
 		Server: "invalid",
-	}, gosn.Items{&tag}, true)
+	}, items: gosn.Items{&tag}, debug: true})
+
 	assert.Error(t, err)
 }
 
@@ -77,13 +79,61 @@ func TestRemoveNoPaths(t *testing.T) {
 	assert.Contains(t, err.Error(), "paths")
 }
 
+func TestRemoveTags(t *testing.T) {
+	session, err := GetTestSession()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, session.Token)
+	defer func() {
+		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
+			log.Fatal("failed to WipeTheLot")
+		}
+	}()
+	home := getTemporaryHome()
+	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
+
+	fwc := make(map[string]string)
+	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
+	fwc[gitConfigPath] = "git config content"
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	fwc[applePath] = "apple content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	// add items
+	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath}, Debug: true}
+	var ao AddOutput
+	ao, err = Add(ai)
+	assert.NoError(t, err)
+	assert.Len(t, ao.PathsAdded, 2)
+	assert.Len(t, ao.PathsExisting, 0)
+	assert.Len(t, ao.PathsInvalid, 0)
+
+	// remove single path
+	ri := RemoveInput{
+		Session: session,
+		Home:    home,
+		Paths:   []string{gitConfigPath},
+		Debug:   true,
+	}
+
+	var ro RemoveOutput
+	ro, err = Remove(ri)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, ro.NotesRemoved)
+	assert.Equal(t, 0, ro.TagsRemoved)
+	assert.Equal(t, 0, ro.NotTracked)
+	assert.NotEmpty(t, ro.Msg)
+	re := regexp.MustCompile("\\.gitconfig\\s+removed")
+	assert.True(t, re.MatchString(ro.Msg))
+
+}
+
 func TestRemoveItems(t *testing.T) {
 	session, err := GetTestSession()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -103,11 +153,16 @@ func TestRemoveItems(t *testing.T) {
 	// add items
 	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
 	var ao AddOutput
+
+	debugPrint(true, "Adding four paths")
+
 	ao, err = Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
 	assert.Len(t, ao.PathsInvalid, 0)
+
+	debugPrint(true, "removing ./gitconfig")
 
 	// remove single path
 	ri := RemoveInput{
@@ -135,6 +190,7 @@ func TestRemoveItems(t *testing.T) {
 		Debug:   true,
 	}
 
+	debugPrint(true, "Removing \".cars/\"")
 	ro, err = Remove(ri)
 
 	assert.NoError(t, err)
@@ -145,12 +201,19 @@ func TestRemoveItems(t *testing.T) {
 	re = regexp.MustCompile("\\.cars/mercedes/a250/premium\\s+removed")
 	assert.True(t, re.MatchString(ro.Msg))
 
+	var all tagsWithNotes
+	all, err = get(session, 0, true)
+	debugPrint(true, "after removing all .cars we have")
+	for k, v := range all {
+		fmt.Println(k, v)
+	}
+
 	// remove nested path with single item (without trailing slash)
 	ri = RemoveInput{
 		Session: session,
 		Home:    home,
 		Paths:   []string{fmt.Sprintf("%s/.fruit", home)},
-		Debug:   true,
+		Debug:   false,
 	}
 
 	ro, err = Remove(ri)
@@ -167,9 +230,9 @@ func TestRemoveItems(t *testing.T) {
 	// ensure error with missing home
 	ri = RemoveInput{
 		Session: session,
-		Home:    home,
+		Home:    "",
 		Paths:   []string{fmt.Sprintf("%s/.fruit", home)},
-		Debug:   true,
+		Debug:   false,
 	}
 
 	ro, err = Remove(ri)
@@ -194,7 +257,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -245,7 +308,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -293,7 +356,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -347,7 +410,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -390,7 +453,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot")
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()

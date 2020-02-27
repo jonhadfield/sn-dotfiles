@@ -2,6 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
+	"log"
 	"testing"
 	"time"
 
@@ -50,7 +52,7 @@ func TestSync(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot", err)
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -98,10 +100,23 @@ func TestSync(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, so.noPushed)
+	// .cars/vw/golf.txt should be pulled
 	assert.Equal(t, 1, so.noPulled)
 
+	so, err = sync(syncInput{
+		session: session,
+		twn:     twn,
+		home:    home,
+		paths:   []string{},
+		exclude: []string{},
+		debug:   true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, so.noPushed)
+	// everything should now be in sync
+	assert.Equal(t, 0, so.noPulled)
+
 	// Sync with changes to push
-	debugPrint(true, "test | sync with single local content update")
 	// update local apple file
 	// wait a second so file is noticeably newer
 	time.Sleep(2 * time.Second)
@@ -174,7 +189,7 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot", err)
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()
@@ -221,7 +236,7 @@ func TestSyncWithExcludeParentPaths(t *testing.T) {
 	assert.NotEmpty(t, session.Token)
 	defer func() {
 		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			fmt.Println("failed to WipeTheLot", err)
+			log.Fatal("failed to WipeTheLot")
 		}
 	}()
 	home := getTemporaryHome()

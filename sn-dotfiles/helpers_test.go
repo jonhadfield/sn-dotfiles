@@ -2,6 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/jonhadfield/gosn-v2"
 	"os"
 	"testing"
 	"time"
