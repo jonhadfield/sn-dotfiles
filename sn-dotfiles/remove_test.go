@@ -3,14 +3,14 @@ package sndotfiles
 import (
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/stretchr/testify/assert"
-	"log"
 	"regexp"
 	"testing"
 )
 
 func TestRemoveNoItems(t *testing.T) {
-	err := remove(removeInput{session: gosn.Session{}, items: gosn.Items{}, debug: true})
+	err := removeFromDB(removeInput{session: testCacheSession, items: gosn.Items{}, debug: true})
 	assert.Error(t, err)
 }
 
@@ -19,11 +19,10 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 	tagContent := gosn.NewTagContent()
 	tagContent.SetTitle("newTag")
 
-	err := remove(removeInput{session: gosn.Session{
-		Token:  "invalid",
-		Mk:     "invalid",
-		Ak:     "invalid",
-		Server: "invalid",
+	err := removeFromDB(removeInput{session: &cache.Session{
+		Session:     nil,
+		CacheDB:     nil,
+		CacheDBPath: "",
 	}, items: gosn.Items{&tag}, debug: true})
 
 	assert.Error(t, err)
@@ -39,37 +38,31 @@ func TestRemoveInvalidSession(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 
 	ri := RemoveInput{
-		Session: gosn.Session{
-			Token:  "invalid",
-			Mk:     "invalid",
-			Ak:     "invalid",
-			Server: "invalid",
-		},
-		Home:  home,
-		Paths: []string{gitConfigPath},
-		Debug: true,
+		Session: &cache.Session{},
+		Home:    home,
+		Paths:   []string{gitConfigPath},
+		Debug:   true,
 	}
 
 	_, err := Remove(ri)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid")
 }
 
 func TestRemoveInvalidPath(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    getTemporaryHome(),
 		Paths:   []string{"/invalid"},
 		Debug:   true,
 	}
-	_, err = Remove(ri)
+	_, err := Remove(ri)
 	assert.Error(t, err)
 }
 
 func TestRemoveNoPaths(t *testing.T) {
 	ri := RemoveInput{
-		Session: gosn.Session{},
+		Session: testCacheSession,
 		Home:    getTemporaryHome(),
 		Paths:   nil,
 		Debug:   true,
@@ -80,12 +73,9 @@ func TestRemoveNoPaths(t *testing.T) {
 }
 
 func TestRemoveTags(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			log.Fatal("failed to WipeTheLot")
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
 	home := getTemporaryHome()
@@ -99,7 +89,8 @@ func TestRemoveTags(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath}, Debug: true}
+	var err error
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath}}
 	var ao AddOutput
 	ao, err = Add(ai)
 	assert.NoError(t, err)
@@ -107,9 +98,9 @@ func TestRemoveTags(t *testing.T) {
 	assert.Len(t, ao.PathsExisting, 0)
 	assert.Len(t, ao.PathsInvalid, 0)
 
-	// remove single path
+	// removeFromDB single path
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{gitConfigPath},
 		Debug:   true,
@@ -128,12 +119,9 @@ func TestRemoveTags(t *testing.T) {
 }
 
 func TestRemoveItems(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			log.Fatal("failed to WipeTheLot")
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
 	home := getTemporaryHome()
@@ -151,12 +139,11 @@ func TestRemoveItems(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
-	var ao AddOutput
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}}
 
 	debugPrint(true, "Adding four paths")
 
-	ao, err = Add(ai)
+	ao, err := Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -164,9 +151,9 @@ func TestRemoveItems(t *testing.T) {
 
 	debugPrint(true, "removing ./gitconfig")
 
-	// remove single path
+	// removeFromDB single path
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{gitConfigPath},
 		Debug:   true,
@@ -182,9 +169,9 @@ func TestRemoveItems(t *testing.T) {
 	re := regexp.MustCompile("\\.gitconfig\\s+removed")
 	assert.True(t, re.MatchString(ro.Msg))
 
-	// remove nested path with single item (with trailing slash)
+	// removeFromDB nested path with single item (with trailing slash)
 	ri = RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{fmt.Sprintf("%s/.cars/", home)},
 		Debug:   true,
@@ -192,7 +179,6 @@ func TestRemoveItems(t *testing.T) {
 
 	debugPrint(true, "Removing \".cars/\"")
 	ro, err = Remove(ri)
-
 	assert.NoError(t, err)
 	assert.Equal(t, 1, ro.NotesRemoved)
 	assert.Equal(t, 3, ro.TagsRemoved)
@@ -201,16 +187,29 @@ func TestRemoveItems(t *testing.T) {
 	re = regexp.MustCompile("\\.cars/mercedes/a250/premium\\s+removed")
 	assert.True(t, re.MatchString(ro.Msg))
 
-	var all tagsWithNotes
-	all, err = get(session, 0, true)
-	debugPrint(true, "after removing all .cars we have")
-	for k, v := range all {
-		fmt.Println(k, v)
+	// get populated db
+	si := cache.SyncInput{
+		Session: testCacheSession,
+		Close:   false,
 	}
 
-	// remove nested path with single item (without trailing slash)
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(si)
+	if err != nil {
+		return
+	}
+
+	var all tagsWithNotes
+	all, err = getTagsWithNotes(cso.DB, testCacheSession)
+	debugPrint(true, "after removing all .cars we have")
+	for k, v := range all {
+		debugPrint(true, fmt.Sprint(k, v))
+	}
+	assert.NoError(t, cso.DB.Close())
+
+	// removeFromDB nested path with single item (without trailing slash)
 	ri = RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{fmt.Sprintf("%s/.fruit", home)},
 		Debug:   false,
@@ -229,7 +228,7 @@ func TestRemoveItems(t *testing.T) {
 
 	// ensure error with missing home
 	ri = RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    "",
 		Paths:   []string{fmt.Sprintf("%s/.fruit", home)},
 		Debug:   false,
@@ -241,7 +240,7 @@ func TestRemoveItems(t *testing.T) {
 
 	// ensure error with missing paths
 	ri = RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{""},
 		Debug:   true,
@@ -252,14 +251,12 @@ func TestRemoveItems(t *testing.T) {
 }
 
 func TestRemoveItemsRecursive(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			log.Fatal("failed to WipeTheLot")
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
+
 	home := getTemporaryHome()
 	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
@@ -272,23 +269,22 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	fwc[yellowPath] = "yellow content"
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
-	// path to recursively remove
+	// path to recursively removeFromDB
 	fruitPath := fmt.Sprintf("%s/.fruit", home)
 	// try removing same path twice
 	fruitPathDupe := fmt.Sprintf("%s/.fruit", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai)
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}}
+	ao, err := Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
 	// try removing overlapping path and note in specified path
 
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{yellowPath, fruitPath, fruitPathDupe},
 		Debug:   true,
@@ -303,14 +299,12 @@ func TestRemoveItemsRecursive(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveTwo(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			log.Fatal("failed to WipeTheLot")
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
+
 	home := getTemporaryHome()
 	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
@@ -323,20 +317,19 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	fwc[yellowPath] = "yellow content"
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
-	// path to recursively remove
+	// path to recursively removeFromDB
 	fruitPath := fmt.Sprintf("%s/.fruit", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai)
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}}
+	ao, err := Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{fruitPath},
 		Debug:   true,
@@ -351,14 +344,12 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveThree(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			log.Fatal("failed to WipeTheLot")
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
+
 	home := getTemporaryHome()
 	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
@@ -375,21 +366,21 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	fwc[lokiPath] = "chicken please content"
 	housePath := fmt.Sprintf("%s/.house/flat", home)
 	fwc[housePath] = "flat description"
-	// paths to recursively remove
+	// paths to recursively removeFromDB
 	fruitPath := fmt.Sprintf("%s/.fruit/", home)
 	labradorPath := fmt.Sprintf("%s/.dogs/labrador", home)
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath, labradorPath}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai)
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath, labradorPath}}
+
+	ao, err := Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 5)
 	assert.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{fruitPath, labradorPath, housePath},
 		Debug:   true,
@@ -405,14 +396,12 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 }
 
 func TestRemoveAndCheckRemoved(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			log.Fatal("failed to WipeTheLot")
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
+
 	home := getTemporaryHome()
 	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
@@ -422,15 +411,14 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai)
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath}}
+	ao, err := Add(ai)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 1)
 	assert.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{gitConfigPath},
 		Debug:   true,
@@ -443,19 +431,27 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.Equal(t, 1, ro.NotesRemoved)
 	assert.Equal(t, 1, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
-	twn, _ := get(session, DefaultPageSize, true)
+
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(cache.SyncInput{
+		Session: testCacheSession,
+	})
+	if err != nil {
+		return
+	}
+
+	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
 	assert.Len(t, twn, 0)
+	assert.NoError(t, cso.DB.Close())
 }
 
 func TestRemoveAndCheckRemovedOne(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	defer func() {
-		if _, err := WipeDotfileTagsAndNotes(session, DefaultPageSize, true); err != nil {
-			log.Fatal("failed to WipeTheLot")
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
+
 	home := getTemporaryHome()
 	debugPrint(true, fmt.Sprintf("test | using temp home: %s", home))
 
@@ -468,16 +464,15 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	fwc[acmeConfigPath] = "acme config"
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
-	ai := AddInput{Session: session, Home: home, Paths: []string{gitConfigPath, awsConfigPath, acmeConfigPath}, Debug: true}
-	var ao AddOutput
-	ao, err = Add(ai)
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, awsConfigPath, acmeConfigPath}}
+	ao, err := Add(ai)
 	assert.NoError(t, err)
 	// dotfiles tag, .gitconfig, and acmeConfig should exist
 	assert.Len(t, ao.PathsAdded, 3)
 	assert.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
-		Session: session,
+		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{gitConfigPath, acmeConfigPath},
 		Debug:   true,
@@ -490,7 +485,16 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.Equal(t, 2, ro.NotesRemoved)
 	assert.Equal(t, 1, ro.TagsRemoved)
 	assert.Equal(t, 0, ro.NotTracked)
-	twn, _ := get(session, DefaultPageSize, true)
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(cache.SyncInput{
+		Session: testCacheSession,
+	})
+	if err != nil {
+		return
+	}
+
+	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
 	// dotfiles tag and .gitconfig note should exist
 	assert.Len(t, twn, 2)
+	assert.NoError(t, cso.DB.Close())
 }

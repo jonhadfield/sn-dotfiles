@@ -2,32 +2,101 @@ package main
 
 import (
 	"fmt"
+	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"index/suffixarray"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
-
-	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/spf13/viper"
-
-	"github.com/stretchr/testify/assert"
 )
 
+func removeDB(dbPath string) {
+	if err := os.Remove(dbPath); err != nil {
+		if !strings.Contains(err.Error(), "no such file or directory") {
+			panic(err)
+		}
+	}
+}
+
+func CleanUp(session cache.Session) error {
+	removeDB(session.CacheDBPath)
+	err := gosn.DeleteContent(&gosn.Session{
+		Token:             testCacheSession.Token,
+		MasterKey:         testCacheSession.MasterKey,
+		Server:            testCacheSession.Server,
+		AccessToken:       testCacheSession.AccessToken,
+		AccessExpiration:  testCacheSession.AccessExpiration,
+		RefreshExpiration: testCacheSession.RefreshExpiration,
+		RefreshToken:      testCacheSession.RefreshToken,
+	})
+	return err
+}
+
+var testCacheSession *cache.Session
+
+func csync(si cache.SyncInput) (so cache.SyncOutput, err error) {
+	return cache.Sync(cache.SyncInput{
+		Session: si.Session,
+		Close:   si.Close,
+	})
+}
 func TestMain(m *testing.M) {
-	viper.SetEnvPrefix("sn")
-	_ = viper.BindEnv("email")
-	_ = viper.BindEnv("password")
-	_ = viper.BindEnv("server")
-	session, _, err := gosn.GetSession(false, "", os.Getenv("SN_SERVER"))
-	if _, err = sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
-		fmt.Println("failed to wipe:", err)
-		os.Exit(1)
+	gs, err := gosn.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"))
+	if err != nil {
+		panic(err)
 	}
 
+	testCacheSession = &cache.Session{
+		Session: &gosn.Session{
+			Debug:             true,
+			Server:            gs.Server,
+			Token:             gs.Token,
+			MasterKey:         gs.MasterKey,
+			RefreshExpiration: gs.RefreshExpiration,
+			RefreshToken:      gs.RefreshToken,
+			AccessToken:       gs.AccessToken,
+			AccessExpiration:  gs.AccessExpiration,
+		},
+		CacheDBPath: "",
+	}
+
+	var path string
+
+	path, err = cache.GenCacheDBPath(*testCacheSession, "", sndotfiles2.SNAppName)
+	if err != nil {
+		panic(err)
+	}
+
+	testCacheSession.CacheDBPath = path
+
+	var so cache.SyncOutput
+	so, err = csync(cache.SyncInput{
+		Session: testCacheSession,
+		Close:   false,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var allPersistedItems cache.Items
+
+	if err = so.DB.All(&allPersistedItems); err != nil {
+		return
+	}
+	if err = so.DB.Close(); err != nil {
+		panic(err)
+	}
+
+	if testCacheSession.DefaultItemsKey.ItemsKey == "" {
+		panic("failed in TestMain due to empty default items key")
+	}
 	os.Exit(m.Run())
 }
 
@@ -80,12 +149,12 @@ func TestAdd(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
+		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
+	var err error
 	home := getHome()
 	fwc := make(map[string]string)
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
@@ -97,8 +166,7 @@ func TestAdd(t *testing.T) {
 	assert.NotEmpty(t, msg)
 	assert.True(t, disp)
 	assert.NoError(t, err)
-	re := regexp.MustCompile("\\.fruit/apple  now tracked")
-	assert.Regexp(t, msg, re)
+	assert.Regexp(t, regexp.MustCompile(".fruit/apple\\s*now tracked"), msg)
 }
 
 func TestAddInvalidPath(t *testing.T) {
@@ -136,26 +204,19 @@ func TestRemove(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	fwc[applePath] = "apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
-	session, _, err := gosn.GetSession(false, "", serverURL)
+
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
+		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
+
+	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", fmt.Sprintf("%s/.fruit", home)})
 	assert.NoError(t, err)
-	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
-	assert.NoError(t, err)
-	var msg string
-	var disp bool
 	msg, disp, err = startCLI([]string{"sn-dotfiles", "remove", fmt.Sprintf("%s/.fruit", home)})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, msg)
-	assert.Contains(t, msg, ".fruit/apple  removed")
+	assert.Regexp(t, regexp.MustCompile(".fruit/apple\\s*removed"), msg)
 	assert.True(t, disp)
 }
 
@@ -174,18 +235,18 @@ func TestWipe(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
+		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	assert.NoError(t, err)
-	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+
+	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	_, err := sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
+	time.Sleep(time.Second * 1)
 	msg, disp, err = startCLI([]string{"sn-dotfiles", "wipe", "--force"})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "3 ")
@@ -207,17 +268,18 @@ func TestStatus(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
+		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	assert.NoError(t, err)
-	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	var err error
+	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
 	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
-	msg, disp, err := startCLI([]string{"sn-dotfiles", "status", applePath})
+	var msg string
+	var disp bool
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "status", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, ".fruit/apple  identical")
 	assert.True(t, disp)
@@ -240,17 +302,19 @@ func TestSync(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
+		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	assert.NoError(t, err)
-	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath, lemonPath}, Debug: true}
+
+	var err error
+	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath, lemonPath}}
 	_, err = sndotfiles2.Add(ai)
 	assert.NoError(t, err)
-	msg, disp, err := startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
+	var msg string
+	var disp bool
+	msg, disp, err = startCLI([]string{"sn-dotfiles", "--debug", "sync", applePath})
 	assert.NoError(t, err)
 	assert.Contains(t, msg, "nothing to do")
 	assert.True(t, disp)
@@ -281,7 +345,6 @@ func TestSync(t *testing.T) {
 	r := regexp.MustCompile("pulled")
 	index := suffixarray.New([]byte(msg))
 	results := index.FindAllIndex(r, -1)
-	fmt.Println(len(results))
 	assert.Len(t, results, 1)
 }
 
@@ -300,15 +363,13 @@ func TestDiff(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
+		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	assert.NoError(t, err)
-	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	_, err := sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -337,15 +398,14 @@ func TestSyncExclude(t *testing.T) {
 	if serverURL == "" {
 		serverURL = sndotfiles2.SNServerURL
 	}
-	session, _, err := gosn.GetSession(false, "", serverURL)
 	defer func() {
-		if _, err := sndotfiles2.WipeDotfileTagsAndNotes(session, sndotfiles2.DefaultPageSize, true); err != nil {
+		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
-	assert.NoError(t, err)
-	ai := sndotfiles2.AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
-	_, err = sndotfiles2.Add(ai)
+
+	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	_, err := sndotfiles2.Add(ai)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool

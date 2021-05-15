@@ -1,21 +1,26 @@
 package sndotfiles
 
 import (
+	"errors"
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"regexp"
-	"time"
-
+	"github.com/asdine/storm/v3"
+	"github.com/asdine/storm/v3/q"
 	"github.com/fatih/color"
+	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"regexp"
 )
 
 const (
-	// SNServerURL defines the default URL for making calls to sync with SN
-	SNServerURL = "https://sync.standardnotes.org"
+	// SNServerURL defines the default URL for making calls to syncDBwithFS with SN
+	SNServerURL = "https://syncDBwithFS.standardnotes.org"
 	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
 	DotFilesTag = "dotfiles"
-	// DefaultPageSize defines the number of items to attempt to sync per request
+	// DefaultPageSize defines the number of items to attempt to syncDBwithFS per request
 	DefaultPageSize = 500
+
+	SNAppName   = "sn-dotfiles"
+
 )
 
 var (
@@ -35,38 +40,23 @@ func removeImposters(i gosn.EncryptedItems) (o gosn.EncryptedItems) {
 	return o
 }
 
-func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err error) {
-	si := gosn.SyncInput{
-		Session:  session,
-		PageSize: pageSize,
-		Debug:    debug,
-	}
-
-	var so gosn.SyncOutput
-
-	start := time.Now()
-	so, err = gosn.Sync(si)
-	elapsed := time.Since(start)
-	debugPrint(debug, fmt.Sprintf("get | get took: %v", elapsed))
-
-	if err != nil {
-		return t, err
-	}
-
-	so.Items = removeImposters(so.Items)
-	so.Items.DeDupe()
-
-	var dItems gosn.DecryptedItems
-
-	dItems, err = so.Items.Decrypt(session.Mk, session.Ak, debug)
-	if err != nil {
+func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, err error) {
+	// validate session
+	if ! session.Valid() {
+		err = errors.New("invalid session")
 		return
 	}
 
+	var notesAndTags cache.Items
+
+	if e := db.Select(q.In("ContentType", []string{"Note", "Tag"})).Find(&notesAndTags) ; e != nil {
+		if e.Error() != "not found" {
+			return
+		}
+	}
+
 	var items gosn.Items
-
-	items, err = dItems.Parse()
-
+	items, err = notesAndTags.ToItems(session)
 	if err != nil {
 		return
 	}
@@ -105,7 +95,7 @@ func get(session gosn.Session, pageSize int, debug bool) (t tagsWithNotes, err e
 
 	return t, err
 }
-
+//
 func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 	for _, ir := range itemRefs {
 		if ir.ContentType == "Note" {
@@ -115,7 +105,7 @@ func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 
 	return refIds
 }
-
+//
 type tagWithNotes struct {
 	tag   gosn.Tag
 	notes gosn.Notes
@@ -125,7 +115,7 @@ type tagsWithNotes []tagWithNotes
 
 // GetNoteConfig defines the input for getting notes from SN
 type GetNoteConfig struct {
-	Session    gosn.Session
+	Session    cache.Session
 	Filters    gosn.ItemFilters
 	NoteTitles []string
 	TagTitles  []string

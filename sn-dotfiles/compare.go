@@ -47,7 +47,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 	// loop through remotes to generate a list of diffs for:
 	// - existing local and remotes
 	// - missing local files
-	// also get a list of remotes that should have locals
+	// also getTagsWithNotes a list of remotes that should have locals
 	for _, twn := range remote {
 		// only do a compare if path equals translated tag
 		tagTitle := twn.tag.Content.GetTitle()
@@ -116,7 +116,7 @@ func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bo
 	}
 
 	defer func() {
-		if err := file.Close(); err != nil {
+		if err = file.Close(); err != nil {
 			fmt.Println("failed to close file:", path)
 		}
 	}()

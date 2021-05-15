@@ -1,9 +1,11 @@
 package sndotfiles
 
 import (
-	"errors"
 	"fmt"
+	"github.com/asdine/storm/v3"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/pkg/errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -50,20 +52,18 @@ func stripHome(in, home string) string {
 	return in
 }
 
-func push(session gosn.Session, itemDiffs []ItemDiff, debug bool) (pio gosn.SyncOutput, err error) {
+func addToDB(db *storm.DB, session *cache.Session, itemDiffs []ItemDiff) (err error) {
 	var dItems gosn.Items
 	for _, i := range itemDiffs {
 		dItems = append(dItems, &i.remote)
 	}
 
 	if dItems == nil {
-		err = errors.New("no items to push")
+		err = errors.New("no items to addToDB")
 		return
 	}
 
-	pio, err = putItems(putItemsInput{session: session, debug: debug, items: dItems})
-
-	return pio, err
+	return cache.SaveItems(db, session, dItems, false, session.Debug)
 }
 
 func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Tag, found bool) {
@@ -76,7 +76,7 @@ func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Tag, found bool) {
 	return tag, false
 }
 
-func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes, debug bool) (newTags gosn.Tags, err error) {
+func createMissingTags(db *storm.DB, session *cache.Session, pt string, twn tagsWithNotes) (newTags gosn.Tags, err error) {
 	var fts []string
 
 	ts := strings.Split(pt, ".")
@@ -103,32 +103,31 @@ func createMissingTags(session gosn.Session, pt string, twn tagsWithNotes, debug
 		}
 	}
 
-	var pio gosn.SyncOutput
-
-	pii := putItemsInput{session: session, items: itemsToPush, debug: debug}
-
-	pio, err = putItems(pii)
+	err = cache.SaveItems(db, session, itemsToPush, false, true)
 	if err != nil {
 		return
 	}
 
-	created := pio.SavedItems
-	created.DeDupe()
-
-	var is gosn.Items
-
-	is, err = created.DecryptAndParse(session.Mk, session.Ak, debug)
-	if err != nil {
-		return
-	}
-
-	return is.Tags(), err
+	return itemsToPush.Tags(), err
 }
 
-func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNotes, debug bool) (tagsPushed, notesPushed int, err error) {
+func isDBOpen(db storm.DB) (open bool, err error) {
+	var x []gosn.EncryptedItem
+	err = db.All(&x)
+	if err != nil {
+		if err.Error() == "database not open" {
+			return false, nil
+		}
+
+		return
+	}
+
+	return true, err
+}
+
+func pushAndTag(db *storm.DB, session *cache.Session, tim map[string]gosn.Items, twn tagsWithNotes) (tagsPushed, notesPushed int, err error) {
 	// create missing tags first to create a new tim
 	itemsToPush := gosn.Items{}
-
 	for potentialTag, notes := range tim {
 		existingTag, found := getTagIfExists(potentialTag, twn)
 		if found {
@@ -148,7 +147,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 		} else {
 			// need to create tag
 			var newTags gosn.Tags
-			newTags, err = createMissingTags(session, potentialTag, twn, debug)
+			newTags, err = createMissingTags(db, session, potentialTag, twn)
 			if err != nil {
 				return
 			}
@@ -165,7 +164,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 			newTag.Content.UpsertReferences(newReferences)
 			itemsToPush = append(itemsToPush, &newTag)
 
-			// add to twn so we don't get duplicates
+			// add to twn so we don't getTagsWithNotes duplicates
 			twn = append(twn, tagWithNotes{
 				tag:   newTag,
 				notes: notes.Notes(),
@@ -178,9 +177,7 @@ func pushAndTag(session gosn.Session, tim map[string]gosn.Items, twn tagsWithNot
 			}
 		}
 	}
-
-	//_, err = putItems(session, itemsToPush, debug)
-	_, err = putItems(putItemsInput{session: session, items: itemsToPush, debug: debug})
+	err = cache.SaveItems(db, session, itemsToPush, true, session.Debug)
 	tagsPushed, notesPushed = getItemCounts(itemsToPush)
 
 	return tagsPushed, notesPushed, err
@@ -200,7 +197,7 @@ func createTag(name string) (tag gosn.Tag) {
 	return
 }
 
-func pull(itemDiffs []ItemDiff) error {
+func createLocal(itemDiffs []ItemDiff) error {
 	for _, item := range itemDiffs {
 		dir, _ := filepath.Split(item.path)
 		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -253,13 +250,13 @@ func noteInNotes(item gosn.Note, items gosn.Notes) bool {
 // getAllTagsWithoutNotes finds all tags that no longer have notes
 // (doesn't check tags that are empty after child tag(s) removed)
 func getAllTagsWithoutNotes(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) (tagsWithoutNotes []string) {
-	// get a map of all tags and notes, minus the notes to delete
+	// getTagsWithNotes a map of all tags and notes, minus the notes to delete
 	res := make(map[string]int)
 	// initialise map with 0 count
 	for _, x := range twn {
 		res[x.tag.Content.GetTitle()] = 0
 	}
-	// get a count of notes for each tag
+	// getTagsWithNotes a count of notes for each tag
 	for _, t := range twn {
 		debugPrint(debug, fmt.Sprintf("getAllTagsWithoutNotes | tag: %s", t.tag.Content.GetTitle()))
 
@@ -294,7 +291,7 @@ func removeStringFromSlice(item string, slice []string) (updatedSlice []string) 
 // findEmptyTags takes a set of tags with notes and a list of notes being deleted
 // in order to find all tags that are already empty or will be empty once the notes are deleted
 func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) gosn.Tags {
-	// get a list of tags without notes (including those that have just become noteless)
+	// getTagsWithNotes a list of tags without notes (including those that have just become noteless)
 	allTagsWithoutNotes := getAllTagsWithoutNotes(twn, deletedNotes, debug)
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsWithoutNotes: %s", allTagsWithoutNotes))
 
@@ -325,7 +322,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) gosn.
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsChildMap: %s", allTagsChildMap))
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsWithoutNotes: %s", allTagsWithoutNotes))
 
-	// remove tags without notes and without children
+	// removeFromDB tags without notes and without children
 	for {
 		var changeMade bool
 
@@ -361,7 +358,7 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) gosn.
 
 	tagsToRemove = dedupe(tagsToRemove)
 
-	// now remove dotfiles tag if it has no children
+	// now removeFromDB dotfiles tag if it has no children
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | tagsToRemove: %s", tagsToRemove))
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allDotfileChildTags: %s", allDotfileChildTags))
 
@@ -370,9 +367,9 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) gosn.
 		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", DotFilesTag))
 	}
 
-	debugPrint(debug, fmt.Sprintf("findEmptyTags | tags to remove (deduped): %s", tagsToRemove))
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | tags to removeFromDB (deduped): %s", tagsToRemove))
 
-	debugPrint(debug, fmt.Sprintf("findEmptyTags | total to remove: %d", len(tagsToRemove)))
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | total to removeFromDB: %d", len(tagsToRemove)))
 
 	return tagTitlesToTags(tagsToRemove, twn)
 }
@@ -398,7 +395,7 @@ func getNotesToRemove(path, home string, twn tagsWithNotes, debug bool) (homeRel
 
 	debugPrint(debug, fmt.Sprintf("getNotesToRemove | path: '%s': %s", path, remoteEquiv))
 
-	// get item tags from remoteEquiv by stripping <DotFilesTag> and filename from remoteEquiv
+	// getTagsWithNotes item tags from remoteEquiv by stripping <DotFilesTag> and filename from remoteEquiv
 	var noteTag, noteTitle string
 
 	debugPrint(debug, fmt.Sprintf("getNotesToRemove | path type: %s", pathType))
@@ -561,8 +558,6 @@ func ParseSessionString(in string) (email string, session gosn.Session, err erro
 	email = parts[0]
 	session = gosn.Session{
 		Token:  parts[2],
-		Mk:     parts[4],
-		Ak:     parts[3],
 		Server: parts[1],
 	}
 
@@ -579,23 +574,6 @@ func StringInSlice(inStr string, inSlice []string, matchCase bool) bool {
 	}
 
 	return false
-}
-
-func putItems(pii putItemsInput) (pio gosn.SyncOutput, err error) {
-	var encItemsToPut gosn.EncryptedItems
-
-	encItemsToPut, err = pii.items.Encrypt(pii.session.Mk, pii.session.Ak, pii.debug)
-	if err != nil {
-		return pio, fmt.Errorf("failed to encrypt items to put: %v", err)
-	}
-
-	si := gosn.SyncInput{
-		Items:   encItemsToPut,
-		Session: pii.session,
-		Debug:   pii.debug,
-	}
-
-	return gosn.Sync(si)
 }
 
 func stripTrailingSlash(in string) string {

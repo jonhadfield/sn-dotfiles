@@ -2,9 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/fatih/set"
+	"strings"
 )
 
 func checkFSPaths(paths []string) error {

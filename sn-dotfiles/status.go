@@ -2,8 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-
+	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
 )
 
@@ -13,10 +12,18 @@ import (
 // - remote items that are newer
 // - local items that are untracked (if Paths specified)
 // - identical local and remote items
-func Status(session gosn.Session, home string, paths []string, pageSize int, debug bool) (diffs []ItemDiff, msg string, err error) {
+func Status(session *cache.Session, home string, paths []string, pageSize int, debug bool) (diffs []ItemDiff, msg string, err error) {
+	// get populated db
+	si := cache.SyncInput{
+		Session: session,
+		Close: false,
+	}
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(si)
+
 	var remote tagsWithNotes
 
-	remote, err = get(session, pageSize, debug)
+	remote, err = getTagsWithNotes(cso.DB, session)
 	if err != nil {
 		return diffs, msg, err
 	}

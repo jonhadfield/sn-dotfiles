@@ -80,7 +80,7 @@ func TestDiff(t *testing.T) {
 	err = createTemporaryFiles(fwc)
 	assert.NoError(t, err)
 	defer func() {
-		if err := deleteTemporaryFiles(home); err != nil {
+		if err = deleteTemporaryFiles(home); err != nil {
 			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
 		}
 	}()
@@ -101,7 +101,7 @@ func TestCompare1(t *testing.T) {
 	err := createTemporaryFiles(filesWithContent)
 	assert.NoError(t, err)
 	defer func() {
-		if err := deleteTemporaryFiles(home); err != nil {
+		if err = deleteTemporaryFiles(home); err != nil {
 			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
 		}
 	}()
@@ -186,7 +186,7 @@ func TestCompare2(t *testing.T) {
 	err := createTemporaryFiles(filesWithContent)
 	assert.NoError(t, err)
 	defer func() {
-		if err := deleteTemporaryFiles(home); err != nil {
+		if err = deleteTemporaryFiles(home); err != nil {
 			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
 		}
 	}()
@@ -236,7 +236,7 @@ func TestCompare3(t *testing.T) {
 	err := createTemporaryFiles(fwc)
 	assert.NoError(t, err)
 	defer func() {
-		if err := deleteTemporaryFiles(home); err != nil {
+		if err = deleteTemporaryFiles(home); err != nil {
 			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
 		}
 	}()
@@ -278,7 +278,7 @@ func TestCompare4(t *testing.T) {
 	err := createTemporaryFiles(fwc)
 	assert.NoError(t, err)
 	defer func() {
-		if err := deleteTemporaryFiles(home); err != nil {
+		if err = deleteTemporaryFiles(home); err != nil {
 			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
 		}
 	}()

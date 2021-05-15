@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"path/filepath"
 	"sort"
@@ -93,17 +94,22 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"))
+
+			var session cache.Session
+			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
+			session.CacheDBPath = cacheDBPath
 
 			home := c.GlobalString("home-dir")
 			if home == "" {
 				home = getHome()
 			}
-			_, msg, err = sndotfiles.Status(session, home, c.Args(),
+			_, msg, err = sndotfiles.Status(&session, home, c.Args(),
 				c.GlobalInt("page-size"), c.GlobalBool("debug"))
 			return err
 		},
@@ -128,24 +134,28 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"))
+
+			var session cache.Session
+			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
+			session.CacheDBPath = cacheDBPath
 
 			home := c.GlobalString("home-dir")
 			if home == "" {
 				home = getHome()
 			}
 			var so sndotfiles.SyncOutput
-			so, err = sndotfiles.Sync(sndotfiles.SyncInput{
-				Session:  session,
+			so, err = sndotfiles.Sync(sndotfiles.SNDotfilesSyncInput{
+				Session:  &session,
 				Home:     home,
 				Paths:    c.Args(),
 				Exclude:  c.StringSlice("exclude"),
 				PageSize: c.GlobalInt("page-size"),
-				Debug:    c.GlobalBool("debug"),
 			})
 			if err != nil {
 				return err
@@ -195,18 +205,23 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				absPaths = append(absPaths, ap)
 			}
 
-			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"))
+			var session cache.Session
+			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
+			session.CacheDBPath = cacheDBPath
+
 			home := c.GlobalString("home-dir")
 			if home == "" {
 				home = getHome()
 			}
 
-			ai := sndotfiles.AddInput{Session: session, Home: home, Paths: absPaths,
-				PageSize: c.GlobalInt("page-size"), All: c.Bool("all"), Debug: c.GlobalBool("debug")}
+			ai := sndotfiles.AddInput{Session: &session, Home: home, Paths: absPaths,
+				PageSize: c.GlobalInt("page-size"), All: c.Bool("all")}
 
 			var ao sndotfiles.AddOutput
 
@@ -239,17 +254,22 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				return nil
 			}
 
-			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"))
+			var session cache.Session
+			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
+			session.CacheDBPath = cacheDBPath
+
 			home := c.GlobalString("home-dir")
 			if home == "" {
 				home = getHome()
 			}
 			ri := sndotfiles.RemoveInput{
-				Session:  session,
+				Session:  &session,
 				Home:     home,
 				Paths:    c.Args(),
 				PageSize: c.GlobalInt("page-size"),
@@ -275,17 +295,21 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, _, err := gosn.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"))
+			var session cache.Session
+			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
+			session.CacheDBPath = cacheDBPath
+
 			home := c.GlobalString("home-dir")
 			if home == "" {
 				home = getHome()
 			}
-			_, msg, err = sndotfiles.Diff(session, home, c.Args(), c.GlobalInt("page-size"),
-				c.GlobalBool("debug"))
+			_, msg, err = sndotfiles.Diff(&session, home, c.Args(), c.GlobalInt("page-size"), true)
 			return err
 		},
 	}
@@ -374,11 +398,18 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if !c.GlobalBool("quiet") {
 				display = true
 			}
-			session, email, err := gosn.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"))
+
+			var email string
+			var session cache.Session
+			session, email, err = cache.GetSession(c.GlobalBool("use-session"),
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
+			session.CacheDBPath = cacheDBPath
+
 			var proceed bool
 			if c.Bool("force") {
 				proceed = true
@@ -392,7 +423,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(session, c.GlobalInt("page-size"),
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, c.GlobalInt("page-size"),
 					c.GlobalBool("quiet"))
 				if err != nil {
 					return err

@@ -3,28 +3,35 @@ package sndotfiles
 import (
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/lithammer/shortuuid"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/lithammer/shortuuid"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(m *testing.M) {
-	// call flag.Parse() here if TestMain uses flags
-	session, err := GetTestSession()
-	if err != nil {
-		fmt.Println("failed to get session:", err)
-		os.Exit(1)
+func removeDB(dbPath string) {
+	if err := os.Remove(dbPath); err != nil {
+		if !strings.Contains(err.Error(), "no such file or directory") {
+			panic(err)
+		}
 	}
-	if _, err := WipeTheLot(session); err != nil {
-		fmt.Println("failed to wipe:", err)
-		os.Exit(1)
-	}
-	os.Exit(m.Run())
+}
+
+func CleanUp(session cache.Session) error {
+	removeDB(session.CacheDBPath)
+	err := gosn.DeleteContent(&gosn.Session{
+		Token:             testCacheSession.Token,
+		MasterKey:         testCacheSession.MasterKey,
+		Server:            testCacheSession.Server,
+		AccessToken:       testCacheSession.AccessToken,
+		AccessExpiration:  testCacheSession.AccessExpiration,
+		RefreshExpiration: testCacheSession.RefreshExpiration,
+		RefreshToken:      testCacheSession.RefreshToken,
+	})
+	return err
 }
 
 func getTemporaryHome() string {
@@ -32,12 +39,12 @@ func getTemporaryHome() string {
 	return strings.ReplaceAll(home, "//", "/")
 }
 
+
 func TestAddNoPaths(t *testing.T) {
 	ai := AddInput{
-		Session: gosn.Session{},
+		Session: testCacheSession,
 		Home:    getTemporaryHome(),
 		Paths:   nil,
-		Debug:   true,
 	}
 	_, err := Add(ai)
 	assert.Error(t, err)
@@ -51,22 +58,19 @@ func TestAddInvalidSession(t *testing.T) {
 	fwc[gitConfigPath] = "git config content"
 
 	assert.NoError(t, createTemporaryFiles(fwc))
-	ai := AddInput{Session: gosn.Session{
-		Token:  "invalid",
-		Mk:     "invalid",
-		Ak:     "invalid",
-		Server: "invalid",
-	}, Home: home, Paths: []string{gitConfigPath}, Debug: true}
+	ai := AddInput{Session: &cache.Session{
+		Session:     nil,
+		CacheDB:     nil,
+		CacheDBPath: "",
+	}, Home: home, Paths: []string{gitConfigPath}}
 	_, err := Add(ai)
 	assert.Error(t, err)
 }
 
 func TestAddInvalidPath(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
+	var err error
 	defer func() {
-		if _, err := WipeTheLot(session); err != nil {
+		if err = CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -79,7 +83,7 @@ func TestAddInvalidPath(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 
-	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, duffPath}, Debug: true}
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath, duffPath}}
 	var ao AddOutput
 	ao, err = Add(ai)
 
@@ -90,11 +94,9 @@ func TestAddInvalidPath(t *testing.T) {
 }
 
 func TestAddOne(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
+	var err error
 	defer func() {
-		if _, err := WipeTheLot(session); err != nil {
+		if err = CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
 		}
 	}()
@@ -106,7 +108,7 @@ func TestAddOne(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	ai := AddInput{Session: session, Home: home, Paths: []string{applePath}, Debug: true}
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
 	var ao AddOutput
 	ao, err = Add(ai)
 	assert.NoError(t, err)
@@ -116,13 +118,12 @@ func TestAddOne(t *testing.T) {
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
 
+
 func TestAddTwoSameTag(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
+	var err error
 	defer func() {
-		if _, err := WipeTheLot(session); err != nil {
-			fmt.Println("failed to WipeTheLot")
+		if err = CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
 	home := getTemporaryHome()
@@ -137,7 +138,7 @@ func TestAddTwoSameTag(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	ai := AddInput{Session: session, Home: home, Paths: []string{applePath, vwPath, bananaPath}, Debug: true}
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath, vwPath, bananaPath}}
 	var ao AddOutput
 	ao, err = Add(ai)
 	assert.NoError(t, err)
@@ -146,21 +147,13 @@ func TestAddTwoSameTag(t *testing.T) {
 	assert.Contains(t, ao.PathsAdded, bananaPath)
 	assert.Equal(t, 0, len(ao.PathsExisting))
 	assert.Equal(t, 0, len(ao.PathsInvalid))
-
-	var twn tagsWithNotes
-	twn, err = get(session, DefaultPageSize, true)
-	assert.NoError(t, err)
-	tagCount := len(twn)
-	assert.Equal(t, 3, tagCount)
 }
 
 func TestAddRecursive(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
+	var err error
 	defer func() {
-		if _, err := WipeTheLot(session); err != nil {
-			fmt.Println("failed to WipeTheLot")
+		if err = CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
 	home := getTemporaryHome()
@@ -176,7 +169,7 @@ func TestAddRecursive(t *testing.T) {
 	carsPath := fmt.Sprintf("%s/.cars", home)
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	ai := AddInput{Session: session, Home: home, Paths: []string{fruitPath, carsPath}, Debug: true}
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{fruitPath, carsPath}}
 	var ao AddOutput
 	ao, err = Add(ai)
 	assert.NoError(t, err)
@@ -187,12 +180,10 @@ func TestAddRecursive(t *testing.T) {
 }
 
 func TestAddAll(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
+	var err error
 	defer func() {
-		if _, err := WipeTheLot(session); err != nil {
-			fmt.Println("failed to WipeTheLot")
+		if err = CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
 		}
 	}()
 	home := getTemporaryHome()
@@ -206,7 +197,7 @@ func TestAddAll(t *testing.T) {
 	fwc[file3Path] = "file3 content"
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
-	ai := AddInput{Session: session, Home: home, All: true, Debug: true}
+	ai := AddInput{Session: testCacheSession, Home: home, All: true}
 	var ao AddOutput
 	ao, err = Add(ai)
 	assert.NoError(t, err)
@@ -238,54 +229,4 @@ func TestCheckPathValid(t *testing.T) {
 func TestCreateItemInvalidPath(t *testing.T) {
 	_, err := createItem("invalid", "title")
 	assert.Error(t, err)
-}
-
-func GetTestSession() (gosn.Session, error) {
-	email := os.Getenv("SN_EMAIL")
-	password := os.Getenv("SN_PASSWORD")
-	apiServer := os.Getenv("SN_SERVER")
-	return gosn.CliSignIn(email, password, apiServer)
-}
-
-func WipeTheLot(session gosn.Session) (int, error) {
-	getItemsInput := gosn.SyncInput{
-		Session: session,
-		Debug:   true,
-	}
-	var err error
-	// get all existing Tags and Notes and mark for deletion
-	var output gosn.SyncOutput
-	output, err = gosn.Sync(getItemsInput)
-	if err != nil {
-		return 0, err
-	}
-	output.Items.DeDupe()
-	var pi gosn.Items
-	pi, err = output.Items.DecryptAndParse(session.Mk, session.Ak, true)
-	if err != nil {
-		return 0, err
-	}
-	var itemsToDel gosn.Items
-	for _, item := range pi {
-		if item == nil || item.IsDeleted() {
-			continue
-		}
-
-		switch {
-		case item.GetContentType() == "Tag":
-			item.SetDeleted(true)
-			item.SetContent(*gosn.NewTagContent())
-			itemsToDel = append(itemsToDel, item)
-		case item.GetContentType() == "Note":
-			item.SetDeleted(true)
-			item.SetContent(*gosn.NewNoteContent())
-			itemsToDel = append(itemsToDel, item)
-		}
-	}
-
-	_, err = putItems(putItemsInput{session: session, items: itemsToDel, debug: true})
-	if err != nil {
-		return 0, err
-	}
-	return len(itemsToDel), err
 }

@@ -1,30 +1,22 @@
 package sndotfiles
 
 import (
-	"github.com/jonhadfield/gosn-v2"
-	"testing"
-
+	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestWipeInvalidSession(t *testing.T) {
-	n, err := WipeDotfileTagsAndNotes(gosn.Session{
-		Token:  "invalid",
-		Mk:     "invalid",
-		Ak:     "invalid",
-		Server: "invalid",
+	n, err := WipeDotfileTagsAndNotes(&cache.Session{
 	}, DefaultPageSize, true)
 	assert.Zero(t, n)
 	assert.Error(t, err)
 }
 
-
 func TestWipeNoItems(t *testing.T) {
-	session, err := GetTestSession()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, session.Token)
 	var num int
-	num, err = WipeDotfileTagsAndNotes(session, DefaultPageSize, true)
+	var err error
+	num, err = WipeDotfileTagsAndNotes(testCacheSession, DefaultPageSize, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, num)
 }

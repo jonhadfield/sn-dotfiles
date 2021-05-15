@@ -3,13 +3,13 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/jonhadfield/findexec"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/jonhadfield/findexec"
 )
 
 const (
@@ -20,17 +20,31 @@ const (
 	identical    = "identical"
 )
 
-func Diff(session gosn.Session, home string, paths []string, pageSize int, debug bool) (diffs []ItemDiff, msg string, err error) {
-	debugPrint(debug, fmt.Sprintf("Diff | %d paths", len(paths)))
+func Diff(session *cache.Session, home string, paths []string, pageSize int, close bool) (diffs []ItemDiff, msg string, err error) {
+	debugPrint(session.Debug, fmt.Sprintf("Diff | %d paths", len(paths)))
+
+	// get populated db
+	si := cache.SyncInput{
+		Session: session,
+		Close: false,
+	}
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(si)
+	if err != nil {
+		return
+	}
 
 	var remote tagsWithNotes
 
-	remote, err = get(session, pageSize, debug)
+	remote, err = getTagsWithNotes(cso.DB, session)
 	if err != nil {
 		return diffs, msg, err
 	}
+	if err = cso.DB.Close(); err != nil {
+		return
+	}
 
-	return diff(remote, home, paths, debug)
+	return diff(remote, home, paths, session.Debug)
 }
 
 type ItemDiff struct {
@@ -80,7 +94,7 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 	}
 
 	var differencesFound bool
-	// get tempdir
+	// getTagsWithNotes tempdir
 	tempDir := os.TempDir()
 	if !strings.HasSuffix(tempDir, string(os.PathSeparator)) {
 		tempDir += string(os.PathSeparator)

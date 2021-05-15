@@ -3,17 +3,36 @@ package sndotfiles
 import (
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
 )
 
-func WipeDotfileTagsAndNotes(session gosn.Session, pageSize int, debug bool) (int, error) {
-	twns, err := get(session, pageSize, debug)
+func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, debug bool) (int, error) {
+	// get populated db
+	si := cache.SyncInput{
+		Session: session,
+		Close: false,
+	}
+
+	var err error
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(si)
 	if err != nil {
+		return 0, err
+	}
+
+	var remote tagsWithNotes
+
+	remote, err = getTagsWithNotes(cso.DB, session)
+	if err != nil {
+		return 0, err
+	}
+	if err = cso.DB.Close() ; err != nil {
 		return 0, err
 	}
 
 	var itemsToRemove gosn.Items
 
-	for _, twn := range twns {
+	for _, twn := range remote {
 		twn.tag.Deleted = true
 		t := twn.tag
 		itemsToRemove = append(itemsToRemove, &t)
@@ -26,24 +45,16 @@ func WipeDotfileTagsAndNotes(session gosn.Session, pageSize int, debug bool) (in
 
 	debugPrint(debug, fmt.Sprintf("WipeDotfileTagsAndNotes | removing %d items", len(itemsToRemove)))
 
-	var eItemsToDel gosn.EncryptedItems
-
 	if len(itemsToRemove) == 0 {
 		return 0, nil
 	}
 
-	eItemsToDel, err = itemsToRemove.Encrypt(session.Mk, session.Ak, debug)
-	if err != nil {
-		return 0, err
-	}
-
-	putItemsInput := gosn.SyncInput{
+	pii := cache.SyncInput{
 		Session: session,
-		Items:   eItemsToDel,
-		Debug:   true,
+		Close: true,
 	}
 
-	_, err = gosn.Sync(putItemsInput)
+	_, err = cache.Sync(pii)
 	if err != nil {
 		return 0, err
 	}

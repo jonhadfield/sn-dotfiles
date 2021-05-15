@@ -17,16 +17,6 @@ func TestStatusEmptyTWN(t *testing.T) {
 	assert.Equal(t, "no dotfiles being tracked", msg)
 }
 
-func TestStatusInvalidSession(t *testing.T) {
-	_, _, err := Status(gosn.Session{
-		Token:  "invalid",
-		Mk:     "invalid",
-		Ak:     "invalid",
-		Server: "invalid",
-	}, getTemporaryHome(), []string{}, DefaultPageSize, true)
-	assert.Error(t, err)
-}
-
 func testStatusSetup() (twn tagsWithNotes) {
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
@@ -170,7 +160,7 @@ func TestStatus2(t *testing.T) {
 
 	// update yellow content
 	// wait so that update time comparison doesn't fail due to formats
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	d1 := []byte("new yellow content")
 	assert.NoError(t, ioutil.WriteFile(yellowPath, d1, 0644))
 
@@ -179,7 +169,7 @@ func TestStatus2(t *testing.T) {
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
 	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
 	// pause so that remote updated time newer
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	// update premium remote to trigger remote newer condition
 	newPremiumNote := createNote("premium", "new content")
 	newCarsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{newPremiumNote}}

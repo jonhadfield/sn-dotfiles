@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
-
+	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
 )
 
 type RemoveInput struct {
-	Session  gosn.Session
+	Session  *cache.Session
 	Home     string
 	Paths    []string
 	PageSize int
@@ -20,6 +20,7 @@ type RemoveOutput struct {
 	NotesRemoved, TagsRemoved, NotTracked int
 	Msg                                   string
 }
+
 
 // Remove stops tracking local Paths by removing the related notes from SN
 func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
@@ -39,7 +40,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		return ro, errors.New("paths not defined")
 	}
 
-	// remove any duplicate paths
+	// removeFromDB any duplicate paths
 	ri.Paths = dedupe(ri.Paths)
 	debugPrint(ri.Debug, fmt.Sprintf("Remove | paths after dedupe: %d", len(ri.Paths)))
 
@@ -48,14 +49,24 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		return
 	}
 
-	var tagsWithNotes tagsWithNotes
-	tagsWithNotes, err = get(ri.Session, ri.PageSize, ri.Debug)
-
+	// get populated db
+	si := cache.SyncInput{
+		Session: ri.Session,
+		Close: false,
+	}
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(si)
 	if err != nil {
 		return
 	}
 
-	err = checkNoteTagConflicts(tagsWithNotes)
+	var twn tagsWithNotes
+	twn, err = getTagsWithNotes(cso.DB, ri.Session)
+	if err != nil {
+		return
+	}
+
+	err = checkNoteTagConflicts(twn)
 	if err != nil {
 		return
 	}
@@ -65,7 +76,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	var notesToRemove gosn.Notes
 
 	for _, path := range ri.Paths {
-		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, tagsWithNotes, ri.Debug)
+		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, twn, ri.Debug)
 
 		debugPrint(ri.Debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
 
@@ -84,28 +95,28 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		notesToRemove = append(notesToRemove, matchingItems...)
 	}
 
-	// dedupe any notes to remove
+	// dedupe any notes to removeFromDB
 	if notesToRemove != nil {
 		notesToRemove.DeDupe()
 	}
 	for _, n := range notesToRemove {
-		debugPrint(ri.Debug, fmt.Sprintf("Remove | remove note: %s", n.Content.Title))
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | removeFromDB note: %s", n.Content.Title))
 	}
 
 	// find any empty tags to delete
-	emptyTags := findEmptyTags(tagsWithNotes, notesToRemove, ri.Debug)
+	emptyTags := findEmptyTags(twn, notesToRemove, ri.Debug)
 
-	// dedupe any tags to remove
+	// dedupe any tags to removeFromDB
 	if emptyTags != nil {
 		emptyTags.DeDupe()
 	}
 
 	for x, et := range emptyTags {
-		debugPrint(ri.Debug, fmt.Sprintf("Remove | tags to remove: [%d] %s", x, et.Content.GetTitle()))
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | tags to removeFromDB: [%d] %s", x, et.Content.GetTitle()))
 	}
 
 	for x, n := range notesToRemove {
-		debugPrint(ri.Debug, fmt.Sprintf("Remove | notes to remove: [%d] %s", x, n.Content.GetTitle()))
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | notes to removeFromDB: [%d] %s", x, n.Content.GetTitle()))
 	}
 
 	var a gosn.Items
@@ -114,13 +125,19 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		a = append(a, &notesToRemove[i])
 	}
 
-
 	for i := range emptyTags {
 		a = append(a, &emptyTags[i])
 	}
-
+	ri.Session.CacheDB = cso.DB
 	x := removeInput{items: a, session: ri.Session, debug: ri.Debug}
-	if err = remove(x); err != nil {
+	if err = removeFromDB(x); err != nil {
+		return
+	}
+
+	// sync changes back to SN
+	si.Close = true
+	cso, err = cache.Sync(si)
+	if err != nil {
 		return
 	}
 
@@ -132,44 +149,31 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 }
 
 type removeInput struct {
-	session gosn.Session
+	session *cache.Session
 	items   gosn.Items
 	debug   bool
 }
 
-func remove(input removeInput) error {
-	var err error
-
+func removeFromDB(input removeInput) error {
+	if ! input.session.Valid() {
+		return errors.New("session is invalid")
+	}
 	var items gosn.Items
 
 	for _, i := range input.items {
-		debugPrint(true, fmt.Sprintf("Setting %s %v to be deleted", i.GetContentType(), i.GetContent()))
 		i.SetDeleted(true)
 		items = append(items, i)
 	}
 
 	if items == nil {
-		return fmt.Errorf("no items to remove")
+		return fmt.Errorf("no items to removeFromDB")
 	}
 
-	var pio gosn.SyncOutput
-
-	pio, err = putItems(putItemsInput{
-		session: input.session,
-		items:   items,
-		debug:   input.debug,
-	})
-	if err != nil {
+	var err error
+	if err = cache.SaveItems(input.session.CacheDB, input.session, items, true, input.session.Debug) ; err != nil {
 		return err
 	}
-
-	debugPrint(input.debug, fmt.Sprintf("remove | items put: %d", len(pio.SavedItems)))
 
 	return err
 }
 
-type putItemsInput struct {
-	items   gosn.Items
-	session gosn.Session
-	debug   bool
-}

@@ -1,20 +1,26 @@
 package sndotfiles
 
 import (
+	"errors"
 	"fmt"
+	"github.com/asdine/storm/v3"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/ryanuber/columnize"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
-
-	"github.com/ryanuber/columnize"
 )
+
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
 func Add(ai AddInput) (ao AddOutput, err error) {
+	// validate session
+	if ! ai.Session.Valid() {
+		err = errors.New("invalid session")
+		return
+	}
 	// ensure home is passed
 	if len(ai.Home) == 0 {
 		err = errors.New("home undefined")
@@ -30,7 +36,7 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 	if ai.All {
 		noRecurse = true
 
-		ai.Paths, err = discoverDotfilesInHome(ai.Home, ai.Debug)
+		ai.Paths, err = discoverDotfilesInHome(ai.Home, ai.Session.Debug)
 		if err != nil {
 			return
 		}
@@ -41,7 +47,7 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 		return ao, errors.New("paths not defined")
 	}
 
-	// remove any duplicate paths
+	// removeFromDB any duplicate paths
 	ai.Paths = dedupe(ai.Paths)
 
 	// check paths are valid
@@ -49,15 +55,25 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 		return
 	}
 
-	debugPrint(ai.Debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
+	debugPrint(ai.Session.Debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
 
-	var twn tagsWithNotes
-
-	twn, err = get(ai.Session, ai.PageSize, ai.Debug)
+	// get populated db
+	si := cache.SyncInput{
+		Session: ai.Session,
+		Close: false,
+	}
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(si)
 	if err != nil {
 		return
 	}
 
+	var twn tagsWithNotes
+
+	twn, err = getTagsWithNotes(cso.DB, ai.Session)
+	if err != nil {
+		return
+	}
 	// run pre-checks
 	err = checkNoteTagConflicts(twn)
 	if err != nil {
@@ -66,15 +82,20 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 
 	ai.Twn = twn
 
-	return add(ai, noRecurse, ai.Debug)
+	ao, err =  add(cso.DB, ai, noRecurse)
+	si.CacheDB = cso.DB
+	// syncDBwithFS db back to SN
+	si.Close = true
+	cso, err = cache.Sync(si)
+
+	return
 }
 
 type AddInput struct {
-	Session  gosn.Session
+	Session  *cache.Session
 	Home     string
 	Paths    []string
 	All      bool
-	Debug    bool
 	Twn      tagsWithNotes
 	PageSize int
 }
@@ -85,7 +106,7 @@ type AddOutput struct {
 	Msg                                     string
 }
 
-func add(ai AddInput, noRecurse, debug bool) (ao AddOutput, err error) {
+func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 	var tagToItemMap map[string]gosn.Items
 
 	var fsPathsToAdd []string
@@ -109,18 +130,17 @@ func add(ai AddInput, noRecurse, debug bool) (ao AddOutput, err error) {
 	// add DotFilesTag tag if missing
 	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
 	if !tagExists("dotfiles", ai.Twn) && !dotFilesTagInTagToItemMap {
-		debugPrint(ai.Debug, "Add | adding missing dotfiles tag")
+		debugPrint(ai.Session.Debug, "Add | adding missing dotfiles tag")
 
 		tagToItemMap[DotFilesTag] = gosn.Items{}
 	}
-	// push and tag items
-	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(ai.Session, tagToItemMap, ai.Twn, debug)
-
+	// addToDB and tag items
+	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(db, ai.Session, tagToItemMap, ai.Twn)
 	if err != nil {
 		return
 	}
 
-	debugPrint(debug, fmt.Sprintf("Add | tags pushed: %d notes pushed %d", ao.TagsPushed, ao.NotesPushed))
+	debugPrint(ai.Session.Debug, fmt.Sprintf("Add | tags pushed: %d notes pushed %d", ao.TagsPushed, ao.NotesPushed))
 
 	ao.Msg = fmt.Sprint(columnize.SimpleFormat(statusLines))
 
@@ -226,7 +246,7 @@ func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err e
 
 	return finalPaths, err
 }
-
+//
 func createItem(path, title string) (item gosn.Note, err error) {
 	// read file content
 	var file *os.File
@@ -237,7 +257,7 @@ func createItem(path, title string) (item gosn.Note, err error) {
 	}
 
 	defer func() {
-		if err := file.Close(); err != nil {
+		if err = file.Close(); err != nil {
 			fmt.Println("failed to close file:", path)
 		}
 	}()
@@ -250,7 +270,7 @@ func createItem(path, title string) (item gosn.Note, err error) {
 	}
 
 	localStr := string(localBytes)
-	// push item
+	// addToDB item
 	item = gosn.NewNote()
 	itemContent := gosn.NewNoteContent()
 	item.Content = *itemContent

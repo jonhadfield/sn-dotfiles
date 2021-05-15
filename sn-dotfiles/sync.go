@@ -3,7 +3,8 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
+	"github.com/asdine/storm/v3"
+	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"strings"
 
@@ -13,14 +14,22 @@ import (
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
-func Sync(si SyncInput) (so SyncOutput, err error) {
+func Sync(si SNDotfilesSyncInput) (so SyncOutput, err error) {
 	if err = checkPathsExist(si.Exclude); err != nil {
 		return
 	}
-
+	// get populated db
+	csi := cache.SyncInput{
+		Session: si.Session,
+		Close: false,
+	}
+	var cso cache.SyncOutput
+	cso, err = cache.Sync(csi)
+	if err != nil {
+		return
+	}
 	var remote tagsWithNotes
-
-	remote, err = get(si.Session, si.PageSize, si.Debug)
+	remote, err = getTagsWithNotes(cso.DB, si.Session)
 	if err != nil {
 		return
 	}
@@ -31,10 +40,21 @@ func Sync(si SyncInput) (so SyncOutput, err error) {
 	}
 
 	var sOut syncOutput
-	sOut, err = sync(syncInput{session: si.Session, twn: remote, home: si.Home, paths: si.Paths,
-		exclude: si.Exclude, debug: si.Debug})
-
+	sOut, err = syncDBwithFS(syncInput{db: cso.DB, session: si.Session, twn: remote, home: si.Home, paths: si.Paths,
+		exclude: si.Exclude})
 	if err != nil {
+
+		return
+	}
+	if err = cso.DB.Close() ; err != nil {
+		return
+	}
+
+	// persist changes
+	csi.Close = true
+	cso, err = cache.Sync(csi)
+	if err != nil {
+
 		return
 	}
 
@@ -45,19 +65,21 @@ func Sync(si SyncInput) (so SyncOutput, err error) {
 	}, err
 }
 
-type SyncInput struct {
-	Session        gosn.Session
+type SNDotfilesSyncInput struct {
+	Session        *cache.Session
 	Home           string
 	Paths, Exclude []string
 	PageSize       int
-	Debug          bool
 }
 type SyncOutput struct {
 	NoPushed, NoPulled int
 	Msg                string
 }
 
-func sync(si syncInput) (so syncOutput, err error) {
+func syncDBwithFS(si syncInput) (so syncOutput, err error) {
+	if si.db == nil {
+		panic("didn't get db sent to syncDBwithFS")
+	}
 	var itemDiffs []ItemDiff
 
 	itemDiffs, err = compare(si.twn, si.home, si.paths, si.exclude, si.debug)
@@ -76,25 +98,25 @@ func sync(si syncInput) (so syncOutput, err error) {
 	for _, itemDiff := range itemDiffs {
 		// check if itemDiff is for a path to be excluded
 		if matchesPathsToExclude(si.home, itemDiff.homeRelPath, si.exclude) {
-			debugPrint(si.debug, fmt.Sprintf("sync | excluding: %s", itemDiff.homeRelPath))
+			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | excluding: %s", itemDiff.homeRelPath))
 			continue
 		}
 
 		switch itemDiff.diff {
 		case localNewer:
-			//push
-			debugPrint(si.debug, fmt.Sprintf("sync | local %s is newer", itemDiff.homeRelPath))
+			//addToDB
+			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | local %s is newer", itemDiff.homeRelPath))
 			itemDiff.remote.Content.SetText(itemDiff.local)
 			itemsToPush = append(itemsToPush, itemDiff)
 			itemsToSync = true
 		case localMissing:
-			// pull
-			debugPrint(si.debug, fmt.Sprintf("sync | %s is missing", itemDiff.homeRelPath))
+			// createLocal
+			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | %s is missing", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		case remoteNewer:
-			// pull
-			debugPrint(si.debug, fmt.Sprintf("sync | remote %s is newer", itemDiff.homeRelPath))
+			// createLocal
+			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | remote %s is newer", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		}
@@ -106,14 +128,13 @@ func sync(si syncInput) (so syncOutput, err error) {
 		return
 	}
 
-	// push
+	// addToDB
 	if len(itemsToPush) > 0 {
-		_, err = push(si.session, itemsToPush, si.debug)
-		so.noPushed = len(itemsToPush)
-
+		err = addToDB(si.db, si.session, itemsToPush)
 		if err != nil {
 			return
 		}
+		so.noPushed = len(itemsToPush)
 	}
 
 	res := make([]string, len(itemsToPush))
@@ -125,8 +146,8 @@ func sync(si syncInput) (so syncOutput, err error) {
 		res[i] = line
 	}
 
-	// pull
-	if err = pull(itemsToPull); err != nil {
+	// create local
+	if err = createLocal(itemsToPull); err != nil {
 		return
 	}
 
@@ -143,11 +164,13 @@ func sync(si syncInput) (so syncOutput, err error) {
 }
 
 type syncInput struct {
-	session        gosn.Session
+	db 				*storm.DB
+	session        *cache.Session
 	twn            tagsWithNotes
 	home           string
 	paths, exclude []string
 	debug          bool
+	close          bool
 }
 
 type syncOutput struct {

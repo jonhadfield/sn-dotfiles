@@ -3,6 +3,7 @@ package sndotfiles
 import (
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
+	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"testing"
 	"time"
@@ -196,9 +197,7 @@ func TestParsesessionString(t *testing.T) {
 	assert.Equal(t, "someone@example.com", email)
 	assert.NotNil(t, sess)
 	assert.Equal(t, gosn.Session{Server: "https://sync.standardnotes.org",
-		Token: "eyJhbGciOiJKUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
-		Mk:    "6d5ffc6f8e337e6e3ae6d0c3201d9e2d00ffee64672bc4fe1886ad31770c19f1",
-		Ak:    "8f0f5166841ca4dee2975c74cc7e0a4345ce24b54d7b215677a3d540303aa203"},
+		Token: "eyJhbGciOiJKUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"},
 		sess)
 }
 
@@ -218,8 +217,23 @@ func TestNoteWithTagExists(t *testing.T) {
 }
 
 func TestPushNoItems(t *testing.T) {
-	pio, err := push(gosn.Session{}, []ItemDiff{}, true)
-	assert.Equal(t, pio, gosn.SyncOutput{})
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+
+	// get populated db
+	si := cache.SyncInput{
+		Session: testCacheSession,
+		Close:   false,
+	}
+	cso, err := cache.Sync(si)
+	if err != nil {
+		return
+	}
+
+	err = addToDB(cso.DB, testCacheSession, []ItemDiff{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no items")
 }
