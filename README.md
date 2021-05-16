@@ -2,6 +2,12 @@
 
 [![Build Status][travisci-image]][travisci-url] [![Coverage Status][coverage-image]][coverage-url] [![Go Report Card][go-report-card-image]][go-report-card-url]  
 
+## Important
+This is an early release to add support for SN accounts using encryption version 004 so please ensure you have a backup in case of any issues caused by this app.
+This is only compatible with accounts either created since November 2020, or older accounts that have backed up, then restored to force an upgrade to 004.
+
+Please create an issue if you receive any errors or notice anything unexpected.
+
 ## about
 
 sn-dotfiles is a command-line tool to sync [dotfiles](https://www.thegeekyway.com/what-are-dotfiles/) with a [Standard Notes](https://standardnotes.org/) account.  
