@@ -63,7 +63,7 @@ func addToDB(db *storm.DB, session *cache.Session, itemDiffs []ItemDiff) (err er
 		return
 	}
 
-	return cache.SaveItems(db, session, dItems, false, session.Debug)
+	return cache.SaveItems(db, session, dItems, false)
 }
 
 func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Tag, found bool) {
@@ -103,7 +103,7 @@ func createMissingTags(db *storm.DB, session *cache.Session, pt string, twn tags
 		}
 	}
 
-	err = cache.SaveItems(db, session, itemsToPush, false, true)
+	err = cache.SaveItems(db, session, itemsToPush, false)
 	if err != nil {
 		return
 	}
@@ -177,7 +177,7 @@ func pushAndTag(db *storm.DB, session *cache.Session, tim map[string]gosn.Items,
 			}
 		}
 	}
-	err = cache.SaveItems(db, session, itemsToPush, true, session.Debug)
+	err = cache.SaveItems(db, session, itemsToPush, true)
 	tagsPushed, notesPushed = getItemCounts(itemsToPush)
 
 	return tagsPushed, notesPushed, err

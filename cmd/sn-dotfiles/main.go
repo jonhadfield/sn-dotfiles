@@ -98,7 +98,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			var session cache.Session
 			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"),
-				c.GlobalBool("debug"), true)
+				c.GlobalBool("debug"))
 			var cacheDBPath string
 			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
@@ -138,7 +138,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			var session cache.Session
 			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"), true)
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
 			var cacheDBPath string
 			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
@@ -208,7 +208,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			var session cache.Session
 			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"), true)
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
 			var cacheDBPath string
 			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
@@ -258,7 +258,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			var session cache.Session
 			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"),
-				c.GlobalBool("debug"), true)
+				c.GlobalBool("debug"))
 			var cacheDBPath string
 			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
@@ -299,7 +299,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			var session cache.Session
 			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"), true)
+				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
 			var cacheDBPath string
 			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {
@@ -405,7 +405,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			var session cache.Session
 			session, email, err = cache.GetSession(c.GlobalBool("use-session"),
 				c.GlobalString("session-key"), c.GlobalString("server"),
-				c.GlobalBool("debug"), true)
+				c.GlobalBool("debug"))
 			var cacheDBPath string
 			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
 			if err != nil {

@@ -170,7 +170,7 @@ func removeFromDB(input removeInput) error {
 	}
 
 	var err error
-	if err = cache.SaveItems(input.session.CacheDB, input.session, items, true, input.session.Debug) ; err != nil {
+	if err = cache.SaveItems(input.session.CacheDB, input.session, items, true) ; err != nil {
 		return err
 	}
 

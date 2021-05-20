@@ -8,7 +8,7 @@ require (
 	github.com/fatih/color v1.11.0
 	github.com/fatih/set v0.2.1
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
-	github.com/jonhadfield/gosn-v2 v0.0.0-20210515192549-4d2e4afd096e
+	github.com/jonhadfield/gosn-v2 v0.0.0-20210517200829-69c8b477cb8b
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/pelletier/go-toml v1.9.1 // indirect
 	github.com/pkg/errors v0.9.1
@@ -22,4 +22,4 @@ require (
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
 )
 
-//replace github.com/jonhadfield/gosn-v2 => ../gosn-v2
+// replace github.com/jonhadfield/gosn-v2 => ../gosn-v2

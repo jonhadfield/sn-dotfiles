@@ -122,8 +122,8 @@ github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/J
 github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22gdxWY5EU2bo=
 github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77 h1:U1mtIepXhvIq0cLDLO6z1hZYS80lDXzmsZJwMgzwaf8=
 github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77/go.mod h1:9Q9pFtVLzvgKEi8++fNhmSR7HpD9+9+dPy/SECsNB6k=
-github.com/jonhadfield/gosn-v2 v0.0.0-20210515192549-4d2e4afd096e h1:krwWmbWwa8LCV2vYDXXYhgw7lSuPWtkzuYk+11UW9Js=
-github.com/jonhadfield/gosn-v2 v0.0.0-20210515192549-4d2e4afd096e/go.mod h1:bamrTbsrRUe6bHMqgoleIDF2c6Pm+kzKRvUkHuoUdCA=
+github.com/jonhadfield/gosn-v2 v0.0.0-20210517200829-69c8b477cb8b h1:2IERSjxQCugzHCrjKWifhXmDL3i1ApqnJiMOy/eBuok=
+github.com/jonhadfield/gosn-v2 v0.0.0-20210517200829-69c8b477cb8b/go.mod h1:bamrTbsrRUe6bHMqgoleIDF2c6Pm+kzKRvUkHuoUdCA=
 github.com/json-iterator/go v1.1.6/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7C0MuV77Wo=
