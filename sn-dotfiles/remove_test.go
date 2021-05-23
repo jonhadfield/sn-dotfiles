@@ -10,7 +10,7 @@ import (
 )
 
 func TestRemoveNoItems(t *testing.T) {
-	err := removeFromDB(removeInput{session: testCacheSession, items: gosn.Items{}, debug: true})
+	err := removeFromDB(removeInput{session: testCacheSession, items: gosn.Items{}})
 	assert.Error(t, err)
 }
 
@@ -23,7 +23,7 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 		Session:     nil,
 		CacheDB:     nil,
 		CacheDBPath: "",
-	}, items: gosn.Items{&tag}, debug: true})
+	}, items: gosn.Items{&tag}})
 
 	assert.Error(t, err)
 }

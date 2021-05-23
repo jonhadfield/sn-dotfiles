@@ -6,7 +6,7 @@ import (
 	"github.com/jonhadfield/gosn-v2/cache"
 )
 
-func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, debug bool) (int, error) {
+func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int) (int, error) {
 	// get populated db
 	si := cache.SyncInput{
 		Session: session,
@@ -43,7 +43,7 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, debug bool) (
 		}
 	}
 
-	debugPrint(debug, fmt.Sprintf("WipeDotfileTagsAndNotes | removing %d items", len(itemsToRemove)))
+	debugPrint(session.Debug, fmt.Sprintf("WipeDotfileTagsAndNotes | removing %d items", len(itemsToRemove)))
 
 	if len(itemsToRemove) == 0 {
 		return 0, nil

@@ -426,8 +426,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, c.GlobalInt("page-size"),
-					c.GlobalBool("quiet"))
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, c.GlobalInt("page-size"))
 				if err != nil {
 					return err
 				}

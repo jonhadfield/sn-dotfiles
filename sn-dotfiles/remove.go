@@ -128,7 +128,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 		a = append(a, &emptyTags[i])
 	}
 	ri.Session.CacheDB = cso.DB
-	x := removeInput{items: a, session: ri.Session, debug: ri.Debug}
+	x := removeInput{items: a, session: ri.Session}
 	if err = removeFromDB(x); err != nil {
 		return
 	}
@@ -150,7 +150,6 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 type removeInput struct {
 	session *cache.Session
 	items   gosn.Items
-	debug   bool
 }
 
 func removeFromDB(input removeInput) error {
