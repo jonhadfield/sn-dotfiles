@@ -71,7 +71,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		},
 	}
 	app.HelpName = "-"
-	app.Usage = "dotfiles sn"
+	app.Usage = "sync dotfiles with Standard Notes"
 	app.Description = ""
 
 	app.Flags = []cli.Flag{
