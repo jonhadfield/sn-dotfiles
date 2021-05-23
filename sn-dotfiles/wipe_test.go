@@ -7,8 +7,7 @@ import (
 )
 
 func TestWipeInvalidSession(t *testing.T) {
-	n, err := WipeDotfileTagsAndNotes(&cache.Session{
-	}, DefaultPageSize, true)
+	n, err := WipeDotfileTagsAndNotes(&cache.Session{}, DefaultPageSize, true)
 	assert.Zero(t, n)
 	assert.Error(t, err)
 }

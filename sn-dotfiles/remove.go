@@ -21,7 +21,6 @@ type RemoveOutput struct {
 	Msg                                   string
 }
 
-
 // Remove stops tracking local Paths by removing the related notes from SN
 func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	// ensure home is passed
@@ -52,7 +51,7 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	// get populated db
 	si := cache.SyncInput{
 		Session: ri.Session,
-		Close: false,
+		Close:   false,
 	}
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)
@@ -155,7 +154,7 @@ type removeInput struct {
 }
 
 func removeFromDB(input removeInput) error {
-	if ! input.session.Valid() {
+	if !input.session.Valid() {
 		return errors.New("session is invalid")
 	}
 	var items gosn.Items
@@ -170,10 +169,9 @@ func removeFromDB(input removeInput) error {
 	}
 
 	var err error
-	if err = cache.SaveItems(input.session.CacheDB, input.session, items, true) ; err != nil {
+	if err = cache.SaveItems(input.session.CacheDB, input.session, items, true); err != nil {
 		return err
 	}
 
 	return err
 }
-

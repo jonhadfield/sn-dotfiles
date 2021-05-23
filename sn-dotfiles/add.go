@@ -13,11 +13,10 @@ import (
 	"strings"
 )
 
-
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
 func Add(ai AddInput) (ao AddOutput, err error) {
 	// validate session
-	if ! ai.Session.Valid() {
+	if !ai.Session.Valid() {
 		err = errors.New("invalid session")
 		return
 	}
@@ -60,7 +59,7 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 	// get populated db
 	si := cache.SyncInput{
 		Session: ai.Session,
-		Close: false,
+		Close:   false,
 	}
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)
@@ -82,7 +81,7 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 
 	ai.Twn = twn
 
-	ao, err =  add(cso.DB, ai, noRecurse)
+	ao, err = add(cso.DB, ai, noRecurse)
 	si.CacheDB = cso.DB
 	// syncDBwithFS db back to SN
 	si.Close = true
@@ -246,6 +245,7 @@ func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err e
 
 	return finalPaths, err
 }
+
 //
 func createItem(path, title string) (item gosn.Note, err error) {
 	// read file content
@@ -276,6 +276,8 @@ func createItem(path, title string) (item gosn.Note, err error) {
 	item.Content = *itemContent
 	item.Content.SetTitle(title)
 	item.Content.SetText(localStr)
+	// prevent a default editor parsing as html when selected via app
+	item.Content.SetPrefersPlainEditor(true)
 
 	return item, err
 }

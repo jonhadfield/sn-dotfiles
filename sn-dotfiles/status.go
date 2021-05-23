@@ -16,7 +16,7 @@ func Status(session *cache.Session, home string, paths []string, pageSize int, d
 	// get populated db
 	si := cache.SyncInput{
 		Session: session,
-		Close: false,
+		Close:   false,
 	}
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)

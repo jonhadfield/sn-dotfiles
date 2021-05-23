@@ -21,7 +21,7 @@ func Sync(si SNDotfilesSyncInput) (so SyncOutput, err error) {
 	// get populated db
 	csi := cache.SyncInput{
 		Session: si.Session,
-		Close: false,
+		Close:   false,
 	}
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(csi)
@@ -46,9 +46,11 @@ func Sync(si SNDotfilesSyncInput) (so SyncOutput, err error) {
 
 		return
 	}
-	if err = cso.DB.Close() ; err != nil {
+	if err = cso.DB.Close(); err != nil {
 		return
 	}
+
+	// TODO: Check every editor component and ensure no dotfiles are associated (ensure plain text editor)
 
 	// persist changes
 	csi.Close = true
@@ -164,7 +166,7 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 }
 
 type syncInput struct {
-	db 				*storm.DB
+	db             *storm.DB
 	session        *cache.Session
 	twn            tagsWithNotes
 	home           string

@@ -19,8 +19,7 @@ const (
 	// DefaultPageSize defines the number of items to attempt to syncDBwithFS per request
 	DefaultPageSize = 500
 
-	SNAppName   = "sn-dotfiles"
-
+	SNAppName = "sn-dotfiles"
 )
 
 var (
@@ -42,14 +41,14 @@ func removeImposters(i gosn.EncryptedItems) (o gosn.EncryptedItems) {
 
 func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, err error) {
 	// validate session
-	if ! session.Valid() {
+	if !session.Valid() {
 		err = errors.New("invalid session")
 		return
 	}
 
 	var notesAndTags cache.Items
 
-	if e := db.Select(q.In("ContentType", []string{"Note", "Tag"})).Find(&notesAndTags) ; e != nil {
+	if e := db.Select(q.In("ContentType", []string{"Note", "Tag", "SN|Component", "Extension"})).Find(&notesAndTags); e != nil {
 		if e.Error() != "not found" {
 			return
 		}
@@ -95,6 +94,7 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 
 	return t, err
 }
+
 //
 func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 	for _, ir := range itemRefs {
@@ -105,6 +105,7 @@ func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 
 	return refIds
 }
+
 //
 type tagWithNotes struct {
 	tag   gosn.Tag

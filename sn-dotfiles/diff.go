@@ -26,7 +26,7 @@ func Diff(session *cache.Session, home string, paths []string, pageSize int, clo
 	// get populated db
 	si := cache.SyncInput{
 		Session: session,
-		Close: false,
+		Close:   false,
 	}
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)

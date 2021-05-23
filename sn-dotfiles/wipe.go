@@ -10,7 +10,7 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, debug bool) (
 	// get populated db
 	si := cache.SyncInput{
 		Session: session,
-		Close: false,
+		Close:   false,
 	}
 
 	var err error
@@ -26,7 +26,7 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, debug bool) (
 	if err != nil {
 		return 0, err
 	}
-	if err = cso.DB.Close() ; err != nil {
+	if err = cso.DB.Close(); err != nil {
 		return 0, err
 	}
 
@@ -51,7 +51,7 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, debug bool) (
 
 	pii := cache.SyncInput{
 		Session: session,
-		Close: true,
+		Close:   true,
 	}
 
 	_, err = cache.Sync(pii)

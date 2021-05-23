@@ -39,7 +39,6 @@ func getTemporaryHome() string {
 	return strings.ReplaceAll(home, "//", "/")
 }
 
-
 func TestAddNoPaths(t *testing.T) {
 	ai := AddInput{
 		Session: testCacheSession,
@@ -117,7 +116,6 @@ func TestAddOne(t *testing.T) {
 	assert.Equal(t, 0, len(ao.PathsExisting))
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
-
 
 func TestAddTwoSameTag(t *testing.T) {
 	var err error
