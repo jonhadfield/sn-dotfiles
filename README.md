@@ -1,7 +1,9 @@
 # SN-Dotfiles
 
 [![Build Status][travisci-image]][travisci-url] [![Coverage Status][coverage-image]][coverage-url] [![Go Report Card][go-report-card-image]][go-report-card-url]  
-
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jonhadfield_sn-dotfiles&metric=alert_status)](https://sonarcloud.io/dashboard?id=jonhadfield_sn-dotfiles)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=jonhadfield_sn-dotfiles&metric=coverage)](https://sonarcloud.io/dashboard?id=jonhadfield_sn-dotfiles)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=jonhadfield_sn-dotfiles&metric=security_rating)](https://sonarcloud.io/dashboard?id=jonhadfield_sn-dotfiles)
 ## Important
 This is an early release to add support for SN accounts using encryption version 004 so please ensure you have a backup in case of any issues caused by this app.
 This is only compatible with accounts either created since November 2020, or older accounts that have backed up, then restored to force an upgrade to 004.
