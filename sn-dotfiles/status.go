@@ -20,6 +20,9 @@ func Status(session *cache.Session, home string, paths []string, pageSize int, d
 	}
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)
+	if err != nil {
+		return
+	}
 
 	var remote tagsWithNotes
 
