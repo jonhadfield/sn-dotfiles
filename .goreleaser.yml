@@ -4,6 +4,7 @@ env:
 before:
   hooks:
     - go mod tidy
+
 changelog:
   sort: asc
   filters:
@@ -12,11 +13,11 @@ changelog:
     - '^test:'
     - Merge pull request
     - Merge branch
+
 builds:
   - binary: sn-dotfiles
     env:
     - CGO_ENABLED=0
-
     goos:
       - linux
       - windows
