@@ -363,7 +363,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				os.Exit(1)
 			}
 			if sAdd {
-				msg, err = gosn.AddSession(c.GlobalString("server"), sessKey, nil)
+				msg, err = gosn.AddSession(c.GlobalString("server"), sessKey, nil, c.Bool("debug"))
 				return err
 			}
 			if sRemove {
