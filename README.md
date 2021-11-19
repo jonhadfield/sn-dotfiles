@@ -146,3 +146,4 @@ $ sn-dotfiles <tab>
 ## known issues
 
 - Notes moved to trash using the Standard Notes app will still be managed by sn-dotfiles until they are permanently deleted 
+
