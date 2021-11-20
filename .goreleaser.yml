@@ -13,9 +13,9 @@ changelog:
     - '^test:'
     - Merge pull request
     - Merge branch
-
 builds:
   - binary: sn-dotfiles
+    main: cmd/sn-dotfiles/main.go
     env:
     - CGO_ENABLED=0
     goos:
