@@ -31,7 +31,7 @@ jobs:
         name: Tests
         run: |
           go mod tidy
-          go test -v ./...
+          go test -v -i -failfast -p 1 -parallel 1 ./...
         env:
           SN_SERVER: ${{ secrets.SN_SERVER }}
           SN_EMAIL: ${{ secrets.SN_EMAIL }}
