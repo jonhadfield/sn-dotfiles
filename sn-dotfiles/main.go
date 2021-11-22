@@ -122,6 +122,5 @@ type GetNoteConfig struct {
 	TagTitles  []string
 	TagUUIDs   []string
 	PageSize   int
-	BatchSize  int
 	Debug      bool
 }
