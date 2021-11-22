@@ -10,7 +10,7 @@ require (
 	github.com/fatih/set v0.2.1
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
-	github.com/jonhadfield/gosn-v2 v0.0.0-20211120195839-c82eddb894b2
+	github.com/jonhadfield/gosn-v2 v0.0.0-20211122125940-ad6be3624056
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/pkg/errors v0.9.1
