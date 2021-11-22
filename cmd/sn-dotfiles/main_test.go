@@ -49,7 +49,6 @@ func csync(si cache.SyncInput) (so cache.SyncOutput, err error) {
 }
 func TestMain(m *testing.M) {
 	gs, err := gosn.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"), true)
-	fmt.Println("email:", os.Getenv("SN_EMAIL"),"password:", os.Getenv("SN_PASSWORD"),"server:", os.Getenv("SN_SERVER"))
 	if err != nil {
 		panic(err)
 	}
