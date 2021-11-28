@@ -77,7 +77,6 @@ builds:
     binary: sn-dotfiles
     goos:
       - linux
-      - windows
     goarch:
       - amd64
       - arm64
@@ -93,15 +92,11 @@ archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     replacements:
       linux: Linux
-      windows: Windows
       386: i386
       amd64: x86_64
     builds:
       - sn-dotfiles
     format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
     files:
       - none*
 
