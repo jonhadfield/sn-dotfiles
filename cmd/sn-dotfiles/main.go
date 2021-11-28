@@ -20,6 +20,54 @@ import (
 // overwritten at build time
 var version, versionOutput, tag, sha, buildDate string
 
+type configOptsOutput struct {
+	display    bool
+	useSession bool
+	home       string
+	sessKey    string
+	server     string
+	pageSize   int
+	cacheDBDir string
+	debug      bool
+}
+
+func getOpts(c *cli.Context) (out configOptsOutput, err error) {
+	if c.GlobalBool("use-session") || viper.GetBool("use_session") {
+		out.useSession = true
+	}
+
+	out.sessKey = c.GlobalString("session-key")
+
+	out.server = c.GlobalString("server")
+	if viper.GetString("server") != "" {
+		out.server = viper.GetString("server")
+	}
+
+	out.cacheDBDir = viper.GetString("cachedb_dir")
+	if out.cacheDBDir != "" {
+		out.cacheDBDir = c.GlobalString("cachedb-dir")
+	}
+
+	out.display = true
+	if c.GlobalBool("quiet") {
+		out.display = false
+	}
+
+	out.home = c.GlobalString("home-dir")
+	if out.home == "" {
+		out.home = getHome()
+	}
+
+	out.pageSize = c.GlobalInt("page-size")
+
+	out.debug = viper.GetBool("debug")
+	if c.GlobalBool("debug") {
+		out.debug = true
+	}
+
+	return
+}
+
 func main() {
 	msg, display, err := startCLI(os.Args)
 	if err != nil {
@@ -48,6 +96,16 @@ func startCLI(args []string) (msg string, display bool, err error) {
 	}
 
 	err = viper.BindEnv("server")
+	if err != nil {
+		return "", false, err
+	}
+
+	err = viper.BindEnv("debug")
+	if err != nil {
+		return "", false, err
+	}
+
+	err = viper.BindEnv("use_session")
 	if err != nil {
 		return "", false, err
 	}
@@ -91,27 +149,25 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		Name:  "status",
 		Usage: "compare local and remote",
 		Action: func(c *cli.Context) error {
-			if !c.GlobalBool("quiet") {
-				display = true
+			var opts configOptsOutput
+			opts, err = getOpts(c)
+			if err != nil {
+				return err
 			}
+			display = opts.display
 
 			var session cache.Session
-			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"),
-				c.GlobalBool("debug"))
+			session, _, err = cache.GetSession(opts.useSession, opts.sessKey, opts.server, opts.debug)
+
 			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
+			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
 			session.CacheDBPath = cacheDBPath
 
-			home := c.GlobalString("home-dir")
-			if home == "" {
-				home = getHome()
-			}
-			_, msg, err = sndotfiles.Status(&session, home, c.Args(),
-				c.GlobalInt("page-size"), c.GlobalBool("debug"))
+			_, msg, err = sndotfiles.Status(&session, opts.home, c.Args(),
+				opts.pageSize, opts.debug)
 			return err
 		},
 	}
@@ -132,36 +188,38 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 		},
 		Action: func(c *cli.Context) error {
-			if !c.GlobalBool("quiet") {
-				display = true
+			var opts configOptsOutput
+			opts, err = getOpts(c)
+			if err != nil {
+				return err
 			}
+			display = opts.display
 
 			var session cache.Session
-			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			session, _, err = cache.GetSession(opts.useSession,
+				opts.sessKey, opts.server, opts.debug)
 			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
+			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
 			session.CacheDBPath = cacheDBPath
 
-			home := c.GlobalString("home-dir")
-			if home == "" {
-				home = getHome()
-			}
 			var so sndotfiles.SyncOutput
 			so, err = sndotfiles.Sync(sndotfiles.SNDotfilesSyncInput{
 				Session:  &session,
-				Home:     home,
+				Home:     opts.home,
 				Paths:    c.Args(),
 				Exclude:  c.StringSlice("exclude"),
-				PageSize: c.GlobalInt("page-size"),
+				PageSize: opts.pageSize,
+				Debug:    opts.debug,
 			})
+
 			if err != nil {
 				return err
 			}
 			msg = so.Msg
+
 			return err
 		},
 	}
@@ -176,9 +234,12 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			if !c.GlobalBool("quiet") {
-				display = true
+			var opts configOptsOutput
+			opts, err = getOpts(c)
+			if err != nil {
+				return err
 			}
+			display = opts.display
 
 			if !c.Bool("all") && len(c.Args()) == 0 {
 				msg = "error: either specify paths to add or --all to add everything"
@@ -207,22 +268,17 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 
 			var session cache.Session
-			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
+			session, _, err = cache.GetSession(opts.useSession,
+				opts.sessKey, opts.server, opts.debug)
 			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
+			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
 			session.CacheDBPath = cacheDBPath
 
-			home := c.GlobalString("home-dir")
-			if home == "" {
-				home = getHome()
-			}
-
-			ai := sndotfiles.AddInput{Session: &session, Home: home, Paths: absPaths,
-				PageSize: c.GlobalInt("page-size"), All: c.Bool("all")}
+			ai := sndotfiles.AddInput{Session: &session, Home: opts.home, Paths: absPaths,
+				PageSize: opts.pageSize, All: c.Bool("all")}
 
 			var ao sndotfiles.AddOutput
 
@@ -245,9 +301,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				_ = cli.ShowCommandHelp(c, "remove")
 				return nil
 			}
-			if !c.GlobalBool("quiet") {
-				display = true
+
+			var opts configOptsOutput
+			opts, err = getOpts(c)
+			if err != nil {
+				return err
 			}
+			display = opts.display
 
 			if len(c.Args()) == 0 {
 				msg = "error: paths not specified"
@@ -256,26 +316,22 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 
 			var session cache.Session
-			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"),
-				c.GlobalBool("debug"))
+			session, _, err = cache.GetSession(opts.useSession,
+				opts.sessKey, opts.server,
+				opts.debug)
 			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
+			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
 			session.CacheDBPath = cacheDBPath
 
-			home := c.GlobalString("home-dir")
-			if home == "" {
-				home = getHome()
-			}
 			ri := sndotfiles.RemoveInput{
 				Session:  &session,
-				Home:     home,
+				Home:     opts.home,
 				Paths:    c.Args(),
-				PageSize: c.GlobalInt("page-size"),
-				Debug:    c.GlobalBool("debug"),
+				PageSize: opts.pageSize,
+				Debug:    opts.debug,
 			}
 
 			var ro sndotfiles.RemoveOutput
@@ -294,24 +350,28 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		Name:  "diff",
 		Usage: "display differences between local and remote",
 		Action: func(c *cli.Context) error {
-			if !c.GlobalBool("quiet") {
-				display = true
-			}
-			var session cache.Session
-			session, _, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"), c.GlobalBool("debug"))
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
+			var opts configOptsOutput
+			opts, err = getOpts(c)
 			if err != nil {
 				return err
 			}
+			display = opts.display
+
+			var session cache.Session
+			session, _, err = cache.GetSession(opts.useSession,
+				opts.sessKey, opts.server, opts.debug)
+
+			var cacheDBPath string
+
+			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+
 			session.CacheDBPath = cacheDBPath
 
-			home := c.GlobalString("home-dir")
-			if home == "" {
-				home = getHome()
-			}
-			_, msg, err = sndotfiles.Diff(&session, home, c.Args(), c.GlobalInt("page-size"), true)
+			_, msg, err = sndotfiles.Diff(&session, opts.home, c.Args(), opts.pageSize, true)
+
 			return err
 		},
 	}
@@ -349,9 +409,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 		},
 		Action: func(c *cli.Context) error {
-			if !c.GlobalBool("quiet") {
-				display = true
+			var opts configOptsOutput
+			opts, err = getOpts(c)
+			if err != nil {
+				return err
 			}
+			display = opts.display
+
 			sAdd := c.Bool("add")
 			sRemove := c.Bool("remove")
 			sStatus := c.Bool("status")
@@ -363,7 +427,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				os.Exit(1)
 			}
 			if sAdd {
-				msg, err = gosn.AddSession(c.GlobalString("server"), sessKey, nil, c.Bool("debug"))
+				msg, err = gosn.AddSession(opts.server, sessKey, nil, c.Bool("debug"))
 				return err
 			}
 			if sRemove {
@@ -379,7 +443,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 	wipeCmd := cli.Command{
 		Name:  "wipe",
-		Usage: "manage session credentials",
+		Usage: "remove all dotfiles",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "force",
@@ -397,17 +461,20 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		},
 		Hidden: true,
 		Action: func(c *cli.Context) error {
-			if !c.GlobalBool("quiet") {
-				display = true
+			var opts configOptsOutput
+			opts, err = getOpts(c)
+			if err != nil {
+				return err
 			}
+			display = opts.display
 
 			var email string
 			var session cache.Session
-			session, email, err = cache.GetSession(c.GlobalBool("use-session"),
-				c.GlobalString("session-key"), c.GlobalString("server"),
-				c.GlobalBool("debug"))
+			session, email, err = cache.GetSession(opts.useSession,
+				opts.sessKey, opts.server,
+				opts.debug)
 			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, "", sndotfiles.SNAppName)
+			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
@@ -426,7 +493,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, c.GlobalInt("page-size"))
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, opts.pageSize)
 				if err != nil {
 					return err
 				}
@@ -434,6 +501,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			} else {
 				return nil
 			}
+
 			return err
 		},
 	}
