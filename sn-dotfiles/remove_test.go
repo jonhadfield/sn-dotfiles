@@ -5,6 +5,7 @@ import (
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
 )
@@ -195,9 +196,7 @@ func TestRemoveItems(t *testing.T) {
 
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 
 	var all tagsWithNotes
 	all, err = getTagsWithNotes(cso.DB, testCacheSession)
@@ -436,9 +435,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	cso, err = cache.Sync(cache.SyncInput{
 		Session: testCacheSession,
 	})
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 
 	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
 	assert.Len(t, twn, 0)
@@ -489,9 +486,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	cso, err = cache.Sync(cache.SyncInput{
 		Session: testCacheSession,
 	})
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 
 	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
 	// dotfiles tag and .gitconfig note should exist

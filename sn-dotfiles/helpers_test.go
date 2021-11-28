@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
@@ -229,11 +230,9 @@ func TestPushNoItems(t *testing.T) {
 		Close:   false,
 	}
 	cso, err := cache.Sync(si)
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 
-	err = addToDB(cso.DB, testCacheSession, []ItemDiff{})
+	err = addToDB(cso.DB, testCacheSession, []ItemDiff{}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no items")
 }

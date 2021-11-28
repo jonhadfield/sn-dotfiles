@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -25,6 +28,11 @@ func TestSyncInvalidSession(t *testing.T) {
 }
 
 func TestSyncNoItems(t *testing.T) {
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
 	home := getTemporaryHome()
 	var err error
 	// add item
@@ -41,7 +49,8 @@ func TestSyncNoItems(t *testing.T) {
 	assert.Equal(t, 0, so.NoPulled)
 }
 
-// TestBasicSync creates local dotfiles and syncs them to remote
+// TestBasicSync adds a file to the remote, deletes the local file and then
+// performs a sync to check it was added back
 func TestBasicSync(t *testing.T) {
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -51,40 +60,79 @@ func TestBasicSync(t *testing.T) {
 	assert.NotEmpty(t, testCacheSession.AccessToken)
 	home := getTemporaryHome()
 
+	// add item
 	fwc := make(map[string]string)
-	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	applePath := fmt.Sprintf("%s/.apple", home)
 	fwc[applePath] = "apple content"
-	yellowPath := fmt.Sprintf("%s/.fruit/banana/yellow", home)
-	fwc[yellowPath] = "yellow content"
-	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
-	fwc[premiumPath] = "premium content"
 
 	assert.NoError(t, createTemporaryFiles(fwc))
+	// add item
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	ao, err := Add(ai)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(ao.PathsAdded))
+	assert.Equal(t, applePath, ao.PathsAdded[0])
+	assert.Equal(t, 0, len(ao.PathsExisting))
+	assert.Equal(t, 0, len(ao.PathsInvalid))
 
-	// get populated db
-	si := cache.SyncInput{
+	// delete local file so we can sync it back
+	require.NoError(t, os.Remove(applePath))
+
+	so, err := Sync(SNDotfilesSyncInput{
 		Session: testCacheSession,
-		Close:   false,
-	}
-	cso, err := cache.Sync(si)
-	if err != nil {
-		return
-	}
-
-	// Sync with changes to createLocal based on missing local
-	debugPrint(true, "test | syncDBwithFS with changes to createLocal based on missing local")
-	var so syncOutput
-	so, err = syncDBwithFS(syncInput{
-		db:      cso.DB,
-		session: testCacheSession,
-		home:    home,
-		debug:   true,
-		close:   true,
+		Home:    home,
+		Paths:   []string{},
+		Exclude: []string{},
 	})
-	assert.EqualError(t, err, "no remote dotfiles found")
-	assert.Equal(t, 0, so.noPushed)
-	assert.Equal(t, 0, so.noPulled)
 
+	require.NoError(t, err)
+	assert.Equal(t, 0, so.NoPushed)
+	assert.Equal(t, 1, so.NoPulled)
+
+	content, err := ioutil.ReadFile(applePath)
+	require.NoError(t, err)
+	require.Equal(t, "apple content", string(content))
+}
+
+// TestSyncTwoUpdatesFiles adds two files, updates them locally and syncs them back
+func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NotEmpty(t, testCacheSession.AccessToken)
+	home := getTemporaryHome()
+
+	// add item
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.apple", home)
+	fwc[applePath] = "apple content"
+	lemonPath := fmt.Sprintf("%s/.lemon", home)
+	fwc[lemonPath] = "lemon content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath, lemonPath}}
+	ao, err := Add(ai)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(ao.PathsAdded))
+	assert.Equal(t, applePath, ao.PathsAdded[0])
+	assert.Equal(t, lemonPath, ao.PathsAdded[1])
+	assert.Equal(t, 0, len(ao.PathsExisting))
+	assert.Equal(t, 0, len(ao.PathsInvalid))
+	assert.NoError(t, createPathWithContent(applePath, "apple content updated"))
+	assert.NoError(t, createPathWithContent(lemonPath, "lemon content updated"))
+
+	var so SyncOutput
+	so, err = Sync(SNDotfilesSyncInput{
+		Session: testCacheSession,
+		Home:    home,
+		Paths:   []string{applePath, lemonPath},
+		Exclude: []string{},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, so.NoPushed, 2)
 }
 
 // TestSync creates local dotfiles
@@ -132,9 +180,7 @@ func TestSync(t *testing.T) {
 		Close:   false,
 	}
 	cso, err := cache.Sync(si)
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 
 	// Sync with changes to createLocal based on missing local
 	var noPushed, noPulled int
@@ -259,9 +305,7 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 		Close:   false,
 	}
 	cso, err := cache.Sync(si)
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 
 	debugPrint(true, "test | syncDBwithFS with three changes to createLocal based on exclusion of golf path")
 	golfPath := fmt.Sprintf("%s/.cars/vw/golf.txt", home)
@@ -279,7 +323,6 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 0, so.noPushed)
 	assert.Equal(t, 3, so.noPulled)
-
 }
 
 func TestSyncWithExcludeParentPaths(t *testing.T) {
@@ -316,9 +359,7 @@ func TestSyncWithExcludeParentPaths(t *testing.T) {
 		Close:   false,
 	}
 	cso, err := cache.Sync(si)
-	if err != nil {
-		return
-	}
+	assert.NoError(t, err)
 
 	debugPrint(true, "test | syncDBwithFS with two changes to createLocal based on exclusion of cars path")
 	carsPath := fmt.Sprintf("%s/.cars", home)

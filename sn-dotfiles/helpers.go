@@ -52,7 +52,7 @@ func stripHome(in, home string) string {
 	return in
 }
 
-func addToDB(db *storm.DB, session *cache.Session, itemDiffs []ItemDiff) (err error) {
+func addToDB(db *storm.DB, session *cache.Session, itemDiffs []ItemDiff, close bool) (err error) {
 	var dItems gosn.Items
 	for i := range itemDiffs {
 		dItems = append(dItems, &itemDiffs[i].remote)
@@ -63,7 +63,7 @@ func addToDB(db *storm.DB, session *cache.Session, itemDiffs []ItemDiff) (err er
 		return
 	}
 
-	return cache.SaveItems(db, session, dItems, false)
+	return cache.SaveItems(db, session, dItems, close)
 }
 
 func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Tag, found bool) {

@@ -40,8 +40,14 @@ func Sync(si SNDotfilesSyncInput) (so SyncOutput, err error) {
 	}
 
 	var sOut syncOutput
-	sOut, err = syncDBwithFS(syncInput{db: cso.DB, session: si.Session, twn: remote, home: si.Home, paths: si.Paths,
-		exclude: si.Exclude})
+	sOut, err = syncDBwithFS(syncInput{
+		db:      cso.DB,
+		session: si.Session,
+		twn:     remote,
+		home:    si.Home,
+		paths:   si.Paths,
+		exclude: si.Exclude,
+		debug:   si.Debug})
 	if err != nil {
 
 		return
@@ -72,6 +78,7 @@ type SNDotfilesSyncInput struct {
 	Home           string
 	Paths, Exclude []string
 	PageSize       int
+	Debug          bool
 }
 type SyncOutput struct {
 	NoPushed, NoPulled int
@@ -96,7 +103,6 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 	var itemsToPush, itemsToPull []ItemDiff
 
 	var itemsToSync bool
-
 	for _, itemDiff := range itemDiffs {
 		// check if itemDiff is for a path to be excluded
 		if matchesPathsToExclude(si.home, itemDiff.homeRelPath, si.exclude) {
@@ -132,7 +138,7 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 
 	// addToDB
 	if len(itemsToPush) > 0 {
-		err = addToDB(si.db, si.session, itemsToPush)
+		err = addToDB(si.db, si.session, itemsToPush, si.close)
 		if err != nil {
 			return
 		}
