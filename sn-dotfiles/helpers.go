@@ -54,8 +54,8 @@ func stripHome(in, home string) string {
 
 func addToDB(db *storm.DB, session *cache.Session, itemDiffs []ItemDiff) (err error) {
 	var dItems gosn.Items
-	for _, i := range itemDiffs {
-		dItems = append(dItems, &i.remote)
+	for i := range itemDiffs {
+		dItems = append(dItems, &itemDiffs[i].remote)
 	}
 
 	if dItems == nil {
