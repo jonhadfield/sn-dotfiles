@@ -21,6 +21,7 @@ import (
 var version, versionOutput, tag, sha, buildDate string
 
 type configOptsOutput struct {
+	useStdOut  bool
 	display    bool
 	useSession bool
 	home       string
@@ -32,6 +33,12 @@ type configOptsOutput struct {
 }
 
 func getOpts(c *cli.Context) (out configOptsOutput, err error) {
+	out.useStdOut = c.Bool("no-stdout")
+
+	if !c.GlobalBool("no-stdout") {
+		out.useStdOut = false
+	}
+
 	if c.GlobalBool("use-session") || viper.GetBool("use_session") {
 		out.useSession = true
 	}
@@ -140,6 +147,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.StringFlag{Name: "session-key"},
 		cli.IntFlag{Name: "page-size", Hidden: true, Value: sndotfiles.DefaultPageSize},
 		cli.BoolFlag{Name: "quiet"},
+		cli.BoolFlag{Name: "no-stdout"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
 		_, _ = fmt.Fprintf(c.App.Writer, "\ninvalid command: \"%s\" \n\n", command)
@@ -166,8 +174,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			session.CacheDBPath = cacheDBPath
 
-			_, msg, err = sndotfiles.Status(&session, opts.home, c.Args(),
-				opts.pageSize, opts.debug)
+			_, msg, err = sndotfiles.Status(&session, opts.home, c.Args(), opts.pageSize, opts.debug, false)
 			return err
 		},
 	}
@@ -213,7 +220,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				Exclude:  c.StringSlice("exclude"),
 				PageSize: opts.pageSize,
 				Debug:    opts.debug,
-			})
+			}, c.GlobalBool("no-stdout"))
 
 			if err != nil {
 				return err
@@ -282,7 +289,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			var ao sndotfiles.AddOutput
 
-			ao, err = sndotfiles.Add(ai)
+			ao, err = sndotfiles.Add(ai, true)
 			if err != nil {
 				return err
 			}
@@ -336,7 +343,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			var ro sndotfiles.RemoveOutput
 
-			ro, err = sndotfiles.Remove(ri)
+			ro, err = sndotfiles.Remove(ri, c.Bool("no-stdout"))
 			if err != nil {
 				return err
 			}
@@ -370,7 +377,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			session.CacheDBPath = cacheDBPath
 
-			_, msg, err = sndotfiles.Diff(&session, opts.home, c.Args(), opts.pageSize, true)
+			_, msg, err = sndotfiles.Diff(&session, opts.home, c.Args(), opts.pageSize, true, c.Bool("no-stdout"))
 
 			return err
 		},
@@ -493,7 +500,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, opts.pageSize)
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, opts.pageSize, c.Bool("no-stdout"))
 				if err != nil {
 					return err
 				}

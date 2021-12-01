@@ -3,9 +3,12 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
+	"os"
+	"time"
 )
 
 type RemoveInput struct {
@@ -22,7 +25,7 @@ type RemoveOutput struct {
 }
 
 // Remove stops tracking local Paths by removing the related notes from SN
-func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
+func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	// ensure home is passed
 	if len(ri.Home) == 0 {
 		err = errors.New("home undefined")
@@ -46,6 +49,22 @@ func Remove(ri RemoveInput) (ro RemoveOutput, err error) {
 	// check paths are valid
 	if err = checkFSPaths(ri.Paths); err != nil {
 		return
+	}
+
+	if !ri.Debug {
+		prefix := HiWhite("syncing ")
+		if _, err = os.Stat(ri.Session.CacheDBPath); os.IsNotExist(err) {
+			prefix = HiWhite("initializing ")
+		}
+
+		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
+		if useStdErr {
+			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
+		}
+
+		s.Prefix = prefix
+		s.Start()
+		defer s.Stop()
 	}
 
 	// get populated db

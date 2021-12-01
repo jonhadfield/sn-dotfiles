@@ -3,6 +3,7 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/findexec"
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
@@ -10,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -20,8 +22,24 @@ const (
 	identical    = "identical"
 )
 
-func Diff(session *cache.Session, home string, paths []string, pageSize int, close bool) (diffs []ItemDiff, msg string, err error) {
+func Diff(session *cache.Session, home string, paths []string, pageSize int, close, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(session.Debug, fmt.Sprintf("Diff | %d paths", len(paths)))
+
+	if !session.Debug {
+		prefix := HiWhite("syncing ")
+		if _, err = os.Stat(session.CacheDBPath); os.IsNotExist(err) {
+			prefix = HiWhite("initializing ")
+		}
+
+		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
+		if useStdErr {
+			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
+		}
+
+		s.Prefix = prefix
+		s.Start()
+		defer s.Stop()
+	}
 
 	// get populated db
 	si := cache.SyncInput{

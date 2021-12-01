@@ -23,7 +23,8 @@ func TestSyncInvalidSession(t *testing.T) {
 		Home:    getTemporaryHome(),
 		Paths:   []string{},
 		Exclude: []string{},
-	})
+		Debug:   true,
+	}, true)
 	assert.Error(t, err)
 }
 
@@ -42,7 +43,8 @@ func TestSyncNoItems(t *testing.T) {
 		Home:    home,
 		Paths:   []string{},
 		Exclude: []string{},
-	})
+		Debug:   true,
+	}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no remote dotfiles found")
 	assert.Equal(t, 0, so.NoPushed)
@@ -68,7 +70,7 @@ func TestBasicSync(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add item
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(ao.PathsAdded))
 	assert.Equal(t, applePath, ao.PathsAdded[0])
@@ -83,7 +85,8 @@ func TestBasicSync(t *testing.T) {
 		Home:    home,
 		Paths:   []string{},
 		Exclude: []string{},
-	})
+		Debug:   true,
+	}, true)
 
 	require.NoError(t, err)
 	assert.Equal(t, 0, so.NoPushed)
@@ -113,7 +116,7 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath, lemonPath}}
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(ao.PathsAdded))
 	assert.Equal(t, applePath, ao.PathsAdded[0])
@@ -129,7 +132,8 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 		Home:    home,
 		Paths:   []string{applePath, lemonPath},
 		Exclude: []string{},
-	})
+		Debug:   true,
+	}, true)
 
 	require.NoError(t, err)
 	require.Equal(t, so.NoPushed, 2)

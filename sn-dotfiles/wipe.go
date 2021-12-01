@@ -2,11 +2,30 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"os"
+	"time"
 )
 
-func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int) (int, error) {
+func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr bool) (int, error) {
+	if session.Valid() && !session.Debug {
+		prefix := HiWhite("syncing ")
+		if _, err := os.Stat(session.CacheDBPath); os.IsNotExist(err) {
+			prefix = HiWhite("initializing ")
+		}
+
+		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
+		if useStdErr {
+			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
+		}
+
+		s.Prefix = prefix
+		s.Start()
+		defer s.Stop()
+	}
+
 	// get populated db
 	si := cache.SyncInput{
 		Session: session,

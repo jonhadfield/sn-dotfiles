@@ -45,7 +45,7 @@ func TestRemoveInvalidSession(t *testing.T) {
 		Debug:   true,
 	}
 
-	_, err := Remove(ri)
+	_, err := Remove(ri, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid")
 }
@@ -57,7 +57,7 @@ func TestRemoveInvalidPath(t *testing.T) {
 		Paths:   []string{"/invalid"},
 		Debug:   true,
 	}
-	_, err := Remove(ri)
+	_, err := Remove(ri, true)
 	assert.Error(t, err)
 }
 
@@ -68,7 +68,7 @@ func TestRemoveNoPaths(t *testing.T) {
 		Paths:   nil,
 		Debug:   true,
 	}
-	_, err := Remove(ri)
+	_, err := Remove(ri, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "paths")
 }
@@ -93,7 +93,7 @@ func TestRemoveTags(t *testing.T) {
 	var err error
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath}}
 	var ao AddOutput
-	ao, err = Add(ai)
+	ao, err = Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 2)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -108,7 +108,7 @@ func TestRemoveTags(t *testing.T) {
 	}
 
 	var ro RemoveOutput
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, ro.NotesRemoved)
 	assert.Equal(t, 0, ro.TagsRemoved)
@@ -144,7 +144,7 @@ func TestRemoveItems(t *testing.T) {
 
 	debugPrint(true, "Adding four paths")
 
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -161,7 +161,7 @@ func TestRemoveItems(t *testing.T) {
 	}
 
 	var ro RemoveOutput
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, ro.NotesRemoved)
 	assert.Equal(t, 0, ro.TagsRemoved)
@@ -179,7 +179,7 @@ func TestRemoveItems(t *testing.T) {
 	}
 
 	debugPrint(true, "Removing \".cars/\"")
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, ro.NotesRemoved)
 	assert.Equal(t, 3, ro.TagsRemoved)
@@ -214,7 +214,7 @@ func TestRemoveItems(t *testing.T) {
 		Debug:   false,
 	}
 
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, ro.NotesRemoved)
 	assert.Equal(t, 3, ro.TagsRemoved)
@@ -233,7 +233,7 @@ func TestRemoveItems(t *testing.T) {
 		Debug:   false,
 	}
 
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 
 	assert.Error(t, err)
 
@@ -245,7 +245,7 @@ func TestRemoveItems(t *testing.T) {
 		Debug:   true,
 	}
 
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 	assert.Error(t, err)
 }
 
@@ -276,7 +276,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}}
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -290,7 +290,7 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	}
 
 	var ro RemoveOutput
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, ro.NotesRemoved)
 	assert.Equal(t, 2, ro.TagsRemoved)
@@ -322,7 +322,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}}
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 4)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -335,7 +335,7 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	}
 
 	var ro RemoveOutput
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, ro.NotesRemoved)
 	assert.Equal(t, 2, ro.TagsRemoved)
@@ -373,7 +373,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath, labradorPath}}
 
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 5)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -386,7 +386,7 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	}
 
 	var ro RemoveOutput
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 3, ro.NotesRemoved)
@@ -411,7 +411,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath}}
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	assert.Len(t, ao.PathsAdded, 1)
 	assert.Len(t, ao.PathsExisting, 0)
@@ -424,7 +424,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	}
 
 	var ro RemoveOutput
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, ro.NotesRemoved)
@@ -462,7 +462,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	assert.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, awsConfigPath, acmeConfigPath}}
-	ao, err := Add(ai)
+	ao, err := Add(ai, true)
 	assert.NoError(t, err)
 	// dotfiles tag, .gitconfig, and acmeConfig should exist
 	assert.Len(t, ao.PathsAdded, 3)
@@ -476,7 +476,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	}
 
 	var ro RemoveOutput
-	ro, err = Remove(ri)
+	ro, err = Remove(ri, true)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 2, ro.NotesRemoved)

@@ -35,6 +35,7 @@ func CleanUp(session cache.Session) error {
 		AccessExpiration:  testCacheSession.AccessExpiration,
 		RefreshExpiration: testCacheSession.RefreshExpiration,
 		RefreshToken:      testCacheSession.RefreshToken,
+		Debug:             true,
 	})
 	return err
 }
@@ -242,7 +243,7 @@ func TestWipe(t *testing.T) {
 	}()
 
 	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
-	_, err := sndotfiles2.Add(ai)
+	_, err := sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -275,7 +276,7 @@ func TestStatus(t *testing.T) {
 	}()
 	var err error
 	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
-	_, err = sndotfiles2.Add(ai)
+	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -310,7 +311,7 @@ func TestSync(t *testing.T) {
 
 	var err error
 	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath, lemonPath}}
-	_, err = sndotfiles2.Add(ai)
+	_, err = sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -369,7 +370,7 @@ func TestDiff(t *testing.T) {
 		}
 	}()
 	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
-	_, err := sndotfiles2.Add(ai)
+	_, err := sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool
@@ -405,7 +406,7 @@ func TestSyncExclude(t *testing.T) {
 	}()
 
 	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
-	_, err := sndotfiles2.Add(ai)
+	_, err := sndotfiles2.Add(ai, true)
 	assert.NoError(t, err)
 	var msg string
 	var disp bool

@@ -18,6 +18,10 @@ const (
 	DotFilesTag = "dotfiles"
 	// DefaultPageSize defines the number of items to attempt to syncDBwithFS per request
 	DefaultPageSize = 500
+	// SpinnerCharSet defines the characters to use for the spinner shown when syncing
+	SpinnerCharSet = 14
+	// SpinnerDelay defines the number of milliseconds to wait between each character in the spinner
+	SpinnerDelay = 100
 
 	SNAppName = "sn-dotfiles"
 )
@@ -28,16 +32,6 @@ var (
 	green  = color.New(color.FgGreen).SprintFunc()
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
-
-func removeImposters(i gosn.EncryptedItems) (o gosn.EncryptedItems) {
-	for _, x := range i {
-		if StringInSlice(x.ContentType, []string{"Note", "Tag"}, false) {
-			o = append(o, x)
-		}
-	}
-
-	return o
-}
 
 func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, err error) {
 	// validate session

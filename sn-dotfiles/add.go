@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asdine/storm/v3"
+	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
@@ -11,10 +12,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
-func Add(ai AddInput) (ao AddOutput, err error) {
+func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 	// validate session
 	if !ai.Session.Valid() {
 		err = errors.New("invalid session")
@@ -56,12 +58,30 @@ func Add(ai AddInput) (ao AddOutput, err error) {
 
 	debugPrint(ai.Session.Debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
 
+	if !ai.Session.Debug {
+		prefix := HiWhite("syncing ")
+		if _, err = os.Stat(ai.Session.CacheDBPath); os.IsNotExist(err) {
+			prefix = HiWhite("initializing ")
+		}
+
+		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
+		if useStdErr {
+			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
+		}
+
+		s.Prefix = prefix
+		s.Start()
+		defer s.Stop()
+	}
+
 	// get populated db
 	si := cache.SyncInput{
 		Session: ai.Session,
 		Close:   false,
 	}
+
 	var cso cache.SyncOutput
+
 	cso, err = cache.Sync(si)
 	if err != nil {
 		return
@@ -133,6 +153,7 @@ func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 
 		tagToItemMap[DotFilesTag] = gosn.Items{}
 	}
+
 	// addToDB and tag items
 	ao.TagsPushed, ao.NotesPushed, err = pushAndTag(db, ai.Session, tagToItemMap, ai.Twn)
 	if err != nil {

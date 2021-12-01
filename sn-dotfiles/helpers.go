@@ -111,20 +111,6 @@ func createMissingTags(db *storm.DB, session *cache.Session, pt string, twn tags
 	return itemsToPush.Tags(), err
 }
 
-func isDBOpen(db storm.DB) (open bool, err error) {
-	var x []gosn.EncryptedItem
-	err = db.All(&x)
-	if err != nil {
-		if err.Error() == "database not open" {
-			return false, nil
-		}
-
-		return
-	}
-
-	return true, err
-}
-
 func pushAndTag(db *storm.DB, session *cache.Session, tim map[string]gosn.Items, twn tagsWithNotes) (tagsPushed, notesPushed int, err error) {
 	// create missing tags first to create a new tim
 	itemsToPush := gosn.Items{}

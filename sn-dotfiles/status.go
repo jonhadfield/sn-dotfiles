@@ -2,8 +2,11 @@ package sndotfiles
 
 import (
 	"fmt"
+	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
+	"os"
+	"time"
 )
 
 // Status compares and then outputs status of all items (or a subset defined by Paths param):
@@ -12,7 +15,23 @@ import (
 // - remote items that are newer
 // - local items that are untracked (if Paths specified)
 // - identical local and remote items
-func Status(session *cache.Session, home string, paths []string, pageSize int, debug bool) (diffs []ItemDiff, msg string, err error) {
+func Status(session *cache.Session, home string, paths []string, pageSize int, debug bool, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+	if !debug {
+		prefix := HiWhite("syncing ")
+		if _, err = os.Stat(session.CacheDBPath); os.IsNotExist(err) {
+			prefix = HiWhite("initializing ")
+		}
+
+		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
+		if useStdErr {
+			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
+		}
+
+		s.Prefix = prefix
+		s.Start()
+		defer s.Stop()
+	}
+
 	// get populated db
 	si := cache.SyncInput{
 		Session: session,

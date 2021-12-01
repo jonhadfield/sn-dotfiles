@@ -4,32 +4,75 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asdine/storm/v3"
+	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ryanuber/columnize"
+)
+
+var (
+	HiWhite = color.New(color.FgHiWhite).SprintFunc()
 )
 
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if remotes are newer
-func Sync(si SNDotfilesSyncInput) (so SyncOutput, err error) {
+func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 	if err = checkPathsExist(si.Exclude); err != nil {
 		return
 	}
+
+	if !si.Debug {
+		prefix := HiWhite("syncing ")
+		if _, err = os.Stat(si.Session.CacheDBPath); os.IsNotExist(err) {
+			prefix = HiWhite("initializing ")
+		}
+
+		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
+		if useStdErr {
+			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
+		}
+
+		s.Prefix = prefix
+		s.Start()
+		defer s.Stop()
+	}
+
+	output, err := sync(syncInput{
+		session: si.Session,
+		home:    si.Home,
+		paths:   si.Paths,
+		exclude: si.Exclude,
+		debug:   si.Debug,
+		close:   false,
+	})
+
+	return SyncOutput{
+		NoPushed: output.noPushed,
+		NoPulled: output.noPulled,
+		Msg:      output.msg,
+	}, err
+}
+
+func sync(input syncInput) (output syncOutput, err error) {
 	// get populated db
 	csi := cache.SyncInput{
-		Session: si.Session,
+		Session: input.session,
 		Close:   false,
 	}
+
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(csi)
 	if err != nil {
 		return
 	}
+
 	var remote tagsWithNotes
-	remote, err = getTagsWithNotes(cso.DB, si.Session)
+	remote, err = getTagsWithNotes(cso.DB, input.session)
 	if err != nil {
 		return
 	}
@@ -39,19 +82,19 @@ func Sync(si SNDotfilesSyncInput) (so SyncOutput, err error) {
 		return
 	}
 
-	var sOut syncOutput
-	sOut, err = syncDBwithFS(syncInput{
+	output, err = syncDBwithFS(syncInput{
 		db:      cso.DB,
-		session: si.Session,
+		session: input.session,
 		twn:     remote,
-		home:    si.Home,
-		paths:   si.Paths,
-		exclude: si.Exclude,
-		debug:   si.Debug})
+		home:    input.home,
+		paths:   input.paths,
+		exclude: input.exclude,
+		debug:   input.debug})
 	if err != nil {
 
 		return
 	}
+
 	if err = cso.DB.Close(); err != nil {
 		return
 	}
@@ -60,17 +103,9 @@ func Sync(si SNDotfilesSyncInput) (so SyncOutput, err error) {
 
 	// persist changes
 	csi.Close = true
-	cso, err = cache.Sync(csi)
-	if err != nil {
+	_, err = cache.Sync(csi)
 
-		return
-	}
-
-	return SyncOutput{
-		NoPushed: sOut.noPushed,
-		NoPulled: sOut.noPulled,
-		Msg:      sOut.msg,
-	}, err
+	return
 }
 
 type SNDotfilesSyncInput struct {

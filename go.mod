@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/asdine/storm/v3 v3.2.1
+	github.com/briandowns/spinner v1.12.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/fatih/color v1.13.0
