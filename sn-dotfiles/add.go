@@ -22,11 +22,6 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 		err = errors.New("invalid session")
 		return
 	}
-	// ensure home is passed
-	if len(ai.Home) == 0 {
-		err = errors.New("home undefined")
-		return
-	}
 
 	if StringInSlice(ai.Home, []string{"/", "/home"}, true) {
 		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ai.Home))
@@ -48,11 +43,8 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 		return ao, errors.New("paths not defined")
 	}
 
-	// removeFromDB any duplicate paths
-	ai.Paths = dedupe(ai.Paths)
-
-	// check paths are valid
-	if err = checkFSPaths(ai.Paths); err != nil {
+	ai.Paths, err = preflight(ai.Home, ai.Paths)
+	if err != nil {
 		return
 	}
 

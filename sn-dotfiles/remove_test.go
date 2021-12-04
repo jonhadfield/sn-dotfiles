@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
@@ -12,7 +11,7 @@ import (
 
 func TestRemoveNoItems(t *testing.T) {
 	err := removeFromDB(removeInput{session: testCacheSession, items: gosn.Items{}})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestRemoveItemsInvalidSession(t *testing.T) {
@@ -26,7 +25,7 @@ func TestRemoveItemsInvalidSession(t *testing.T) {
 		CacheDBPath: "",
 	}, items: gosn.Items{&tag}})
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestRemoveInvalidSession(t *testing.T) {
@@ -36,7 +35,7 @@ func TestRemoveInvalidSession(t *testing.T) {
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
 	fwc[gitConfigPath] = "git config content"
 
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 
 	ri := RemoveInput{
 		Session: &cache.Session{},
@@ -46,8 +45,8 @@ func TestRemoveInvalidSession(t *testing.T) {
 	}
 
 	_, err := Remove(ri, true)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid")
 }
 
 func TestRemoveInvalidPath(t *testing.T) {
@@ -58,7 +57,7 @@ func TestRemoveInvalidPath(t *testing.T) {
 		Debug:   true,
 	}
 	_, err := Remove(ri, true)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestRemoveNoPaths(t *testing.T) {
@@ -69,8 +68,8 @@ func TestRemoveNoPaths(t *testing.T) {
 		Debug:   true,
 	}
 	_, err := Remove(ri, true)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "paths")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "paths")
 }
 
 func TestRemoveTags(t *testing.T) {
@@ -88,16 +87,17 @@ func TestRemoveTags(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	fwc[applePath] = "apple content"
 
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var err error
+	testCacheSession.CacheDB.Close()
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath}}
 	var ao AddOutput
 	ao, err = Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 2)
-	assert.Len(t, ao.PathsExisting, 0)
-	assert.Len(t, ao.PathsInvalid, 0)
+	require.NoError(t, err)
+	require.Len(t, ao.PathsAdded, 2)
+	require.Len(t, ao.PathsExisting, 0)
+	require.Len(t, ao.PathsInvalid, 0)
 
 	// removeFromDB single path
 	ri := RemoveInput{
@@ -109,13 +109,13 @@ func TestRemoveTags(t *testing.T) {
 
 	var ro RemoveOutput
 	ro, err = Remove(ri, true)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, ro.NotesRemoved)
-	assert.Equal(t, 0, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
-	assert.NotEmpty(t, ro.Msg)
+	require.NoError(t, err)
+	require.Equal(t, 1, ro.NotesRemoved)
+	require.Equal(t, 0, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
+	require.NotEmpty(t, ro.Msg)
 	re := regexp.MustCompile("\\.gitconfig\\s+removed")
-	assert.True(t, re.MatchString(ro.Msg))
+	require.True(t, re.MatchString(ro.Msg))
 
 }
 
@@ -138,17 +138,17 @@ func TestRemoveItems(t *testing.T) {
 	premiumPath := fmt.Sprintf("%s/.cars/mercedes/a250/premium", home)
 	fwc[premiumPath] = "premium content"
 
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}}
 
 	debugPrint(true, "Adding four paths")
 
 	ao, err := Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 4)
-	assert.Len(t, ao.PathsExisting, 0)
-	assert.Len(t, ao.PathsInvalid, 0)
+	require.NoError(t, err)
+	require.Len(t, ao.PathsAdded, 4)
+	require.Len(t, ao.PathsExisting, 0)
+	require.Len(t, ao.PathsInvalid, 0)
 
 	debugPrint(true, "removing ./gitconfig")
 
@@ -162,13 +162,13 @@ func TestRemoveItems(t *testing.T) {
 
 	var ro RemoveOutput
 	ro, err = Remove(ri, true)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, ro.NotesRemoved)
-	assert.Equal(t, 0, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
-	assert.NotEmpty(t, ro.Msg)
+	require.NoError(t, err)
+	require.Equal(t, 1, ro.NotesRemoved)
+	require.Equal(t, 0, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
+	require.NotEmpty(t, ro.Msg)
 	re := regexp.MustCompile("\\.gitconfig\\s+removed")
-	assert.True(t, re.MatchString(ro.Msg))
+	require.True(t, re.MatchString(ro.Msg))
 
 	// removeFromDB nested path with single item (with trailing slash)
 	ri = RemoveInput{
@@ -180,13 +180,13 @@ func TestRemoveItems(t *testing.T) {
 
 	debugPrint(true, "Removing \".cars/\"")
 	ro, err = Remove(ri, true)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, ro.NotesRemoved)
-	assert.Equal(t, 3, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
-	assert.NotEmpty(t, ro.Msg)
+	require.NoError(t, err)
+	require.Equal(t, 1, ro.NotesRemoved)
+	require.Equal(t, 3, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
+	require.NotEmpty(t, ro.Msg)
 	re = regexp.MustCompile("\\.cars/mercedes/a250/premium\\s+removed")
-	assert.True(t, re.MatchString(ro.Msg))
+	require.True(t, re.MatchString(ro.Msg))
 
 	// get populated db
 	si := cache.SyncInput{
@@ -204,7 +204,7 @@ func TestRemoveItems(t *testing.T) {
 	for k, v := range all {
 		debugPrint(true, fmt.Sprint(k, v))
 	}
-	assert.NoError(t, cso.DB.Close())
+	require.NoError(t, cso.DB.Close())
 
 	// removeFromDB nested path with single item (without trailing slash)
 	ri = RemoveInput{
@@ -215,15 +215,15 @@ func TestRemoveItems(t *testing.T) {
 	}
 
 	ro, err = Remove(ri, true)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, ro.NotesRemoved)
-	assert.Equal(t, 3, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
-	assert.NotEmpty(t, ro.Msg)
+	require.NoError(t, err)
+	require.Equal(t, 2, ro.NotesRemoved)
+	require.Equal(t, 3, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
+	require.NotEmpty(t, ro.Msg)
 	re = regexp.MustCompile("\\.fruit/apple\\s+removed")
-	assert.True(t, re.MatchString(ro.Msg))
+	require.True(t, re.MatchString(ro.Msg))
 	re = regexp.MustCompile("\\.fruit/banana/yellow\\s+removed")
-	assert.True(t, re.MatchString(ro.Msg))
+	require.True(t, re.MatchString(ro.Msg))
 
 	// ensure error with missing home
 	ri = RemoveInput{
@@ -235,18 +235,18 @@ func TestRemoveItems(t *testing.T) {
 
 	ro, err = Remove(ri, true)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// ensure error with missing paths
 	ri = RemoveInput{
 		Session: testCacheSession,
 		Home:    home,
-		Paths:   []string{""},
+		Paths:   []string{},
 		Debug:   true,
 	}
 
 	ro, err = Remove(ri, true)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestRemoveItemsRecursive(t *testing.T) {
@@ -273,13 +273,13 @@ func TestRemoveItemsRecursive(t *testing.T) {
 	// try removing same path twice
 	fruitPathDupe := fmt.Sprintf("%s/.fruit", home)
 
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath, yellowPath, premiumPath}}
 	ao, err := Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 4)
-	assert.Len(t, ao.PathsExisting, 0)
+	require.NoError(t, err)
+	require.Len(t, ao.PathsAdded, 4)
+	require.Len(t, ao.PathsExisting, 0)
 	// try removing overlapping path and note in specified path
 
 	ri := RemoveInput{
@@ -291,10 +291,10 @@ func TestRemoveItemsRecursive(t *testing.T) {
 
 	var ro RemoveOutput
 	ro, err = Remove(ri, true)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, ro.NotesRemoved)
-	assert.Equal(t, 2, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
+	require.NoError(t, err)
+	require.Equal(t, 2, ro.NotesRemoved)
+	require.Equal(t, 2, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
 }
 
 func TestRemoveItemsRecursiveTwo(t *testing.T) {
@@ -319,13 +319,13 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 	// path to recursively removeFromDB
 	fruitPath := fmt.Sprintf("%s/.fruit", home)
 
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath}}
 	ao, err := Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 4)
-	assert.Len(t, ao.PathsExisting, 0)
+	require.NoError(t, err)
+	require.Len(t, ao.PathsAdded, 4)
+	require.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
 		Session: testCacheSession,
@@ -336,10 +336,10 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 
 	var ro RemoveOutput
 	ro, err = Remove(ri, true)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, ro.NotesRemoved)
-	assert.Equal(t, 2, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
+	require.NoError(t, err)
+	require.Equal(t, 2, ro.NotesRemoved)
+	require.Equal(t, 2, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
 }
 
 func TestRemoveItemsRecursiveThree(t *testing.T) {
@@ -369,14 +369,14 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	fruitPath := fmt.Sprintf("%s/.fruit/", home)
 	labradorPath := fmt.Sprintf("%s/.dogs/labrador", home)
 
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, greenPath, yellowPath, premiumPath, labradorPath}}
 
 	ao, err := Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 5)
-	assert.Len(t, ao.PathsExisting, 0)
+	require.NoError(t, err)
+	require.Len(t, ao.PathsAdded, 5)
+	require.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
 		Session: testCacheSession,
@@ -388,10 +388,10 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 	var ro RemoveOutput
 	ro, err = Remove(ri, true)
 
-	assert.NoError(t, err)
-	assert.Equal(t, 3, ro.NotesRemoved)
-	assert.Equal(t, 4, ro.TagsRemoved)
-	assert.Equal(t, 1, ro.NotTracked)
+	require.NoError(t, err)
+	require.Equal(t, 3, ro.NotesRemoved)
+	require.Equal(t, 4, ro.TagsRemoved)
+	require.Equal(t, 1, ro.NotTracked)
 }
 
 func TestRemoveAndCheckRemoved(t *testing.T) {
@@ -408,13 +408,13 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", home)
 	fwc[gitConfigPath] = "git configuration"
 
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath}}
 	ao, err := Add(ai, true)
-	assert.NoError(t, err)
-	assert.Len(t, ao.PathsAdded, 1)
-	assert.Len(t, ao.PathsExisting, 0)
+	require.NoError(t, err)
+	require.Len(t, ao.PathsAdded, 1)
+	require.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
 		Session: testCacheSession,
@@ -426,10 +426,10 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	var ro RemoveOutput
 	ro, err = Remove(ri, true)
 
-	assert.NoError(t, err)
-	assert.Equal(t, 1, ro.NotesRemoved)
-	assert.Equal(t, 1, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
+	require.NoError(t, err)
+	require.Equal(t, 1, ro.NotesRemoved)
+	require.Equal(t, 1, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
 
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(cache.SyncInput{
@@ -438,8 +438,8 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	require.NoError(t, err)
 
 	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
-	assert.Len(t, twn, 0)
-	assert.NoError(t, cso.DB.Close())
+	require.Len(t, twn, 0)
+	require.NoError(t, cso.DB.Close())
 }
 
 func TestRemoveAndCheckRemovedOne(t *testing.T) {
@@ -459,14 +459,14 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	fwc[awsConfigPath] = "aws config"
 	acmeConfigPath := fmt.Sprintf("%s/.acme/config", home)
 	fwc[acmeConfigPath] = "acme config"
-	assert.NoError(t, createTemporaryFiles(fwc))
+	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, awsConfigPath, acmeConfigPath}}
 	ao, err := Add(ai, true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// dotfiles tag, .gitconfig, and acmeConfig should exist
-	assert.Len(t, ao.PathsAdded, 3)
-	assert.Len(t, ao.PathsExisting, 0)
+	require.Len(t, ao.PathsAdded, 3)
+	require.Len(t, ao.PathsExisting, 0)
 
 	ri := RemoveInput{
 		Session: testCacheSession,
@@ -478,10 +478,10 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	var ro RemoveOutput
 	ro, err = Remove(ri, true)
 
-	assert.NoError(t, err)
-	assert.Equal(t, 2, ro.NotesRemoved)
-	assert.Equal(t, 1, ro.TagsRemoved)
-	assert.Equal(t, 0, ro.NotTracked)
+	require.NoError(t, err)
+	require.Equal(t, 2, ro.NotesRemoved)
+	require.Equal(t, 1, ro.TagsRemoved)
+	require.Equal(t, 0, ro.NotTracked)
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(cache.SyncInput{
 		Session: testCacheSession,
@@ -490,6 +490,6 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 
 	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
 	// dotfiles tag and .gitconfig note should exist
-	assert.Len(t, twn, 2)
-	assert.NoError(t, cso.DB.Close())
+	require.Len(t, twn, 2)
+	require.NoError(t, cso.DB.Close())
 }

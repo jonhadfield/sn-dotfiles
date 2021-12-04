@@ -11,8 +11,9 @@ import (
 func TestPreflightInvalidPaths(t *testing.T) {
 	home := getTemporaryHome()
 	duffPath := fmt.Sprintf("%s/.invalid/dodgy", home)
-	assert.Error(t, checkFSPaths([]string{duffPath}))
 
+	_, err := preflight(home, []string{duffPath})
+	assert.Error(t, err)
 }
 func TestPreflightOverlaps(t *testing.T) {
 	// with overlap

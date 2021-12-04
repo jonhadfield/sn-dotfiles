@@ -16,6 +16,12 @@ import (
 // - local items that are untracked (if Paths specified)
 // - identical local and remote items
 func Status(session *cache.Session, home string, paths []string, pageSize int, debug bool, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+	// preflight checks
+	paths, err = preflight(home, paths)
+	if err != nil {
+		return
+	}
+
 	if !debug {
 		prefix := HiWhite("syncing ")
 		if _, err = os.Stat(session.CacheDBPath); os.IsNotExist(err) {

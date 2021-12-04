@@ -1,19 +1,49 @@
 package sndotfiles
 
 import (
+	"errors"
 	"fmt"
 	"github.com/fatih/set"
+	"path/filepath"
 	"strings"
 )
 
-func checkFSPaths(paths []string) error {
-	for i := range paths {
-		if v, err := pathValid(paths[i]); !v {
-			return err
-		}
+// preflight validates and tidies up the home directory and paths provided
+func preflight(home string, in []string) (out []string, err error) {
+	// check home is present
+	if len(home) == 0 {
+		err = errors.New("home undefined")
+		return
 	}
 
-	return nil
+	// remove any duplicate paths
+	in = dedupe(in)
+
+	// handle shell expansion
+	var v bool
+	for _, inPath := range in {
+		if strings.HasPrefix(inPath, "~") {
+			inPath = strings.Replace(inPath, "~", home, 1)
+			if v, err = pathValid(inPath); !v {
+				return
+			}
+			out = append(out, inPath)
+			continue
+		}
+		if !strings.HasPrefix(inPath, "/") {
+			out = append(out, filepath.Join(home, inPath))
+			if v, err = pathValid(inPath); !v {
+				return
+			}
+			continue
+		}
+		if v, err = pathValid(inPath); !v {
+			return
+		}
+		out = append(out, inPath)
+	}
+
+	return
 }
 
 func checkNoteTagConflicts(twn tagsWithNotes) error {

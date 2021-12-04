@@ -26,14 +26,13 @@ type RemoveOutput struct {
 
 // Remove stops tracking local Paths by removing the related notes from SN
 func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
-	// ensure home is passed
-	if len(ri.Home) == 0 {
-		err = errors.New("home undefined")
+	if StringInSlice(ri.Home, []string{"/", "/home"}, true) {
+		err = fmt.Errorf("not a good idea to use '%s' as home dir", ri.Home)
 		return
 	}
 
-	if StringInSlice(ri.Home, []string{"/", "/home"}, true) {
-		err = fmt.Errorf("not a good idea to use '%s' as home dir", ri.Home)
+	ri.Paths, err = preflight(ri.Home, ri.Paths)
+	if err != nil {
 		return
 	}
 
@@ -46,10 +45,7 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	ri.Paths = dedupe(ri.Paths)
 	debugPrint(ri.Debug, fmt.Sprintf("Remove | paths after dedupe: %d", len(ri.Paths)))
 
-	// check paths are valid
-	if err = checkFSPaths(ri.Paths); err != nil {
-		return
-	}
+	ri.Paths, err = preflight(ri.Home, ri.Paths)
 
 	if !ri.Debug {
 		prefix := HiWhite("syncing ")
@@ -72,7 +68,9 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 		Session: ri.Session,
 		Close:   false,
 	}
+
 	var cso cache.SyncOutput
+
 	cso, err = cache.Sync(si)
 	if err != nil {
 		return

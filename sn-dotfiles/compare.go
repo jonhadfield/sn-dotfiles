@@ -18,11 +18,9 @@ func compare(remote tagsWithNotes, home string, paths, exclude []string, debug b
 		return nil, fmt.Errorf("tags with notes not supplied")
 	}
 
-	// check paths provided
-	if len(paths) > 0 {
-		if err = checkFSPaths(paths); err != nil {
-			return
-		}
+	paths, err = preflight(home, paths)
+	if err != nil {
+		return
 	}
 
 	var itemDiffs []ItemDiff
