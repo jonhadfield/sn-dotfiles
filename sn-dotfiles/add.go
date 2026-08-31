@@ -3,16 +3,16 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/asdine/storm/v3"
-	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
-	"github.com/ryanuber/columnize"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/asdine/storm/v3"
+	"github.com/briandowns/spinner"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
+	"github.com/ryanuber/columnize"
 )
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
@@ -24,7 +24,7 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 	}
 
 	if StringInSlice(ai.Home, []string{"/", "/home"}, true) {
-		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ai.Home))
+		err = fmt.Errorf("not a good idea to use '%s' as home dir", ai.Home)
 		return
 	}
 
@@ -79,27 +79,47 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 		return
 	}
 
-	var twn tagsWithNotes
+	ao, err = addToCacheDB(cso.DB, ai, noRecurse)
 
-	twn, err = getTagsWithNotes(cso.DB, ai.Session)
+	// The db holds an exclusive lock on the cache file, so it has to be closed
+	// before syncing changes back to SN. add saves items with close set, so the
+	// db is usually already closed by now; closing it twice is a no-op.
+	if cErr := cso.DB.Close(); cErr != nil {
+		debugPrint(ai.Session.Debug, fmt.Sprintf("Add | closing db: %s", cErr))
+	}
+
+	ai.Session.CacheDB = nil
+
 	if err != nil {
 		return
 	}
-	// run pre-checks
-	err = checkNoteTagConflicts(twn)
+
+	// sync db back to SN
+	si.Close = true
+
+	_, err = cache.Sync(si)
+
+	return
+}
+
+// addToCacheDB runs the pre-checks that need the populated cache db and then
+// writes the new items to it.
+func addToCacheDB(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
+	var twn tagsWithNotes
+
+	twn, err = getTagsWithNotes(db, ai.Session)
 	if err != nil {
+		return
+	}
+
+	// run pre-checks
+	if err = checkNoteTagConflicts(twn); err != nil {
 		return
 	}
 
 	ai.Twn = twn
 
-	ao, err = add(cso.DB, ai, noRecurse)
-	si.CacheDB = cso.DB
-	// syncDBwithFS db back to SN
-	si.Close = true
-	cso, err = cache.Sync(si)
-
-	return
+	return add(db, ai, noRecurse)
 }
 
 type AddInput struct {
@@ -118,7 +138,7 @@ type AddOutput struct {
 }
 
 func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
-	var tagToItemMap map[string]gosn.Items
+	var tagToItemMap map[string]items.Items
 
 	var fsPathsToAdd []string
 
@@ -143,7 +163,7 @@ func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 	if !tagExists("dotfiles", ai.Twn) && !dotFilesTagInTagToItemMap {
 		debugPrint(ai.Session.Debug, "Add | adding missing dotfiles tag")
 
-		tagToItemMap[DotFilesTag] = gosn.Items{}
+		tagToItemMap[DotFilesTag] = items.Items{}
 	}
 
 	// addToDB and tag items
@@ -160,8 +180,8 @@ func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 }
 
 func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string,
-	tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
-	tagToItemMap = make(map[string]gosn.Items)
+	tagToItemMap map[string]items.Items, pathsAdded, pathsExisting []string, err error) {
+	tagToItemMap = make(map[string]items.Items)
 
 	var added []string
 
@@ -189,7 +209,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 		// now add
 		pathsAdded = append(pathsAdded, path)
 
-		var itemToAdd gosn.Note
+		var itemToAdd items.Note
 
 		itemToAdd, err = createItem(path, filename)
 		if err != nil {
@@ -259,36 +279,19 @@ func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err e
 	return finalPaths, err
 }
 
-//
-func createItem(path, title string) (item gosn.Note, err error) {
-	// read file content
-	var file *os.File
-
-	file, err = os.Open(path)
-	if err != nil {
-		return
-	}
-
-	defer func() {
-		if err = file.Close(); err != nil {
-			fmt.Println("failed to close file:", path)
-		}
-	}()
-
+func createItem(path, title string) (item items.Note, err error) {
 	var localBytes []byte
 
-	localBytes, err = ioutil.ReadAll(file)
+	localBytes, err = os.ReadFile(path)
 	if err != nil {
 		return
 	}
 
-	localStr := string(localBytes)
-	// addToDB item
-	item = gosn.NewNote()
-	itemContent := gosn.NewNoteContent()
-	item.Content = *itemContent
-	item.Content.SetTitle(title)
-	item.Content.SetText(localStr)
+	item, err = items.NewNote(title, string(localBytes), nil)
+	if err != nil {
+		return
+	}
+
 	// prevent a default editor parsing as html when selected via app
 	item.Content.SetPrefersPlainEditor(true)
 
@@ -314,26 +317,26 @@ func pathInfo(path string) (mode os.FileMode, pathSize int64, err error) {
 func discoverDotfilesInHome(home string, debug bool) (paths []string, err error) {
 	debugPrint(debug, fmt.Sprintf("discoverDotfilesInHome | checking home: %s", home))
 
-	var homeEntries []os.FileInfo
+	var homeEntries []os.DirEntry
 
-	homeEntries, err = ioutil.ReadDir(home)
+	homeEntries, err = os.ReadDir(home)
 	if err != nil {
 		return
 	}
 
 	for _, f := range homeEntries {
-		if strings.HasPrefix(f.Name(), ".") {
-			var afp string
-
-			afp, err = filepath.Abs(home + string(os.PathSeparator) + f.Name())
-			if err != nil {
-				return
-			}
-
-			if f.Mode().IsRegular() {
-				paths = append(paths, afp)
-			}
+		if !strings.HasPrefix(f.Name(), ".") || !f.Type().IsRegular() {
+			continue
 		}
+
+		var afp string
+
+		afp, err = filepath.Abs(filepath.Join(home, f.Name()))
+		if err != nil {
+			return
+		}
+
+		paths = append(paths, afp)
 	}
 
 	return

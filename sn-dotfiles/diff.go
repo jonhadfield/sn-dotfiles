@@ -3,15 +3,16 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/findexec"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/briandowns/spinner"
+	"github.com/jonhadfield/findexec"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
 )
 
 const (
@@ -22,12 +23,12 @@ const (
 	identical    = "identical"
 )
 
-func Diff(session *cache.Session, home string, paths []string, pageSize int, close, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
-	debugPrint(session.Debug, fmt.Sprintf("Diff | %d paths", len(paths)))
+func Diff(sess *cache.Session, home string, paths []string, pageSize int, close, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+	debugPrint(sess.Debug, fmt.Sprintf("Diff | %d paths", len(paths)))
 
-	if !session.Debug {
+	if !sess.Debug {
 		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(session.CacheDBPath); os.IsNotExist(err) {
+		if _, sErr := os.Stat(sess.CacheDBPath); os.IsNotExist(sErr) {
 			prefix = HiWhite("initializing ")
 		}
 
@@ -43,10 +44,12 @@ func Diff(session *cache.Session, home string, paths []string, pageSize int, clo
 
 	// get populated db
 	si := cache.SyncInput{
-		Session: session,
+		Session: sess,
 		Close:   false,
 	}
+
 	var cso cache.SyncOutput
+
 	cso, err = cache.Sync(si)
 	if err != nil {
 		return
@@ -54,15 +57,19 @@ func Diff(session *cache.Session, home string, paths []string, pageSize int, clo
 
 	var remote tagsWithNotes
 
-	remote, err = getTagsWithNotes(cso.DB, session)
+	remote, err = getTagsWithNotes(cso.DB, sess)
+
+	if cErr := cso.DB.Close(); cErr != nil && err == nil {
+		err = cErr
+	}
+
+	sess.CacheDB = nil
+
 	if err != nil {
 		return diffs, msg, err
 	}
-	if err = cso.DB.Close(); err != nil {
-		return
-	}
 
-	return diff(remote, home, paths, session.Debug)
+	return diff(remote, home, paths, sess.Debug)
 }
 
 type ItemDiff struct {
@@ -71,7 +78,7 @@ type ItemDiff struct {
 	path        string
 	homeRelPath string
 	diff        string
-	remote      gosn.Note
+	remote      items.Note
 	local       string
 }
 
@@ -135,62 +142,60 @@ func processContentDiffs(diffs []ItemDiff, tempDir, diffBinary string) (differen
 		localContent := diff.local
 
 		remoteContent := diff.remote.Content.GetText()
-		if localContent != remoteContent {
-			differencesFound = true
-			// write local and remote content to temporary files
-			var f1, f2 *os.File
-
-			uuid := gosn.GenUUID()
-			f1path := fmt.Sprintf("%ssn-dotfiles-compare-%s-f1", tempDir, uuid)
-			f2path := fmt.Sprintf("%ssn-dotfiles-compare-%s-f2", tempDir, uuid)
-
-			f1, err = os.Create(f1path)
-			if err != nil {
-				return
-			}
-
-			f2, err = os.Create(f2path)
-			if err != nil {
-				return
-			}
-
-			if _, err = f1.WriteString(diff.local); err != nil {
-				return
-			}
-
-			if _, err = f2.WriteString(diff.remote.Content.GetText()); err != nil {
-				return
-			}
-
-			cmd := exec.Command(diffBinary, f1path, f2path)
-			out, oErr := cmd.CombinedOutput()
-
-			if err = os.Remove(f1path); err != nil {
-				return
-			}
-
-			if err = os.Remove(f2path); err != nil {
-				return
-			}
-
-			var exitCode int
-
-			if oErr != nil {
-				if exitError, ok := oErr.(*exec.ExitError); ok {
-					exitCode = exitError.ExitCode()
-				}
-			}
-
-			if exitCode == 2 {
-				panic(fmt.Sprintf("failed to compare: '%s' with '%s'", f1path, f2path))
-			}
-
-			fmt.Println(bold(diff.homeRelPath))
-			fmt.Println(string(out))
+		if localContent == remoteContent {
+			continue
 		}
+
+		differencesFound = true
+
+		var out []byte
+
+		out, err = diffContent(diffBinary, tempDir, localContent, remoteContent)
+		if err != nil {
+			return
+		}
+
+		fmt.Println(bold(diff.homeRelPath))
+		fmt.Println(string(out))
 	}
 
 	return differencesFound, err
+}
+
+// diffContent writes local and remote content to temporary files and returns
+// the output of running diffBinary over them.
+func diffContent(diffBinary, tempDir, local, remote string) (out []byte, err error) {
+	uuid := items.GenUUID()
+
+	f1path := fmt.Sprintf("%ssn-dotfiles-compare-%s-f1", tempDir, uuid)
+	f2path := fmt.Sprintf("%ssn-dotfiles-compare-%s-f2", tempDir, uuid)
+
+	defer func() {
+		for _, p := range []string{f1path, f2path} {
+			if rErr := os.Remove(p); rErr != nil && !os.IsNotExist(rErr) && err == nil {
+				err = rErr
+			}
+		}
+	}()
+
+	if err = writeLocal(f1path, local); err != nil {
+		return
+	}
+
+	if err = writeLocal(f2path, remote); err != nil {
+		return
+	}
+
+	out, oErr := exec.Command(diffBinary, f1path, f2path).CombinedOutput()
+
+	// diff exits 0 when the files match and 1 when they differ; anything else
+	// means diff itself failed.
+	var exitError *exec.ExitError
+	if oErr != nil && (!errors.As(oErr, &exitError) || exitError.ExitCode() > 1) {
+		return out, fmt.Errorf("failed to compare %q with %q: %w", f1path, f2path, oErr)
+	}
+
+	return out, err
 }
 
 func pathIsPrefixOfPaths(path string, paths []string) bool {

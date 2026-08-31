@@ -3,12 +3,13 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
-	"github.com/ryanuber/columnize"
 	"os"
 	"time"
+
+	"github.com/briandowns/spinner"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
+	"github.com/ryanuber/columnize"
 )
 
 type RemoveInput struct {
@@ -26,6 +27,12 @@ type RemoveOutput struct {
 
 // Remove stops tracking local Paths by removing the related notes from SN
 func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
+	// validate session
+	if !ri.Session.Valid() {
+		err = errors.New("invalid session")
+		return
+	}
+
 	if StringInSlice(ri.Home, []string{"/", "/home"}, true) {
 		err = fmt.Errorf("not a good idea to use '%s' as home dir", ri.Home)
 		return
@@ -45,11 +52,9 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	ri.Paths = dedupe(ri.Paths)
 	debugPrint(ri.Debug, fmt.Sprintf("Remove | paths after dedupe: %d", len(ri.Paths)))
 
-	ri.Paths, err = preflight(ri.Home, ri.Paths)
-
 	if !ri.Debug {
 		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(ri.Session.CacheDBPath); os.IsNotExist(err) {
+		if _, sErr := os.Stat(ri.Session.CacheDBPath); os.IsNotExist(sErr) {
 			prefix = HiWhite("initializing ")
 		}
 
@@ -89,7 +94,7 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 
 	var results []string
 
-	var notesToRemove gosn.Notes
+	var notesToRemove items.Notes
 
 	for _, path := range ri.Paths {
 		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, twn, ri.Debug)
@@ -135,26 +140,39 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 		debugPrint(ri.Debug, fmt.Sprintf("Remove | notes to removeFromDB: [%d] %s", x, n.Content.GetTitle()))
 	}
 
-	var a gosn.Items
+	var toRemove items.Items
 
 	for i := range notesToRemove {
-		a = append(a, &notesToRemove[i])
+		toRemove = append(toRemove, &notesToRemove[i])
 	}
 
 	for i := range emptyTags {
-		a = append(a, &emptyTags[i])
-	}
-	ri.Session.CacheDB = cso.DB
-	x := removeInput{items: a, session: ri.Session}
-	if err = removeFromDB(x); err != nil {
-		return
+		toRemove = append(toRemove, &emptyTags[i])
 	}
 
-	// sync changes back to SN
-	si.Close = true
-	cso, err = cache.Sync(si)
-	if err != nil {
-		return
+	if len(toRemove) > 0 {
+		ri.Session.CacheDB = cso.DB
+		if err = removeFromDB(removeInput{items: toRemove, session: ri.Session}); err != nil {
+			return
+		}
+	}
+
+	// removeFromDB saves with close set, so the db is already closed by then;
+	// closing it twice is a no-op, but it has to be closed either way as it
+	// holds an exclusive lock on the cache file.
+	if cErr := cso.DB.Close(); cErr != nil {
+		debugPrint(ri.Debug, fmt.Sprintf("Remove | closing db: %s", cErr))
+	}
+
+	ri.Session.CacheDB = nil
+
+	if len(toRemove) > 0 {
+		// sync changes back to SN
+		si.Close = true
+
+		if _, err = cache.Sync(si); err != nil {
+			return
+		}
 	}
 
 	ro.Msg = fmt.Sprint(columnize.SimpleFormat(results))
@@ -166,28 +184,21 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 
 type removeInput struct {
 	session *cache.Session
-	items   gosn.Items
+	items   items.Items
 }
 
 func removeFromDB(input removeInput) error {
 	if !input.session.Valid() {
 		return errors.New("session is invalid")
 	}
-	var items gosn.Items
+
+	if len(input.items) == 0 {
+		return errors.New("no items to removeFromDB")
+	}
 
 	for _, i := range input.items {
 		i.SetDeleted(true)
-		items = append(items, i)
 	}
 
-	if items == nil {
-		return fmt.Errorf("no items to removeFromDB")
-	}
-
-	var err error
-	if err = cache.SaveItems(input.session.CacheDB, input.session, items, true); err != nil {
-		return err
-	}
-
-	return err
+	return cache.SaveItems(input.session, input.session.CacheDB, input.items, true)
 }

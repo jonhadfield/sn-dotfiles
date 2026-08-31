@@ -2,12 +2,11 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/jonhadfield/gosn-v2/items"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,21 +19,21 @@ func TestStatusEmptyTWN(t *testing.T) {
 func testStatusSetup() (twn tagsWithNotes) {
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
-	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: items.Notes{gitconfigNote}}
 
 	fruitTag := createTag("dotfiles.fruit")
 	fruitBananaTag := createTag("dotfiles.fruit.banana")
 	appleNote := createNote("apple", "apple content")
 	lemonNote := createNote("lemon", "lemon content")
 	grapeNote := createNote("grape", "grape content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote, lemonNote, grapeNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote, lemonNote, grapeNote}}
 
 	yellowNote := createNote("yellow", "yellow content")
-	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Notes{yellowNote}}
+	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: items.Notes{yellowNote}}
 
 	premiumNote := createNote("premium", "premium content")
 	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
-	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{premiumNote}}
+	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: items.Notes{premiumNote}}
 
 	twn = tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
 	return
@@ -103,11 +102,11 @@ func TestStatus1(t *testing.T) {
 
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
-	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: items.Notes{gitconfigNote}}
 
 	awsTag := createTag("dotfiles.aws")
 	awsConfigNote := createNote("config", "aws config content")
-	awsTagWithNotes := tagWithNotes{tag: awsTag, notes: gosn.Notes{awsConfigNote}}
+	awsTagWithNotes := tagWithNotes{tag: awsTag, notes: items.Notes{awsConfigNote}}
 
 	twn := tagsWithNotes{dotfilesTagWithNote, awsTagWithNotes}
 
@@ -136,19 +135,19 @@ func TestStatus2(t *testing.T) {
 
 	dotfilesTag := createTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
-	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
+	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: items.Notes{gitconfigNote}}
 
 	fruitTag := createTag("dotfiles.fruit")
 	fruitBananaTag := createTag("dotfiles.fruit.banana")
 	appleNote := createNote("apple", "apple content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote}}
 
 	yellowNote := createNote("yellow", "yellow content")
-	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Notes{yellowNote}}
+	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: items.Notes{yellowNote}}
 
 	premiumNote := createNote("premium", "premium content")
 	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
-	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{premiumNote}}
+	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: items.Notes{premiumNote}}
 
 	twn := tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
 
@@ -162,17 +161,17 @@ func TestStatus2(t *testing.T) {
 	// wait so that update time comparison doesn't fail due to formats
 	time.Sleep(1 * time.Second)
 	d1 := []byte("new yellow content")
-	assert.NoError(t, ioutil.WriteFile(yellowPath, d1, 0644))
+	assert.NoError(t, os.WriteFile(yellowPath, d1, 0644))
 
 	// create untracked file
 	d1 = []byte("green content")
 	greenPath := fmt.Sprintf("%s/.fruit/banana/green", home)
-	assert.NoError(t, ioutil.WriteFile(greenPath, d1, 0644))
+	assert.NoError(t, os.WriteFile(greenPath, d1, 0644))
 	// pause so that remote updated time newer
 	time.Sleep(1 * time.Second)
 	// update premium remote to trigger remote newer condition
 	newPremiumNote := createNote("premium", "new content")
-	newCarsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{newPremiumNote}}
+	newCarsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: items.Notes{newPremiumNote}}
 	twn = tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, newCarsMercedesA250TagWithNotes}
 
 	var diffs []ItemDiff

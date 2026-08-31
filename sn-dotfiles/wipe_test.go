@@ -13,6 +13,8 @@ func TestWipeInvalidSession(t *testing.T) {
 }
 
 func TestWipeNoItems(t *testing.T) {
+	requireLiveSession(t)
+
 	var num int
 	var err error
 	num, err = WipeDotfileTagsAndNotes(testCacheSession, DefaultPageSize, true)

@@ -2,11 +2,11 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"io/ioutil"
-	"log"
 	"os"
 	"time"
+
+	"github.com/jonhadfield/gosn-v2/common"
+	"github.com/jonhadfield/gosn-v2/items"
 )
 
 func compare(remote tagsWithNotes, home string, paths, exclude []string, debug bool) (diffs []ItemDiff, err error) {
@@ -89,7 +89,15 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 				// local does exist, so compareNoteWithFile and store generated compare
 				debugPrint(debug, fmt.Sprintf("compare | local found: <home>/%s", stripHome(fullPath, home)))
 				remotePaths = append(remotePaths, fullPath)
-				itemDiffs = append(itemDiffs, compareNoteWithFile(tagTitle, fullPath, home, d, debug))
+
+				var itemDiff ItemDiff
+
+				itemDiff, err = compareNoteWithFile(tagTitle, fullPath, home, d, debug)
+				if err != nil {
+					return
+				}
+
+				itemDiffs = append(itemDiffs, itemDiff)
 			}
 		}
 	}
@@ -97,80 +105,54 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 	return itemDiffs, remotePaths, err
 }
 
-func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bool) ItemDiff {
+func compareNoteWithFile(tagTitle, path, home string, remote items.Note, debug bool) (ItemDiff, error) {
 	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <home>/%s",
 		tagTitle, stripHome(path, home)))
 
 	localStat, err := os.Stat(path)
 	if err != nil {
-		log.Fatal(err)
+		return ItemDiff{}, err
 	}
 
-	var file *os.File
-
-	file, err = os.Open(path)
+	localBytes, err := os.ReadFile(path)
 	if err != nil {
-		log.Fatal(err)
+		return ItemDiff{}, err
 	}
 
-	defer func() {
-		if err = file.Close(); err != nil {
-			fmt.Println("failed to close file:", path)
-		}
-	}()
-
-	var localBytes []byte
-
-	localBytes, err = ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	homeRelPath := stripHome(path, home)
-
-	localStr := string(localBytes)
-	if localStr != remote.Content.GetText() {
-		var remoteUpdated time.Time
-
-		remoteUpdated, err = time.Parse("2006-01-02T15:04:05.000Z", remote.UpdatedAt)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | remote updated UTC): %v", remoteUpdated.UTC()))
-		// if content different and local file was updated more recently
-		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | local updated UTC): %v", localStat.ModTime().UTC().Format("2006-01-02T15:04:05.000Z")))
-
-		if localStat.ModTime().UTC().After(remoteUpdated.UTC()) || localStat.ModTime().UTC() == remoteUpdated.UTC() {
-			return ItemDiff{
-				tagTitle:    tagTitle,
-				path:        path,
-				homeRelPath: homeRelPath,
-				noteTitle:   remote.Content.GetTitle(),
-				diff:        localNewer,
-				local:       string(localBytes),
-				remote:      remote,
-			}
-		}
-		// content different remote content was updated more recently
-		return ItemDiff{
-			tagTitle:    tagTitle,
-			path:        path,
-			homeRelPath: homeRelPath,
-			noteTitle:   remote.Content.GetTitle(),
-			diff:        remoteNewer,
-			local:       string(localBytes),
-			remote:      remote,
-		}
-	}
-	// local and remote identical
-	return ItemDiff{
+	itemDiff := ItemDiff{
 		tagTitle:    tagTitle,
 		path:        path,
-		homeRelPath: homeRelPath,
+		homeRelPath: stripHome(path, home),
 		noteTitle:   remote.Content.GetTitle(),
 		diff:        identical,
 		local:       string(localBytes),
 		remote:      remote,
 	}
+
+	if itemDiff.local == remote.Content.GetText() {
+		// local and remote identical
+		return itemDiff, nil
+	}
+
+	remoteUpdated, err := time.Parse(common.TimeLayout, remote.UpdatedAt)
+	if err != nil {
+		return ItemDiff{}, fmt.Errorf("failed to parse updated time of note %q: %w", remote.Content.GetTitle(), err)
+	}
+
+	localUpdated := localStat.ModTime().UTC()
+
+	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | remote updated UTC): %v", remoteUpdated.UTC()))
+	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | local updated UTC): %v", localUpdated.Format(common.TimeLayout)))
+
+	// if content different and local file was updated no earlier than the remote
+	if !localUpdated.Before(remoteUpdated.UTC()) {
+		itemDiff.diff = localNewer
+
+		return itemDiff, nil
+	}
+
+	// content different and remote content was updated more recently
+	itemDiff.diff = remoteNewer
+
+	return itemDiff, nil
 }

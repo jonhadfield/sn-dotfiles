@@ -2,11 +2,12 @@ package sndotfiles
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
-	"os"
-	"time"
 )
 
 // Status compares and then outputs status of all items (or a subset defined by Paths param):
@@ -15,7 +16,7 @@ import (
 // - remote items that are newer
 // - local items that are untracked (if Paths specified)
 // - identical local and remote items
-func Status(session *cache.Session, home string, paths []string, pageSize int, debug bool, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+func Status(sess *cache.Session, home string, paths []string, pageSize int, debug bool, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
 	// preflight checks
 	paths, err = preflight(home, paths)
 	if err != nil {
@@ -24,7 +25,7 @@ func Status(session *cache.Session, home string, paths []string, pageSize int, d
 
 	if !debug {
 		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(session.CacheDBPath); os.IsNotExist(err) {
+		if _, sErr := os.Stat(sess.CacheDBPath); os.IsNotExist(sErr) {
 			prefix = HiWhite("initializing ")
 		}
 
@@ -40,10 +41,12 @@ func Status(session *cache.Session, home string, paths []string, pageSize int, d
 
 	// get populated db
 	si := cache.SyncInput{
-		Session: session,
+		Session: sess,
 		Close:   false,
 	}
+
 	var cso cache.SyncOutput
+
 	cso, err = cache.Sync(si)
 	if err != nil {
 		return
@@ -51,7 +54,14 @@ func Status(session *cache.Session, home string, paths []string, pageSize int, d
 
 	var remote tagsWithNotes
 
-	remote, err = getTagsWithNotes(cso.DB, session)
+	remote, err = getTagsWithNotes(cso.DB, sess)
+
+	if cErr := cso.DB.Close(); cErr != nil && err == nil {
+		err = cErr
+	}
+
+	sess.CacheDB = nil
+
 	if err != nil {
 		return diffs, msg, err
 	}

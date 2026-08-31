@@ -3,8 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,7 +10,8 @@ import (
 	"time"
 
 	sndotfiles "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 )
@@ -21,7 +20,7 @@ import (
 var version, versionOutput, tag, sha, buildDate string
 
 type configOptsOutput struct {
-	useStdOut  bool
+	noStdOut   bool
 	display    bool
 	useSession bool
 	home       string
@@ -33,11 +32,7 @@ type configOptsOutput struct {
 }
 
 func getOpts(c *cli.Context) (out configOptsOutput, err error) {
-	out.useStdOut = c.Bool("no-stdout")
-
-	if !c.GlobalBool("no-stdout") {
-		out.useStdOut = false
-	}
+	out.noStdOut = c.GlobalBool("no-stdout")
 
 	if c.GlobalBool("use-session") || viper.GetBool("use_session") {
 		out.useSession = true
@@ -46,13 +41,13 @@ func getOpts(c *cli.Context) (out configOptsOutput, err error) {
 	out.sessKey = c.GlobalString("session-key")
 
 	out.server = c.GlobalString("server")
-	if viper.GetString("server") != "" {
+	if out.server == "" {
 		out.server = viper.GetString("server")
 	}
 
-	out.cacheDBDir = viper.GetString("cachedb_dir")
-	if out.cacheDBDir != "" {
-		out.cacheDBDir = c.GlobalString("cachedb-dir")
+	out.cacheDBDir = c.GlobalString("cachedb-dir")
+	if out.cacheDBDir == "" {
+		out.cacheDBDir = viper.GetString("cachedb_dir")
 	}
 
 	out.display = true
@@ -73,6 +68,25 @@ func getOpts(c *cli.Context) (out configOptsOutput, err error) {
 	}
 
 	return
+}
+
+// getCacheSession loads the session and points it at the cache database.
+func getCacheSession(opts configOptsOutput) (sess cache.Session, email string, err error) {
+	sess, email, err = cache.GetSession(nil, opts.useSession, opts.sessKey, opts.server, opts.debug)
+	if err != nil {
+		return
+	}
+
+	var cacheDBPath string
+
+	cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+	if err != nil {
+		return
+	}
+
+	sess.CacheDBPath = cacheDBPath
+
+	return sess, email, nil
 }
 
 func main() {
@@ -117,6 +131,11 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		return "", false, err
 	}
 
+	err = viper.BindEnv("cachedb_dir")
+	if err != nil {
+		return "", false, err
+	}
+
 	if tag != "" && buildDate != "" {
 		versionOutput = fmt.Sprintf("[%s-%s] %s UTC", tag, sha, buildDate)
 	} else {
@@ -145,6 +164,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.StringFlag{Name: "home-dir"},
 		cli.BoolFlag{Name: "use-session"},
 		cli.StringFlag{Name: "session-key"},
+		cli.StringFlag{Name: "cachedb-dir"},
 		cli.IntFlag{Name: "page-size", Hidden: true, Value: sndotfiles.DefaultPageSize},
 		cli.BoolFlag{Name: "quiet"},
 		cli.BoolFlag{Name: "no-stdout"},
@@ -164,17 +184,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession, opts.sessKey, opts.server, opts.debug)
+			var sess cache.Session
 
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			sess, _, err = getCacheSession(opts)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
 
-			_, msg, err = sndotfiles.Status(&session, opts.home, c.Args(), opts.pageSize, opts.debug, false)
+			_, msg, err = sndotfiles.Status(&sess, opts.home, c.Args(), opts.pageSize, opts.debug, opts.noStdOut)
+
 			return err
 		},
 	}
@@ -202,25 +220,22 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
-				opts.sessKey, opts.server, opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			var sess cache.Session
+
+			sess, _, err = getCacheSession(opts)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
 
 			var so sndotfiles.SyncOutput
 			so, err = sndotfiles.Sync(sndotfiles.SNDotfilesSyncInput{
-				Session:  &session,
+				Session:  &sess,
 				Home:     opts.home,
 				Paths:    c.Args(),
 				Exclude:  c.StringSlice("exclude"),
 				PageSize: opts.pageSize,
 				Debug:    opts.debug,
-			}, c.GlobalBool("no-stdout"))
+			}, opts.noStdOut)
 
 			if err != nil {
 				return err
@@ -274,22 +289,19 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				absPaths = append(absPaths, ap)
 			}
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
-				opts.sessKey, opts.server, opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			var sess cache.Session
+
+			sess, _, err = getCacheSession(opts)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
 
-			ai := sndotfiles.AddInput{Session: &session, Home: opts.home, Paths: absPaths,
+			ai := sndotfiles.AddInput{Session: &sess, Home: opts.home, Paths: absPaths,
 				PageSize: opts.pageSize, All: c.Bool("all")}
 
 			var ao sndotfiles.AddOutput
 
-			ao, err = sndotfiles.Add(ai, true)
+			ao, err = sndotfiles.Add(ai, opts.noStdOut)
 			if err != nil {
 				return err
 			}
@@ -322,19 +334,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				return nil
 			}
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
-				opts.sessKey, opts.server,
-				opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			var sess cache.Session
+
+			sess, _, err = getCacheSession(opts)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
 
 			ri := sndotfiles.RemoveInput{
-				Session:  &session,
+				Session:  &sess,
 				Home:     opts.home,
 				Paths:    c.Args(),
 				PageSize: opts.pageSize,
@@ -343,7 +351,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			var ro sndotfiles.RemoveOutput
 
-			ro, err = sndotfiles.Remove(ri, c.Bool("no-stdout"))
+			ro, err = sndotfiles.Remove(ri, opts.noStdOut)
 			if err != nil {
 				return err
 			}
@@ -364,20 +372,14 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
-				opts.sessKey, opts.server, opts.debug)
+			var sess cache.Session
 
-			var cacheDBPath string
-
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			sess, _, err = getCacheSession(opts)
 			if err != nil {
 				return err
 			}
 
-			session.CacheDBPath = cacheDBPath
-
-			_, msg, err = sndotfiles.Diff(&session, opts.home, c.Args(), opts.pageSize, true, c.Bool("no-stdout"))
+			_, msg, err = sndotfiles.Diff(&sess, opts.home, c.Args(), opts.pageSize, true, opts.noStdOut)
 
 			return err
 		},
@@ -434,15 +436,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				os.Exit(1)
 			}
 			if sAdd {
-				msg, err = gosn.AddSession(opts.server, sessKey, nil, c.Bool("debug"))
+				msg, err = session.AddSession(nil, opts.server, sessKey, nil, opts.debug)
 				return err
 			}
 			if sRemove {
-				msg = gosn.RemoveSession(nil)
+				msg = session.RemoveSession(nil)
 				return nil
 			}
 			if sStatus {
-				msg, err = gosn.SessionStatus(sessKey, nil)
+				msg, err = session.SessionStatus(sessKey, nil)
 			}
 			return err
 		},
@@ -476,16 +478,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			display = opts.display
 
 			var email string
-			var session cache.Session
-			session, email, err = cache.GetSession(opts.useSession,
-				opts.sessKey, opts.server,
-				opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+
+			var sess cache.Session
+
+			sess, email, err = getCacheSession(opts)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
 
 			var proceed bool
 			if c.Bool("force") {
@@ -500,7 +499,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, opts.pageSize, c.Bool("no-stdout"))
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(&sess, opts.pageSize, opts.noStdOut)
 				if err != nil {
 					return err
 				}

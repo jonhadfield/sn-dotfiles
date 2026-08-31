@@ -2,28 +2,29 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
-	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
+
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRemoveNoItems(t *testing.T) {
-	err := removeFromDB(removeInput{session: testCacheSession, items: gosn.Items{}})
+	requireLiveSession(t)
+
+	err := removeFromDB(removeInput{session: testCacheSession, items: items.Items{}})
 	require.Error(t, err)
 }
 
 func TestRemoveItemsInvalidSession(t *testing.T) {
-	tag := gosn.NewTag()
-	tagContent := gosn.NewTagContent()
-	tagContent.SetTitle("newTag")
+	tag := createTag("newTag")
 
 	err := removeFromDB(removeInput{session: &cache.Session{
 		Session:     nil,
 		CacheDB:     nil,
 		CacheDBPath: "",
-	}, items: gosn.Items{&tag}})
+	}, items: items.Items{&tag}})
 
 	require.Error(t, err)
 }
@@ -50,6 +51,8 @@ func TestRemoveInvalidSession(t *testing.T) {
 }
 
 func TestRemoveInvalidPath(t *testing.T) {
+	requireLiveSession(t)
+
 	ri := RemoveInput{
 		Session: testCacheSession,
 		Home:    getTemporaryHome(),
@@ -61,6 +64,8 @@ func TestRemoveInvalidPath(t *testing.T) {
 }
 
 func TestRemoveNoPaths(t *testing.T) {
+	requireLiveSession(t)
+
 	ri := RemoveInput{
 		Session: testCacheSession,
 		Home:    getTemporaryHome(),
@@ -73,6 +78,8 @@ func TestRemoveNoPaths(t *testing.T) {
 }
 
 func TestRemoveTags(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -120,6 +127,8 @@ func TestRemoveTags(t *testing.T) {
 }
 
 func TestRemoveItems(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -250,6 +259,8 @@ func TestRemoveItems(t *testing.T) {
 }
 
 func TestRemoveItemsRecursive(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -298,6 +309,8 @@ func TestRemoveItemsRecursive(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveTwo(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -343,6 +356,8 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveThree(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -395,6 +410,8 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 }
 
 func TestRemoveAndCheckRemoved(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -443,6 +460,8 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 }
 
 func TestRemoveAndCheckRemovedOne(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")

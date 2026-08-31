@@ -2,14 +2,14 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-
 	"testing"
+	"time"
 
+	"github.com/jonhadfield/gosn-v2/common"
+	"github.com/jonhadfield/gosn-v2/items"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +42,7 @@ func testCompareSetup1and2(home string) (twn tagsWithNotes, fwc map[string]strin
 	appleNote := createNote("apple", "apple content")
 	lemonNote := createNote("lemon", "lemon content")
 	grapeNote := createNote("grape", "grape content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote, lemonNote, grapeNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote, lemonNote, grapeNote}}
 	twn = tagsWithNotes{fruitTagWithNotes}
 
 	fwc = make(map[string]string)
@@ -52,10 +52,7 @@ func testCompareSetup1and2(home string) (twn tagsWithNotes, fwc map[string]strin
 }
 
 func TestTagExists(t *testing.T) {
-	tag1Content := gosn.NewTagContent()
-	tag1Content.Title = "rod"
-	tag1 := gosn.NewTag()
-	tag1.Content = *tag1Content
+	tag1 := createTag("rod")
 	twn := tagsWithNotes{
 		tagWithNotes{
 			tag:   tag1,
@@ -158,7 +155,7 @@ func TestCheckPathExists(t *testing.T) {
 	}
 	p := fmt.Sprintf("%s/hello.txt", tmpDir)
 	b := []byte("hello world")
-	_ = ioutil.WriteFile(p, b, 0644)
+	_ = os.WriteFile(p, b, 0644)
 	// check existing file
 	assert.NoError(t, checkPathsExist([]string{p}))
 	// check one bad returns error
@@ -172,7 +169,7 @@ func TestCheckPathExists(t *testing.T) {
 	assert.NoError(t, checkPathsExist([]string{newPath}))
 	// check new file a few dirs down is valid
 	newFilePath := tmpDir + "test0/test1/test2/test.txt"
-	_ = ioutil.WriteFile(newFilePath, b, 0644)
+	_ = os.WriteFile(newFilePath, b, 0644)
 	assert.NoError(t, checkPathsExist([]string{newPath, newFilePath}))
 	// check path with additional trailing slashes is NOT valid
 	newFilePathWithSlashes := newFilePath + "/"
@@ -226,7 +223,7 @@ func TestCompare3(t *testing.T) {
 	home := getTemporaryHome()
 	fruitTag := createTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote}}
 	twn := tagsWithNotes{fruitTagWithNotes}
 
 	fwc := make(map[string]string)
@@ -266,7 +263,7 @@ func TestCompare4(t *testing.T) {
 	fruitTag := createTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote}}
 	twn := tagsWithNotes{fruitTagWithNotes}
 
 	fwc := make(map[string]string)
@@ -304,14 +301,26 @@ func TestCompare4(t *testing.T) {
 }
 
 // helpers
-func createNote(title, content string) gosn.Note {
-	noteContent := gosn.NewNoteContent()
-	noteContent.Title = title
-	noteContent.Text = content
-	note := gosn.NewNote()
-	note.Content = *noteContent
-	note.ContentType = "Note"
+func createNote(title, content string) items.Note {
+	note, err := items.NewNote(title, content, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// items retrieved from SN always carry an updated time, which comparisons
+	// against the local filesystem rely on
+	note.UpdatedAt = time.Now().UTC().Format(common.TimeLayout)
+
 	return note
+}
+
+func createTag(title string) items.Tag {
+	tag, err := items.NewTag(title, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return tag
 }
 
 func createTemporaryFiles(fwc map[string]string) error {
@@ -336,13 +345,5 @@ func createPathWithContent(path, content string) error {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	_, err = f.WriteString(content)
-	if err != nil {
-		return err
-	}
-	return f.Close()
+	return os.WriteFile(path, []byte(content), 0o600)
 }

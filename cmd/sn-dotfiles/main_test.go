@@ -2,11 +2,6 @@ package main
 
 import (
 	"fmt"
-	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
 	"index/suffixarray"
 	"os"
 	"os/exec"
@@ -15,6 +10,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
+	"github.com/jonhadfield/gosn-v2/auth"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
+	snsession "github.com/jonhadfield/gosn-v2/session"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 func removeDB(dbPath string) {
@@ -25,9 +28,9 @@ func removeDB(dbPath string) {
 	}
 }
 
-func CleanUp(session cache.Session) error {
-	removeDB(session.CacheDBPath)
-	err := gosn.DeleteContent(&gosn.Session{
+func CleanUp(sess cache.Session) error {
+	removeDB(sess.CacheDBPath)
+	_, err := items.DeleteContent(&snsession.Session{
 		Token:             testCacheSession.Token,
 		MasterKey:         testCacheSession.MasterKey,
 		Server:            testCacheSession.Server,
@@ -36,7 +39,8 @@ func CleanUp(session cache.Session) error {
 		RefreshExpiration: testCacheSession.RefreshExpiration,
 		RefreshToken:      testCacheSession.RefreshToken,
 		Debug:             true,
-	})
+	}, true)
+
 	return err
 }
 
@@ -48,14 +52,29 @@ func csync(si cache.SyncInput) (so cache.SyncOutput, err error) {
 		Close:   si.Close,
 	})
 }
+
+// requireLiveSession skips the calling test when no Standard Notes credentials
+// were supplied, so that the offline unit tests can still be run.
+func requireLiveSession(t *testing.T) {
+	t.Helper()
+
+	if testCacheSession == nil {
+		t.Skip("skipping: SN_EMAIL and SN_PASSWORD not set")
+	}
+}
+
 func TestMain(m *testing.M) {
-	gs, err := gosn.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"), true)
+	if os.Getenv("SN_EMAIL") == "" || os.Getenv("SN_PASSWORD") == "" {
+		os.Exit(m.Run())
+	}
+
+	gs, err := auth.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"), true)
 	if err != nil {
 		panic(err)
 	}
 
 	testCacheSession = &cache.Session{
-		Session: &gosn.Session{
+		Session: &snsession.Session{
 			Debug:             true,
 			Server:            gs.Server,
 			Token:             gs.Token,
@@ -64,6 +83,7 @@ func TestMain(m *testing.M) {
 			RefreshToken:      gs.RefreshToken,
 			AccessToken:       gs.AccessToken,
 			AccessExpiration:  gs.AccessExpiration,
+			KeyParams:         gs.KeyParams,
 		},
 		CacheDBPath: "",
 	}
@@ -102,6 +122,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestCLIInvalidCommand(t *testing.T) {
+	requireLiveSession(t)
+
 	// Run the crashing code when FLAG is set
 	if os.Getenv("FLAG") == "1" {
 		msg, display, err := startCLI([]string{"sn-dotfiles", "lemon"})
@@ -142,6 +164,8 @@ func TestIsValidDotfilePath(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
+	requireLiveSession(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -171,6 +195,8 @@ func TestAdd(t *testing.T) {
 }
 
 func TestAddInvalidPath(t *testing.T) {
+	requireLiveSession(t)
+
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", "/invalid"})
 	assert.NotEmpty(t, msg)
 	assert.True(t, disp)
@@ -179,6 +205,8 @@ func TestAddInvalidPath(t *testing.T) {
 }
 
 func TestAddAllAndPath(t *testing.T) {
+	requireLiveSession(t)
+
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "add", "--all", "/invalid"})
 	assert.NotEmpty(t, msg)
 	assert.True(t, disp)
@@ -187,6 +215,8 @@ func TestAddAllAndPath(t *testing.T) {
 }
 
 func TestAddNoArgs(t *testing.T) {
+	requireLiveSession(t)
+
 	msg, disp, err := startCLI([]string{"sn-dotfiles", "add"})
 	assert.NotEmpty(t, msg)
 	assert.True(t, disp)
@@ -195,6 +225,8 @@ func TestAddNoArgs(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	requireLiveSession(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -222,6 +254,8 @@ func TestRemove(t *testing.T) {
 }
 
 func TestWipe(t *testing.T) {
+	requireLiveSession(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -255,6 +289,8 @@ func TestWipe(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
+	requireLiveSession(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -287,6 +323,8 @@ func TestStatus(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
+	requireLiveSession(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -350,6 +388,8 @@ func TestSync(t *testing.T) {
 }
 
 func TestDiff(t *testing.T) {
+	requireLiveSession(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -385,6 +425,8 @@ func TestDiff(t *testing.T) {
 }
 
 func TestSyncExclude(t *testing.T) {
+	requireLiveSession(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -433,15 +475,7 @@ func createPathWithContent(path, content string) error {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	_, err = f.WriteString(content)
-	if err != nil {
-		return err
-	}
-	return f.Close()
+	return os.WriteFile(path, []byte(content), 0o600)
 }
 func createTemporaryFiles(fwc map[string]string) error {
 	for f, c := range fwc {

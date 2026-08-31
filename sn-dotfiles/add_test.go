@@ -2,14 +2,14 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
-	"github.com/lithammer/shortuuid"
-	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
+	snsession "github.com/jonhadfield/gosn-v2/session"
+	"github.com/stretchr/testify/assert"
 )
 
 func removeDB(dbPath string) {
@@ -20,9 +20,9 @@ func removeDB(dbPath string) {
 	}
 }
 
-func CleanUp(session cache.Session) error {
-	removeDB(session.CacheDBPath)
-	err := gosn.DeleteContent(&gosn.Session{
+func CleanUp(sess cache.Session) error {
+	removeDB(sess.CacheDBPath)
+	_, err := items.DeleteContent(&snsession.Session{
 		Token:             testCacheSession.Token,
 		MasterKey:         testCacheSession.MasterKey,
 		Server:            testCacheSession.Server,
@@ -30,16 +30,19 @@ func CleanUp(session cache.Session) error {
 		AccessExpiration:  testCacheSession.AccessExpiration,
 		RefreshExpiration: testCacheSession.RefreshExpiration,
 		RefreshToken:      testCacheSession.RefreshToken,
-	})
+	}, true)
+
 	return err
 }
 
 func getTemporaryHome() string {
-	home := fmt.Sprintf("%s/%s", os.TempDir(), shortuuid.New())
+	home := fmt.Sprintf("%s/%s", os.TempDir(), items.GenUUID())
 	return strings.ReplaceAll(home, "//", "/")
 }
 
 func TestAddNoPaths(t *testing.T) {
+	requireLiveSession(t)
+
 	ai := AddInput{
 		Session: testCacheSession,
 		Home:    getTemporaryHome(),
@@ -67,6 +70,8 @@ func TestAddInvalidSession(t *testing.T) {
 }
 
 func TestAddInvalidPath(t *testing.T) {
+	requireLiveSession(t)
+
 	var err error
 	defer func() {
 		if err = CleanUp(*testCacheSession); err != nil {
@@ -93,6 +98,8 @@ func TestAddInvalidPath(t *testing.T) {
 }
 
 func TestAddOne(t *testing.T) {
+	requireLiveSession(t)
+
 	var err error
 	defer func() {
 		if err = CleanUp(*testCacheSession); err != nil {
@@ -118,6 +125,8 @@ func TestAddOne(t *testing.T) {
 }
 
 func TestAddTwoSameTag(t *testing.T) {
+	requireLiveSession(t)
+
 	var err error
 	defer func() {
 		if err = CleanUp(*testCacheSession); err != nil {
@@ -148,6 +157,8 @@ func TestAddTwoSameTag(t *testing.T) {
 }
 
 func TestAddRecursive(t *testing.T) {
+	requireLiveSession(t)
+
 	var err error
 	defer func() {
 		if err = CleanUp(*testCacheSession); err != nil {
@@ -178,6 +189,8 @@ func TestAddRecursive(t *testing.T) {
 }
 
 func TestAddAll(t *testing.T) {
+	requireLiveSession(t)
+
 	var err error
 	defer func() {
 		if err = CleanUp(*testCacheSession); err != nil {
@@ -212,7 +225,7 @@ func TestCheckPathValid(t *testing.T) {
 	d1 := []byte("test file")
 	filePath := home + "test"
 	symLinkPath := home + "test_sym"
-	assert.NoError(t, ioutil.WriteFile(filePath, d1, 0644))
+	assert.NoError(t, os.WriteFile(filePath, d1, 0644))
 	v, err := pathValid(filePath)
 	assert.True(t, v)
 	assert.NoError(t, err)

@@ -3,14 +3,14 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/asdine/storm/v3"
-	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
-	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/asdine/storm/v3"
+	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
+	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
 )
 
@@ -28,7 +28,7 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 
 	if !si.Debug {
 		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(si.Session.CacheDBPath); os.IsNotExist(err) {
+		if _, sErr := os.Stat(si.Session.CacheDBPath); os.IsNotExist(sErr) {
 			prefix = HiWhite("initializing ")
 		}
 
@@ -50,6 +50,9 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 		debug:   si.Debug,
 		close:   false,
 	})
+	if err != nil {
+		return so, err
+	}
 
 	return SyncOutput{
 		NoPushed: output.noPushed,
@@ -71,31 +74,17 @@ func sync(input syncInput) (output syncOutput, err error) {
 		return
 	}
 
-	var remote tagsWithNotes
-	remote, err = getTagsWithNotes(cso.DB, input.session)
-	if err != nil {
-		return
+	output, err = syncCacheDBwithFS(cso.DB, input)
+
+	// The db holds an exclusive lock on the cache file, so it has to be closed
+	// before syncing changes back to SN.
+	if cErr := cso.DB.Close(); cErr != nil && err == nil {
+		err = cErr
 	}
 
-	err = checkNoteTagConflicts(remote)
+	input.session.CacheDB = nil
+
 	if err != nil {
-		return
-	}
-
-	output, err = syncDBwithFS(syncInput{
-		db:      cso.DB,
-		session: input.session,
-		twn:     remote,
-		home:    input.home,
-		paths:   input.paths,
-		exclude: input.exclude,
-		debug:   input.debug})
-	if err != nil {
-
-		return
-	}
-
-	if err = cso.DB.Close(); err != nil {
 		return
 	}
 
@@ -106,6 +95,31 @@ func sync(input syncInput) (output syncOutput, err error) {
 	_, err = cache.Sync(csi)
 
 	return
+}
+
+// syncCacheDBwithFS reads the tracked notes out of the populated cache db and
+// reconciles them with the local filesystem.
+func syncCacheDBwithFS(db *storm.DB, input syncInput) (output syncOutput, err error) {
+	var remote tagsWithNotes
+
+	remote, err = getTagsWithNotes(db, input.session)
+	if err != nil {
+		return
+	}
+
+	if err = checkNoteTagConflicts(remote); err != nil {
+		return
+	}
+
+	return syncDBwithFS(syncInput{
+		db:      db,
+		session: input.session,
+		twn:     remote,
+		home:    input.home,
+		paths:   input.paths,
+		exclude: input.exclude,
+		debug:   input.debug,
+	})
 }
 
 type SNDotfilesSyncInput struct {
@@ -122,8 +136,9 @@ type SyncOutput struct {
 
 func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 	if si.db == nil {
-		panic("didn't get db sent to syncDBwithFS")
+		return so, errors.New("no db passed to syncDBwithFS")
 	}
+
 	var itemDiffs []ItemDiff
 
 	itemDiffs, err = compare(si.twn, si.home, si.paths, si.exclude, si.debug)

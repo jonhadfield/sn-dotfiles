@@ -2,15 +2,14 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSyncInvalidSession(t *testing.T) {
@@ -29,6 +28,8 @@ func TestSyncInvalidSession(t *testing.T) {
 }
 
 func TestSyncNoItems(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -54,6 +55,8 @@ func TestSyncNoItems(t *testing.T) {
 // TestBasicSync adds a file to the remote, deletes the local file and then
 // performs a sync to check it was added back
 func TestBasicSync(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -92,13 +95,15 @@ func TestBasicSync(t *testing.T) {
 	assert.Equal(t, 0, so.NoPushed)
 	assert.Equal(t, 1, so.NoPulled)
 
-	content, err := ioutil.ReadFile(applePath)
+	content, err := os.ReadFile(applePath)
 	require.NoError(t, err)
 	require.Equal(t, "apple content", string(content))
 }
 
 // TestSyncTwoUpdatesFiles adds two files, updates them locally and syncs them back
 func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -141,6 +146,8 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 
 // TestSync creates local dotfiles
 func TestSync(t *testing.T) {
+	requireLiveSession(t)
+
 	assert.NotEmpty(t, testCacheSession.AccessToken)
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -160,12 +167,12 @@ func TestSync(t *testing.T) {
 	golfNote := createNote("golf.txt", "golf content")
 	premiumNote := createNote("premium", "premium content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
-	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Notes{}}
-	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Notes{yellowNote}}
-	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Notes{golfNote}}
-	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Notes{}}
-	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Notes{premiumNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote}}
+	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: items.Notes{}}
+	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: items.Notes{yellowNote}}
+	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: items.Notes{golfNote}}
+	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: items.Notes{}}
+	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: items.Notes{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
 	fwc := make(map[string]string)
@@ -231,7 +238,7 @@ func TestSync(t *testing.T) {
 	var uTwn tagsWithNotes
 	for _, x := range twn {
 		if x.tag.Content.GetTitle() == "dotfiles.fruit" {
-			var nnotes gosn.Notes
+			var nnotes items.Notes
 			for _, note := range x.notes {
 				if note.Content.GetTitle() == "apple" {
 					note.Content.SetText("new note content")
@@ -277,6 +284,8 @@ func TestSync(t *testing.T) {
 }
 
 func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -295,12 +304,12 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 	golfNote := createNote("golf.txt", "golf content")
 	premiumNote := createNote("premium", "premium content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
-	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Notes{}}
-	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Notes{yellowNote}}
-	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Notes{golfNote}}
-	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Notes{}}
-	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Notes{premiumNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote}}
+	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: items.Notes{}}
+	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: items.Notes{yellowNote}}
+	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: items.Notes{golfNote}}
+	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: items.Notes{}}
+	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: items.Notes{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
 	// get populated db
@@ -330,6 +339,8 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 }
 
 func TestSyncWithExcludeParentPaths(t *testing.T) {
+	requireLiveSession(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -349,12 +360,12 @@ func TestSyncWithExcludeParentPaths(t *testing.T) {
 	golfNote := createNote("golf.txt", "golf content")
 	premiumNote := createNote("premium", "premium content")
 
-	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
-	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: gosn.Notes{}}
-	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: gosn.Notes{yellowNote}}
-	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: gosn.Notes{golfNote}}
-	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: gosn.Notes{}}
-	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: gosn.Notes{premiumNote}}
+	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: items.Notes{appleNote}}
+	carsTagWithNotes := tagWithNotes{tag: carsTag, notes: items.Notes{}}
+	bananaTagWithNotes := tagWithNotes{tag: bananaTag, notes: items.Notes{yellowNote}}
+	vwTagWithNotes := tagWithNotes{tag: vwTag, notes: items.Notes{golfNote}}
+	mercedesTagWithNotes := tagWithNotes{tag: mercedesTag, notes: items.Notes{}}
+	a250TagWithNotes := tagWithNotes{tag: a250Tag, notes: items.Notes{premiumNote}}
 	twn := tagsWithNotes{fruitTagWithNotes, carsTagWithNotes, bananaTagWithNotes, vwTagWithNotes, mercedesTagWithNotes, a250TagWithNotes}
 
 	// get populated db

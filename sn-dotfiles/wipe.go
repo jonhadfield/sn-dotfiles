@@ -1,18 +1,26 @@
 package sndotfiles
 
 import (
+	"errors"
 	"fmt"
-	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/gosn-v2"
-	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"time"
+
+	"github.com/asdine/storm/v3"
+	"github.com/briandowns/spinner"
+	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/items"
 )
 
-func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr bool) (int, error) {
-	if session.Valid() && !session.Debug {
+func WipeDotfileTagsAndNotes(sess *cache.Session, pageSize int, useStdErr bool) (int, error) {
+	// validate session
+	if !sess.Valid() {
+		return 0, errors.New("invalid session")
+	}
+
+	if !sess.Debug {
 		prefix := HiWhite("syncing ")
-		if _, err := os.Stat(session.CacheDBPath); os.IsNotExist(err) {
+		if _, err := os.Stat(sess.CacheDBPath); os.IsNotExist(err) {
 			prefix = HiWhite("initializing ")
 		}
 
@@ -23,38 +31,64 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr boo
 
 		s.Prefix = prefix
 		s.Start()
+
 		defer s.Stop()
 	}
 
 	// get populated db
 	si := cache.SyncInput{
-		Session: session,
+		Session: sess,
 		Close:   false,
 	}
 
-	var err error
-	var cso cache.SyncOutput
-	cso, err = cache.Sync(si)
+	cso, err := cache.Sync(si)
 	if err != nil {
 		return 0, err
 	}
 
-	var remote tagsWithNotes
+	itemsToRemove, err := wipeCacheDB(cso.DB, sess)
 
-	remote, err = getTagsWithNotes(cso.DB, session)
+	// The db holds an exclusive lock on the cache file, so it has to be closed
+	// before syncing changes back to SN. wipeCacheDB saves with close set, so
+	// it is usually already closed by now; closing it twice is a no-op.
+	if cErr := cso.DB.Close(); cErr != nil {
+		debugPrint(sess.Debug, fmt.Sprintf("WipeDotfileTagsAndNotes | closing db: %s", cErr))
+	}
+
+	sess.CacheDB = nil
+
 	if err != nil {
 		return 0, err
 	}
-	if err = cso.DB.Close(); err != nil {
+
+	if itemsToRemove == 0 {
+		return 0, nil
+	}
+
+	// persist the deletions back to SN
+	si.Close = true
+
+	if _, err = cache.Sync(si); err != nil {
 		return 0, err
 	}
 
-	var itemsToRemove gosn.Items
+	return itemsToRemove, nil
+}
+
+// wipeCacheDB marks every dotfiles tag and note in the cache db as deleted and
+// returns the number of items marked.
+func wipeCacheDB(db *storm.DB, sess *cache.Session) (int, error) {
+	remote, err := getTagsWithNotes(db, sess)
+	if err != nil {
+		return 0, err
+	}
+
+	var itemsToRemove items.Items
 
 	for _, twn := range remote {
-		twn.tag.Deleted = true
-		t := twn.tag
-		itemsToRemove = append(itemsToRemove, &t)
+		tag := twn.tag
+		tag.Deleted = true
+		itemsToRemove = append(itemsToRemove, &tag)
 
 		for n := range twn.notes {
 			twn.notes[n].Deleted = true
@@ -62,21 +96,17 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr boo
 		}
 	}
 
-	debugPrint(session.Debug, fmt.Sprintf("WipeDotfileTagsAndNotes | removing %d items", len(itemsToRemove)))
+	debugPrint(sess.Debug, fmt.Sprintf("WipeDotfileTagsAndNotes | removing %d items", len(itemsToRemove)))
 
 	if len(itemsToRemove) == 0 {
 		return 0, nil
 	}
 
-	pii := cache.SyncInput{
-		Session: session,
-		Close:   true,
-	}
+	sess.CacheDB = db
 
-	_, err = cache.Sync(pii)
-	if err != nil {
+	if err = cache.SaveItems(sess, db, itemsToRemove, true); err != nil {
 		return 0, err
 	}
 
-	return len(itemsToRemove), err
+	return len(itemsToRemove), nil
 }

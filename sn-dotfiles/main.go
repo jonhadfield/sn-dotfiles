@@ -3,21 +3,23 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
+	"regexp"
+
 	"github.com/asdine/storm/v3"
 	"github.com/asdine/storm/v3/q"
 	"github.com/fatih/color"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
-	"regexp"
+	"github.com/jonhadfield/gosn-v2/common"
+	"github.com/jonhadfield/gosn-v2/items"
 )
 
 const (
-	// SNServerURL defines the default URL for making calls to syncDBwithFS with SN
-	SNServerURL = "https://syncDBwithFS.standardnotes.org"
+	// SNServerURL defines the default URL for making calls to sync with SN
+	SNServerURL = common.APIServer
 	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
 	DotFilesTag = "dotfiles"
-	// DefaultPageSize defines the number of items to attempt to syncDBwithFS per request
-	DefaultPageSize = 500
+	// DefaultPageSize defines the number of items to attempt to sync per request
+	DefaultPageSize = common.PageSize
 	// SpinnerCharSet defines the characters to use for the spinner shown when syncing
 	SpinnerCharSet = 14
 	// SpinnerDelay defines the number of milliseconds to wait between each character in the spinner
@@ -33,42 +35,58 @@ var (
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
-func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, err error) {
+// dotFilesTagRegexp matches the dotfiles tag itself and any of its descendants,
+// e.g. "dotfiles" and "dotfiles.config.nvim", but not "mydotfiles".
+var dotFilesTagRegexp = regexp.MustCompile(fmt.Sprintf(`^%s(\..+)?$`, regexp.QuoteMeta(DotFilesTag)))
+
+func getTagsWithNotes(db *storm.DB, sess *cache.Session) (t tagsWithNotes, err error) {
 	// validate session
-	if !session.Valid() {
+	if !sess.Valid() {
 		err = errors.New("invalid session")
 		return
 	}
 
 	var notesAndTags cache.Items
 
-	if e := db.Select(q.In("ContentType", []string{"Note", "Tag", "SN|Component", "Extension"})).Find(&notesAndTags); e != nil {
-		if e.Error() != "not found" {
-			return
+	contentTypes := []string{
+		common.SNItemTypeNote,
+		common.SNItemTypeTag,
+		common.SNItemTypeComponent,
+		common.SNItemTypeExtension,
+	}
+
+	if e := db.Select(q.In("ContentType", contentTypes)).Find(&notesAndTags); e != nil {
+		if !errors.Is(e, storm.ErrNotFound) {
+			return t, e
 		}
 	}
 
-	var items gosn.Items
-	items, err = notesAndTags.ToItems(session)
+	var parsed items.Items
+
+	parsed, err = notesAndTags.ToItems(sess)
 	if err != nil {
 		return
 	}
 
-	var dotfileTags gosn.Tags
+	var dotfileTags items.Tags
 
-	var notes gosn.Notes
+	var notes items.Notes
 
-	r := regexp.MustCompile(fmt.Sprintf("%s.?.*", DotFilesTag))
-
-	for _, item := range items {
-		if item.GetContent() != nil && item.GetContentType() == "Tag" && r.MatchString(item.GetContent().(*gosn.TagContent).Title) {
-			tt := item.(*gosn.Tag)
-			dotfileTags = append(dotfileTags, *tt)
+	for _, item := range parsed {
+		if item.GetContent() == nil {
+			continue
 		}
 
-		if item.GetContentType() == "Note" && item.GetContent() != nil {
-			n := item.(*gosn.Note)
-			notes = append(notes, *n)
+		switch item.GetContentType() {
+		case common.SNItemTypeTag:
+			tag, ok := item.(*items.Tag)
+			if ok && dotFilesTagRegexp.MatchString(tag.Content.GetTitle()) {
+				dotfileTags = append(dotfileTags, *tag)
+			}
+		case common.SNItemTypeNote:
+			if note, ok := item.(*items.Note); ok {
+				notes = append(notes, *note)
+			}
 		}
 	}
 
@@ -77,8 +95,10 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 			tag: dotfileTag,
 		}
 
+		noteRefIDs := getItemNoteRefIds(dotfileTag.Content.References())
+
 		for _, note := range notes {
-			if StringInSlice(note.GetUUID(), getItemNoteRefIds(dotfileTag.GetContent().References()), false) {
+			if StringInSlice(note.GetUUID(), noteRefIDs, true) {
 				twn.notes = append(twn.notes, note)
 			}
 		}
@@ -89,10 +109,9 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 	return t, err
 }
 
-//
-func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
+func getItemNoteRefIds(itemRefs items.ItemReferences) (refIds []string) {
 	for _, ir := range itemRefs {
-		if ir.ContentType == "Note" {
+		if ir.ContentType == common.SNItemTypeNote {
 			refIds = append(refIds, ir.UUID)
 		}
 	}
@@ -100,21 +119,9 @@ func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 	return refIds
 }
 
-//
 type tagWithNotes struct {
-	tag   gosn.Tag
-	notes gosn.Notes
+	tag   items.Tag
+	notes items.Notes
 }
 
 type tagsWithNotes []tagWithNotes
-
-// GetNoteConfig defines the input for getting notes from SN
-type GetNoteConfig struct {
-	Session    cache.Session
-	Filters    gosn.ItemFilters
-	NoteTitles []string
-	TagTitles  []string
-	TagUUIDs   []string
-	PageSize   int
-	Debug      bool
-}
