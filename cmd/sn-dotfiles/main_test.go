@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"index/suffixarray"
 	"os"
@@ -11,8 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/asdine/storm/v3"
+	"github.com/jonhadfield/dotfiles-sn/internal/snmock"
 	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/jonhadfield/gosn-v2/auth"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/jonhadfield/gosn-v2/items"
 	snsession "github.com/jonhadfield/gosn-v2/session"
@@ -53,72 +55,62 @@ func csync(si cache.SyncInput) (so cache.SyncOutput, err error) {
 	})
 }
 
-// requireLiveSession skips the calling test when no Standard Notes credentials
-// were supplied, so that the offline unit tests can still be run.
+// requireLiveSession skips the calling test when there is no session to run
+// against. TestMain falls back to the mock server when no real account is
+// configured, so this only bites if that setup failed.
 func requireLiveSession(t *testing.T) {
 	t.Helper()
 
 	if testCacheSession == nil {
-		t.Skip("skipping: SN_EMAIL and SN_PASSWORD not set")
+		t.Skip("skipping: no Standard Notes session available")
 	}
 }
 
 func TestMain(m *testing.M) {
-	if os.Getenv("SN_EMAIL") == "" || os.Getenv("SN_PASSWORD") == "" {
-		os.Exit(m.Run())
-	}
+	os.Exit(run(m))
+}
 
-	gs, err := auth.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"), true)
+func run(m *testing.M) int {
+	sess, srv, cleanup, err := snmock.NewSession(sndotfiles2.SNAppName, true)
 	if err != nil {
 		panic(err)
 	}
 
-	testCacheSession = &cache.Session{
-		Session: &snsession.Session{
-			Debug:             true,
-			Server:            gs.Server,
-			Token:             gs.Token,
-			MasterKey:         gs.MasterKey,
-			RefreshExpiration: gs.RefreshExpiration,
-			RefreshToken:      gs.RefreshToken,
-			AccessToken:       gs.AccessToken,
-			AccessExpiration:  gs.AccessExpiration,
-			KeyParams:         gs.KeyParams,
-		},
-		CacheDBPath: "",
+	defer cleanup()
+
+	testCacheSession = sess
+
+	// startCLI takes its credentials from the environment, so when the tests
+	// are running against the mock server, point the environment at it.
+	if srv != nil {
+		if err = srv.UseEnv(); err != nil {
+			panic(err)
+		}
 	}
 
-	var path string
-
-	path, err = cache.GenCacheDBPath(*testCacheSession, "", sndotfiles2.SNAppName)
-	if err != nil {
-		panic(err)
-	}
-
-	testCacheSession.CacheDBPath = path
-
-	var so cache.SyncOutput
-	so, err = csync(cache.SyncInput{
-		Session: testCacheSession,
-		Close:   false,
-	})
+	// A first sync has to yield an items key, or nothing can be encrypted.
+	so, err := csync(cache.SyncInput{Session: testCacheSession, Close: false})
 	if err != nil {
 		panic(err)
 	}
 
 	var allPersistedItems cache.Items
 
-	if err = so.DB.All(&allPersistedItems); err != nil {
-		return
+	if err = so.DB.All(&allPersistedItems); err != nil && !errors.Is(err, storm.ErrNotFound) {
+		panic(err)
 	}
+
 	if err = so.DB.Close(); err != nil {
 		panic(err)
 	}
 
+	testCacheSession.CacheDB = nil
+
 	if testCacheSession.DefaultItemsKey.ItemsKey == "" {
 		panic("failed in TestMain due to empty default items key")
 	}
-	os.Exit(m.Run())
+
+	return m.Run()
 }
 
 func TestCLIInvalidCommand(t *testing.T) {

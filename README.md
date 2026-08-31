@@ -146,3 +146,23 @@ $ sn-dotfiles <tab>
 ## known issues
 
 - Notes moved to trash using the Standard Notes app will still be managed by sn-dotfiles until they are permanently deleted 
+
+## Testing
+
+```bash
+$ go test ./...
+```
+
+The tests run against an in-memory mock of the Standard Notes API
+(`internal/snmock`) by default, so no account is needed. Only the server is
+faked: sign-in, key derivation, encryption and the sync round trip all run the
+same code they do in production.
+
+To run against a real account instead, set the credentials in the environment:
+
+```bash
+$ SN_EMAIL=you@example.com SN_PASSWORD=... go test ./...
+```
+
+Note that this deletes all notes and tags in that account, so use a throwaway
+one.

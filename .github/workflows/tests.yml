@@ -27,6 +27,9 @@ jobs:
         with:
           go-version-file: go.mod
       -
+        # The suite runs against a real account when SN_EMAIL and SN_PASSWORD
+        # are set, and against the in-memory mock server in internal/snmock
+        # otherwise, so it also passes on forks with no secrets configured.
         name: Tests
         run: |
           go mod tidy

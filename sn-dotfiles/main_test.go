@@ -4,56 +4,56 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jonhadfield/gosn-v2/auth"
+	"github.com/jonhadfield/dotfiles-sn/internal/snmock"
 	"github.com/jonhadfield/gosn-v2/cache"
-	snsession "github.com/jonhadfield/gosn-v2/session"
 )
 
-var testCacheSession *cache.Session
+var (
+	testCacheSession *cache.Session
+	// testMockServer is the mock account backing the tests, and is nil when
+	// they are running against a real Standard Notes account.
+	testMockServer *snmock.Server
+)
 
-// requireLiveSession skips the calling test when no Standard Notes credentials
-// were supplied, so that the offline unit tests can still be run.
+// requireLiveSession skips the calling test when there is no session to run
+// against. TestMain falls back to the mock server when no real account is
+// configured, so this only bites if that setup failed.
 func requireLiveSession(t *testing.T) {
 	t.Helper()
 
 	if testCacheSession == nil {
-		t.Skip("skipping: SN_EMAIL and SN_PASSWORD not set")
+		t.Skip("skipping: no Standard Notes session available")
 	}
 }
 
+// requireMockServer skips the calling test when it is not running against the
+// mock server, for assertions that need to inspect what the server holds.
+func requireMockServer(t *testing.T) *snmock.Server {
+	t.Helper()
+
+	requireLiveSession(t)
+
+	if testMockServer == nil {
+		t.Skip("skipping: test inspects mock server state and a real account is configured")
+	}
+
+	return testMockServer
+}
+
 func TestMain(m *testing.M) {
-	if os.Getenv("SN_EMAIL") == "" || os.Getenv("SN_PASSWORD") == "" {
-		os.Exit(m.Run())
-	}
+	os.Exit(run(m))
+}
 
-	gs, err := auth.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"), true)
+func run(m *testing.M) int {
+	sess, srv, cleanup, err := snmock.NewSession(SNAppName, true)
 	if err != nil {
 		panic(err)
 	}
 
-	testCacheSession = &cache.Session{
-		Session: &snsession.Session{
-			Debug:             true,
-			Server:            gs.Server,
-			Token:             gs.Token,
-			MasterKey:         gs.MasterKey,
-			RefreshExpiration: gs.RefreshExpiration,
-			RefreshToken:      gs.RefreshToken,
-			AccessToken:       gs.AccessToken,
-			AccessExpiration:  gs.AccessExpiration,
-			KeyParams:         gs.KeyParams,
-		},
-		CacheDBPath: "",
-	}
+	defer cleanup()
 
-	var path string
+	testCacheSession = sess
+	testMockServer = srv
 
-	path, err = cache.GenCacheDBPath(*testCacheSession, "", SNAppName)
-	if err != nil {
-		panic(err)
-	}
-
-	testCacheSession.CacheDBPath = path
-
-	os.Exit(m.Run())
+	return m.Run()
 }

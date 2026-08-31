@@ -97,7 +97,7 @@ func TestRemoveTags(t *testing.T) {
 	require.NoError(t, createTemporaryFiles(fwc))
 	// add items
 	var err error
-	testCacheSession.CacheDB.Close()
+
 	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{gitConfigPath, applePath}}
 	var ao AddOutput
 	ao, err = Add(ai, true)

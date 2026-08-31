@@ -128,6 +128,13 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 	assert.Equal(t, lemonPath, ao.PathsAdded[1])
 	assert.Equal(t, 0, len(ao.PathsExisting))
 	assert.Equal(t, 0, len(ao.PathsInvalid))
+
+	// Pause before editing, so the local files are recognised as newer. File
+	// modification times are quantised to the kernel's timer tick, so a file
+	// written immediately after the notes were pushed can carry a timestamp a
+	// few milliseconds older than the one the server recorded.
+	time.Sleep(1 * time.Second)
+
 	assert.NoError(t, createPathWithContent(applePath, "apple content updated"))
 	assert.NoError(t, createPathWithContent(lemonPath, "lemon content updated"))
 

@@ -367,7 +367,10 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes items.Notes, debug bool) item
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | tagsToRemove: %s", tagsToRemove))
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allDotfileChildTags: %s", allDotfileChildTags))
 
-	if len(tagsToRemove) == len(allDotfileChildTags) {
+	// The root tag only goes when every child tag is going with it and it has
+	// no notes of its own left; otherwise removing an unrelated path would
+	// orphan the notes still filed directly under it.
+	if len(tagsToRemove) == len(allDotfileChildTags) && StringInSlice(DotFilesTag, allTagsWithoutNotes, true) {
 		tagsToRemove = append(tagsToRemove, DotFilesTag)
 		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", DotFilesTag))
 	}
