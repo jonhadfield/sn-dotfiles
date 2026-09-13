@@ -8,7 +8,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/fatih/set v0.2.1
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
-	github.com/jonhadfield/gosn-v2 v0.0.0-20260913205423-30069dc81242
+	github.com/jonhadfield/gosn-v2 v0.0.0-20260913213348-be38c415f1c6
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/ryanuber/columnize v2.1.2+incompatible
