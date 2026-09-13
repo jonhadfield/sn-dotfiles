@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/common"
+	gosn "github.com/jonhadfield/gosn-v2/items"
+	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"index/suffixarray"
 	"os"
 	"os/exec"
@@ -27,16 +30,7 @@ func removeDB(dbPath string) {
 
 func CleanUp(session cache.Session) error {
 	removeDB(session.CacheDBPath)
-	err := gosn.DeleteContent(&gosn.Session{
-		Token:             testCacheSession.Token,
-		MasterKey:         testCacheSession.MasterKey,
-		Server:            testCacheSession.Server,
-		AccessToken:       testCacheSession.AccessToken,
-		AccessExpiration:  testCacheSession.AccessExpiration,
-		RefreshExpiration: testCacheSession.RefreshExpiration,
-		RefreshToken:      testCacheSession.RefreshToken,
-		Debug:             true,
-	})
+	_, err := gosn.DeleteContent(testCacheSession.Session, false)
 	return err
 }
 
@@ -48,25 +42,37 @@ func csync(si cache.SyncInput) (so cache.SyncOutput, err error) {
 		Close:   si.Close,
 	})
 }
+
 func TestMain(m *testing.M) {
-	gs, err := gosn.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"), true)
+	// commands require a config file, so provide one that includes everything
+	configHome, err := os.MkdirTemp("", "sn-dotfiles-config")
 	if err != nil {
 		panic(err)
 	}
 
-	testCacheSession = &cache.Session{
-		Session: &gosn.Session{
-			Debug:             true,
-			Server:            gs.Server,
-			Token:             gs.Token,
-			MasterKey:         gs.MasterKey,
-			RefreshExpiration: gs.RefreshExpiration,
-			RefreshToken:      gs.RefreshToken,
-			AccessToken:       gs.AccessToken,
-			AccessExpiration:  gs.AccessExpiration,
-		},
-		CacheDBPath: "",
+	if err = os.MkdirAll(filepath.Join(configHome, sndotfiles2.SNAppName), 0o700); err != nil {
+		panic(err)
 	}
+
+	if err = os.WriteFile(filepath.Join(configHome, sndotfiles2.SNAppName, "config.yaml"), []byte("include:\n  - '.*'\n"), 0o600); err != nil {
+		panic(err)
+	}
+
+	if err = os.Setenv("XDG_CONFIG_HOME", configHome); err != nil {
+		panic(err)
+	}
+
+	// sign in the same way the CLI does, using SN_EMAIL, SN_PASSWORD and SN_SERVER
+	viper.SetEnvPrefix("sn")
+	_ = viper.BindEnv("email")
+	_ = viper.BindEnv("password")
+
+	sess, _, err := session.GetSession(common.NewHTTPClient(), false, "", os.Getenv("SN_SERVER"), true)
+	if err != nil {
+		panic(err)
+	}
+
+	testCacheSession = &cache.Session{Session: &sess}
 
 	var path string
 
@@ -98,7 +104,12 @@ func TestMain(m *testing.M) {
 	if testCacheSession.DefaultItemsKey.ItemsKey == "" {
 		panic("failed in TestMain due to empty default items key")
 	}
-	os.Exit(m.Run())
+
+	code := m.Run()
+
+	_ = os.RemoveAll(configHome)
+
+	os.Exit(code)
 }
 
 func TestCLIInvalidCommand(t *testing.T) {
@@ -450,4 +461,55 @@ func createTemporaryFiles(fwc map[string]string) error {
 		}
 	}
 	return nil
+}
+
+func TestMissingConfig(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "missing.yaml")
+
+	for _, command := range []string{"status", "sync", "add", "remove", "diff", "wipe"} {
+		t.Run(command, func(t *testing.T) {
+			_, _, err := startCLI([]string{"sn-dotfiles", "--config", missing, command, getHome() + "/.gitconfig"})
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "config file "+missing+" not found")
+		})
+	}
+}
+
+func TestInvalidConfigPattern(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("include:\n  - '('\n"), 0o600))
+
+	_, _, err := startCLI([]string{"sn-dotfiles", "--config", path, "status"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `invalid include pattern "("`)
+}
+
+func TestStatusIncludeRegex(t *testing.T) {
+	home := getHome()
+	applePath := fmt.Sprintf("%s/.fruit/apple", home)
+	lemonPath := fmt.Sprintf("%s/.fruit/lemon", home)
+	require.NoError(t, createTemporaryFiles(map[string]string{
+		applePath: "apple content",
+		lemonPath: "lemon content",
+	}))
+
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+
+	ai := sndotfiles2.AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath, lemonPath}}
+	_, err := sndotfiles2.Add(ai, true)
+	require.NoError(t, err)
+
+	msg, _, err := startCLI([]string{"sn-dotfiles", "--include-regex", `^\.fruit/apple$`, "status"})
+	require.NoError(t, err)
+	require.Contains(t, msg, ".fruit/apple")
+	require.NotContains(t, msg, ".fruit/lemon")
+
+	msg, _, err = startCLI([]string{"sn-dotfiles", "--exclude-regex", `/apple$`, "status"})
+	require.NoError(t, err)
+	require.NotContains(t, msg, ".fruit/apple")
+	require.Contains(t, msg, ".fruit/lemon")
 }

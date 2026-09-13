@@ -66,6 +66,28 @@ If your session is encrypted, you will be prompted for the session key. To speci
 sn-dotfiles --use-session --session-key <key> <command>
 ```
 
+### configuration
+A config file is required. By default it is read from `~/.config/sn-dotfiles/config.yaml` (or `$XDG_CONFIG_HOME/sn-dotfiles/config.yaml`); use `--config <path>` to read another file.
+
+It lists regular expressions that decide which dotfiles are synced:
+```yaml
+include:              # required: sync paths matching at least one of these
+  - '^\.gitconfig$'
+  - '^\.config/fish/'
+exclude:              # optional: never sync paths matching any of these
+  - '\.swp$'
+```
+Patterns are matched against each file's path relative to your home directory, using `/` as the separator, for example `.config/fish/config.fish`. To match everything in a folder, match its path as a prefix, e.g. `^\.config/fish/`.
+
+- `status`, `sync` and `diff` only show and sync matching files. Notes in Standard Notes that don't match are left untouched.
+- `add` skips files that don't match, so it never tracks something that would not be synced.
+- `remove` and `wipe` are not filtered, so anything can still be removed.
+
+To replace either list for a single run, pass the patterns before the command:
+```
+sn-dotfiles --include-regex '^\.config/nvim/' --exclude-regex '\.bak$' status
+```
+
 ## commands
 
 ### add
@@ -73,7 +95,7 @@ example:
 ```
 sn-dotfiles add /home/me/.file1 /home/me/.dir1/file2
 ```
-Add will take a copy of the specified file(s) and convert the files to Notes and each path to a Tag. The above command would generate the following structure:
+Add will take a copy of the specified file(s) and convert the files to Notes and each path to a Tag. Files that don't match the [configuration](#configuration) patterns are skipped. The above command would generate the following structure:
 ```
 dotfiles           <- tag
     - .file1       <- note 
@@ -91,7 +113,8 @@ Sync will compare any dotfiles currently tracked in Standard Notes with their lo
 - Update the remote if the filesystem dotfile is newer
 - Create any missing dotfiles and paths that exist remotely  
 
-The example command would sync the /home/me/dir1 path and the file it contains, but ignore /home/me/.file1. 
+The example command would sync the /home/me/dir1 path and the file it contains, but ignore /home/me/.file1.
+Only files matching the [configuration](#configuration) patterns are synced. 
 
 ### remove
 example:

@@ -3,8 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/common"
+	"github.com/jonhadfield/gosn-v2/session"
 	"os"
 	"path/filepath"
 	"sort"
@@ -90,6 +91,8 @@ func main() {
 }
 
 func startCLI(args []string) (msg string, display bool, err error) {
+	const funcName = "startCLI"
+
 	viper.SetEnvPrefix("sn")
 
 	err = viper.BindEnv("email")
@@ -148,6 +151,9 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.IntFlag{Name: "page-size", Hidden: true, Value: sndotfiles.DefaultPageSize},
 		cli.BoolFlag{Name: "quiet"},
 		cli.BoolFlag{Name: "no-stdout"},
+		cli.StringFlag{Name: "config", Usage: "path to config file (default: ~/.config/sn-dotfiles/config.yaml)"},
+		cli.StringSliceFlag{Name: "include-regex", Usage: "only sync paths matching this pattern, replacing the config file's include list"},
+		cli.StringSliceFlag{Name: "exclude-regex", Usage: "never sync paths matching this pattern, replacing the config file's exclude list"},
 	}
 	app.CommandNotFound = func(c *cli.Context, command string) {
 		_, _ = fmt.Fprintf(c.App.Writer, "\ninvalid command: \"%s\" \n\n", command)
@@ -164,17 +170,26 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession, opts.sessKey, opts.server, opts.debug)
-
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			var filter *sndotfiles.PathFilter
+			filter, err = loadFilter(c)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
 
-			_, msg, err = sndotfiles.Status(&session, opts.home, c.Args(), opts.pageSize, opts.debug, false)
+			var sess cache.Session
+			sess, _, err = cache.GetSession(common.NewHTTPClient(), opts.useSession, opts.sessKey, opts.server, opts.debug)
+			if err != nil {
+				return err
+			}
+
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+			sess.CacheDBPath = cacheDBPath
+
+			_, msg, err = sndotfiles.Status(&sess, opts.home, c.Args(), filter, opts.pageSize, opts.debug, false)
 			return err
 		},
 	}
@@ -202,22 +217,33 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
-				opts.sessKey, opts.server, opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			var filter *sndotfiles.PathFilter
+			filter, err = loadFilter(c)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
+
+			var sess cache.Session
+			sess, _, err = cache.GetSession(common.NewHTTPClient(), opts.useSession,
+				opts.sessKey, opts.server, opts.debug)
+			if err != nil {
+				return err
+			}
+
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+			sess.CacheDBPath = cacheDBPath
 
 			var so sndotfiles.SyncOutput
 			so, err = sndotfiles.Sync(sndotfiles.SNDotfilesSyncInput{
-				Session:  &session,
+				Session:  &sess,
 				Home:     opts.home,
 				Paths:    c.Args(),
 				Exclude:  c.StringSlice("exclude"),
+				Filter:   filter,
 				PageSize: opts.pageSize,
 				Debug:    opts.debug,
 			}, c.GlobalBool("no-stdout"))
@@ -248,6 +274,12 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
+			var filter *sndotfiles.PathFilter
+			filter, err = loadFilter(c)
+			if err != nil {
+				return err
+			}
+
 			if !c.Bool("all") && len(c.Args()) == 0 {
 				msg = "error: either specify paths to add or --all to add everything"
 				_ = cli.ShowCommandHelp(c, "add")
@@ -274,18 +306,22 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				absPaths = append(absPaths, ap)
 			}
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
+			var sess cache.Session
+			sess, _, err = cache.GetSession(common.NewHTTPClient(), opts.useSession,
 				opts.sessKey, opts.server, opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
 
-			ai := sndotfiles.AddInput{Session: &session, Home: opts.home, Paths: absPaths,
-				PageSize: opts.pageSize, All: c.Bool("all")}
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+			sess.CacheDBPath = cacheDBPath
+
+			ai := sndotfiles.AddInput{Session: &sess, Home: opts.home, Paths: absPaths,
+				PageSize: opts.pageSize, All: c.Bool("all"), Filter: filter}
 
 			var ao sndotfiles.AddOutput
 
@@ -316,25 +352,34 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
+			// config is required even though these commands don't filter
+			if _, err = loadFilter(c); err != nil {
+				return err
+			}
+
 			if len(c.Args()) == 0 {
 				msg = "error: paths not specified"
 				_ = cli.ShowCommandHelp(c, "add")
 				return nil
 			}
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
+			var sess cache.Session
+			sess, _, err = cache.GetSession(common.NewHTTPClient(), opts.useSession,
 				opts.sessKey, opts.server,
 				opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
+
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+			sess.CacheDBPath = cacheDBPath
 
 			ri := sndotfiles.RemoveInput{
-				Session:  &session,
+				Session:  &sess,
 				Home:     opts.home,
 				Paths:    c.Args(),
 				PageSize: opts.pageSize,
@@ -364,20 +409,29 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var session cache.Session
-			session, _, err = cache.GetSession(opts.useSession,
-				opts.sessKey, opts.server, opts.debug)
-
-			var cacheDBPath string
-
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
+			var filter *sndotfiles.PathFilter
+			filter, err = loadFilter(c)
 			if err != nil {
 				return err
 			}
 
-			session.CacheDBPath = cacheDBPath
+			var sess cache.Session
+			sess, _, err = cache.GetSession(common.NewHTTPClient(), opts.useSession,
+				opts.sessKey, opts.server, opts.debug)
+			if err != nil {
+				return err
+			}
 
-			_, msg, err = sndotfiles.Diff(&session, opts.home, c.Args(), opts.pageSize, true, c.Bool("no-stdout"))
+			var cacheDBPath string
+
+			cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+
+			sess.CacheDBPath = cacheDBPath
+
+			_, msg, err = sndotfiles.Diff(&sess, opts.home, c.Args(), filter, opts.pageSize, true, c.Bool("no-stdout"))
 
 			return err
 		},
@@ -434,15 +488,15 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				os.Exit(1)
 			}
 			if sAdd {
-				msg, err = gosn.AddSession(opts.server, sessKey, nil, c.Bool("debug"))
+				msg, err = session.AddSession(nil, opts.server, sessKey, nil, opts.debug)
 				return err
 			}
 			if sRemove {
-				msg = gosn.RemoveSession(nil)
+				msg = session.RemoveSession(nil)
 				return nil
 			}
 			if sStatus {
-				msg, err = gosn.SessionStatus(sessKey, nil)
+				msg, err = session.SessionStatus(sessKey, nil)
 			}
 			return err
 		},
@@ -475,17 +529,26 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
+			// config is required even though these commands don't filter
+			if _, err = loadFilter(c); err != nil {
+				return err
+			}
+
 			var email string
-			var session cache.Session
-			session, email, err = cache.GetSession(opts.useSession,
+			var sess cache.Session
+			sess, email, err = cache.GetSession(common.NewHTTPClient(), opts.useSession,
 				opts.sessKey, opts.server,
 				opts.debug)
-			var cacheDBPath string
-			cacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, sndotfiles.SNAppName)
 			if err != nil {
 				return err
 			}
-			session.CacheDBPath = cacheDBPath
+
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+			sess.CacheDBPath = cacheDBPath
 
 			var proceed bool
 			if c.Bool("force") {
@@ -500,7 +563,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(&session, opts.pageSize, c.Bool("no-stdout"))
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(&sess, opts.pageSize, c.Bool("no-stdout"))
 				if err != nil {
 					return err
 				}
@@ -525,7 +588,46 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 	sort.Sort(cli.FlagsByName(app.Flags))
 
-	return msg, display, app.Run(args)
+	err = app.Run(args)
+	if err != nil {
+		err = fmt.Errorf("%v: %v", funcName, err)
+	}
+
+	return msg, display, err
+}
+
+// loadFilter reads the required config file and applies any --include-regex and --exclude-regex overrides
+func loadFilter(c *cli.Context) (*sndotfiles.PathFilter, error) {
+	path := c.GlobalString("config")
+	if path == "" {
+		var err error
+
+		if path, err = sndotfiles.DefaultConfigPath(); err != nil {
+			return nil, err
+		}
+	}
+
+	cfg, err := sndotfiles.LoadConfig(path)
+	if err != nil {
+		return nil, err
+	}
+
+	include, exclude := cfg.Include, cfg.Exclude
+
+	if patterns := c.GlobalStringSlice("include-regex"); len(patterns) > 0 {
+		include = patterns
+	}
+
+	if patterns := c.GlobalStringSlice("exclude-regex"); len(patterns) > 0 {
+		exclude = patterns
+	}
+
+	filter, err := sndotfiles.NewPathFilter(include, exclude)
+	if err != nil {
+		return nil, fmt.Errorf("config file %s: %w", path, err)
+	}
+
+	return filter, nil
 }
 
 func numTrue(in ...bool) (total int) {

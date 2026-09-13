@@ -2,14 +2,14 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"io/ioutil"
 	"log"
 	"os"
-	"time"
 )
 
-func compare(remote tagsWithNotes, home string, paths, exclude []string, debug bool) (diffs []ItemDiff, err error) {
+// compare generates diffs for tracked and untracked paths, keeping only those matching filter
+func compare(remote tagsWithNotes, home string, paths, exclude []string, filter *PathFilter, debug bool) (diffs []ItemDiff, err error) {
 	debugPrint(debug, fmt.Sprintf("compare | Home: %s", home))
 	debugPrint(debug, fmt.Sprintf("compare | %d Paths to include supplied", len(paths)))
 	debugPrint(debug, fmt.Sprintf("compare | %d Paths to Exclude supplied", len(exclude)))
@@ -38,7 +38,7 @@ func compare(remote tagsWithNotes, home string, paths, exclude []string, debug b
 		itemDiffs = append(itemDiffs, findUntracked(paths, remotePaths, home, debug)...)
 	}
 
-	return itemDiffs, err
+	return filter.filterDiffs(itemDiffs), err
 }
 
 func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, debug bool) (itemDiffs []ItemDiff, remotePaths []string, err error) {
@@ -130,18 +130,18 @@ func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bo
 
 	localStr := string(localBytes)
 	if localStr != remote.Content.GetText() {
-		var remoteUpdated time.Time
+		var remoteUpdated int64
 
-		remoteUpdated, err = time.Parse("2006-01-02T15:04:05.000Z", remote.UpdatedAt)
+		remoteUpdated = remote.UpdatedAtTimestamp
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | remote updated UTC): %v", remoteUpdated.UTC()))
+		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | remote updated UTC): %v", remoteUpdated))
 		// if content different and local file was updated more recently
-		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | local updated UTC): %v", localStat.ModTime().UTC().Format("2006-01-02T15:04:05.000Z")))
+		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | local updated UTC): %v", localStat.ModTime().UTC().UnixMicro()))
 
-		if localStat.ModTime().UTC().After(remoteUpdated.UTC()) || localStat.ModTime().UTC() == remoteUpdated.UTC() {
+		if localStat.ModTime().UTC().UnixMicro() >= remoteUpdated {
 			return ItemDiff{
 				tagTitle:    tagTitle,
 				path:        path,

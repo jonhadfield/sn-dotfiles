@@ -3,8 +3,8 @@ package sndotfiles
 import (
 	"fmt"
 	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"os"
 	"time"
 )
@@ -30,6 +30,8 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr boo
 	si := cache.SyncInput{
 		Session: session,
 		Close:   false,
+		// always fetch, as dotfiles may have changed on another machine since the last sync
+		AlwaysSync: true,
 	}
 
 	var err error
@@ -43,9 +45,8 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr boo
 
 	remote, err = getTagsWithNotes(cso.DB, session)
 	if err != nil {
-		return 0, err
-	}
-	if err = cso.DB.Close(); err != nil {
+		_ = cso.DB.Close()
+
 		return 0, err
 	}
 
@@ -65,7 +66,13 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr boo
 	debugPrint(session.Debug, fmt.Sprintf("WipeDotfileTagsAndNotes | removing %d items", len(itemsToRemove)))
 
 	if len(itemsToRemove) == 0 {
-		return 0, nil
+		return 0, cso.DB.Close()
+	}
+
+	if err = cache.SaveItems(session, cso.DB, itemsToRemove, true); err != nil {
+		_ = cso.DB.Close()
+
+		return 0, err
 	}
 
 	pii := cache.SyncInput{

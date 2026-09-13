@@ -47,6 +47,7 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 		home:    si.Home,
 		paths:   si.Paths,
 		exclude: si.Exclude,
+		filter:  si.Filter,
 		debug:   si.Debug,
 		close:   false,
 	})
@@ -63,6 +64,8 @@ func sync(input syncInput) (output syncOutput, err error) {
 	csi := cache.SyncInput{
 		Session: input.session,
 		Close:   false,
+		// always fetch, as dotfiles may have changed on another machine since the last sync
+		AlwaysSync: true,
 	}
 
 	var cso cache.SyncOutput
@@ -89,6 +92,7 @@ func sync(input syncInput) (output syncOutput, err error) {
 		home:    input.home,
 		paths:   input.paths,
 		exclude: input.exclude,
+		filter:  input.filter,
 		debug:   input.debug})
 	if err != nil {
 
@@ -112,8 +116,10 @@ type SNDotfilesSyncInput struct {
 	Session        *cache.Session
 	Home           string
 	Paths, Exclude []string
-	PageSize       int
-	Debug          bool
+	// Filter limits the sync to matching paths; nil syncs everything
+	Filter   *PathFilter
+	PageSize int
+	Debug    bool
 }
 type SyncOutput struct {
 	NoPushed, NoPulled int
@@ -126,7 +132,7 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 	}
 	var itemDiffs []ItemDiff
 
-	itemDiffs, err = compare(si.twn, si.home, si.paths, si.exclude, si.debug)
+	itemDiffs, err = compare(si.twn, si.home, si.paths, si.exclude, si.filter, si.debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
@@ -212,6 +218,7 @@ type syncInput struct {
 	twn            tagsWithNotes
 	home           string
 	paths, exclude []string
+	filter         *PathFilter
 	debug          bool
 	close          bool
 }

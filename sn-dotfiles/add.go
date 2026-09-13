@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/asdine/storm/v3"
 	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/ryanuber/columnize"
 	"io/ioutil"
 	"os"
@@ -70,6 +70,8 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 	si := cache.SyncInput{
 		Session: ai.Session,
 		Close:   false,
+		// always fetch, as dotfiles may have changed on another machine since the last sync
+		AlwaysSync: true,
 	}
 
 	var cso cache.SyncOutput
@@ -94,19 +96,30 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 	ai.Twn = twn
 
 	ao, err = add(cso.DB, ai, noRecurse)
-	si.CacheDB = cso.DB
-	// syncDBwithFS db back to SN
+
+	// pushAndTag closes the db after saving, but not every path gets that far
+	if cErr := cso.DB.Close(); cErr != nil && err == nil {
+		err = cErr
+	}
+
+	if err != nil {
+		return
+	}
+
+	// sync db back to SN
 	si.Close = true
-	cso, err = cache.Sync(si)
+	_, err = cache.Sync(si)
 
 	return
 }
 
 type AddInput struct {
-	Session  *cache.Session
-	Home     string
-	Paths    []string
-	All      bool
+	Session *cache.Session
+	Home    string
+	Paths   []string
+	All     bool
+	// Filter skips paths that would never be synced; nil adds everything
+	Filter   *PathFilter
 	Twn      tagsWithNotes
 	PageSize int
 }
@@ -114,6 +127,7 @@ type AddInput struct {
 type AddOutput struct {
 	TagsPushed, NotesPushed                 int
 	PathsAdded, PathsExisting, PathsInvalid []string
+	PathsSkipped                            []string
 	Msg                                     string
 }
 
@@ -134,7 +148,7 @@ func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 
 	var statusLines []string
 
-	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, err = generateTagItemMap(fsPathsToAdd, ai.Home, ai.Twn)
+	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, ao.PathsSkipped, err = generateTagItemMap(fsPathsToAdd, ai.Home, ai.Twn, ai.Filter)
 	if err != nil {
 		return
 	}
@@ -159,18 +173,27 @@ func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 	return ao, err
 }
 
-func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statusLines []string,
-	tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting []string, err error) {
+func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes, filter *PathFilter) (statusLines []string,
+	tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting, pathsSkipped []string, err error) {
 	tagToItemMap = make(map[string]gosn.Items)
 
 	var added []string
 
 	var existing []string
 
+	var skipped []string
+
 	for _, path := range fsPaths {
 		dir, filename := filepath.Split(path)
 		homeRelPath := stripHome(dir+filename, home)
 		boldHomeRelPath := bold(homeRelPath)
+
+		if !filter.Match(homeRelPath) {
+			skipped = append(skipped, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("skipped by config patterns")))
+			pathsSkipped = append(pathsSkipped, path)
+
+			continue
+		}
 
 		var remoteTagTitleWithoutHome, remoteTagTitle string
 		remoteTagTitleWithoutHome = stripHome(dir, home)
@@ -184,7 +207,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 			continue
 		} else if existingCount > 1 {
 			err = fmt.Errorf("duplicate items found with name '%s' and tag '%s'", filename, remoteTagTitle)
-			return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
+			return statusLines, tagToItemMap, pathsAdded, pathsExisting, pathsSkipped, err
 		}
 		// now add
 		pathsAdded = append(pathsAdded, path)
@@ -201,12 +224,15 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes) (statu
 	}
 
 	statusLines = append(statusLines, existing...)
+	statusLines = append(statusLines, skipped...)
 	statusLines = append(statusLines, added...)
 
-	return statusLines, tagToItemMap, pathsAdded, pathsExisting, err
+	return statusLines, tagToItemMap, pathsAdded, pathsExisting, pathsSkipped, err
 }
 
 func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err error) {
+	const fName = "getLocalFSPaths"
+
 	// check for directories
 	for _, path := range paths {
 		// if path is directory, then walk to generate list of additional Paths
@@ -218,7 +244,7 @@ func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err e
 				}
 				stat, err = os.Stat(path)
 				if err != nil {
-					return err
+					return fmt.Errorf("%v: %v", fName, err)
 				}
 				// if it's a dir, then carry on
 				if stat.IsDir() {
@@ -259,14 +285,15 @@ func getLocalFSPaths(paths []string, noRecurse bool) (finalPaths []string, err e
 	return finalPaths, err
 }
 
-//
 func createItem(path, title string) (item gosn.Note, err error) {
+	const fName = "createItem"
+
 	// read file content
 	var file *os.File
 
 	file, err = os.Open(path)
 	if err != nil {
-		return
+		return item, fmt.Errorf("%v: %v", fName, err)
 	}
 
 	defer func() {
@@ -279,16 +306,15 @@ func createItem(path, title string) (item gosn.Note, err error) {
 
 	localBytes, err = ioutil.ReadAll(file)
 	if err != nil {
-		return
+		return item, fmt.Errorf("%v: %v", fName, err)
 	}
 
 	localStr := string(localBytes)
 	// addToDB item
-	item = gosn.NewNote()
-	itemContent := gosn.NewNoteContent()
-	item.Content = *itemContent
-	item.Content.SetTitle(title)
-	item.Content.SetText(localStr)
+	item, err = gosn.NewNote(title, localStr, nil)
+	if err != nil {
+		return item, fmt.Errorf("%v: %v", fName, err)
+	}
 	// prevent a default editor parsing as html when selected via app
 	item.Content.SetPrefersPlainEditor(true)
 

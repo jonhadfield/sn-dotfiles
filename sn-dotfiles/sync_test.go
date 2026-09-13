@@ -2,8 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -149,12 +149,12 @@ func TestSync(t *testing.T) {
 	}()
 	home := getTemporaryHome()
 
-	fruitTag := createTag("dotfiles.fruit")
-	bananaTag := createTag("dotfiles.fruit.banana")
-	carsTag := createTag("dotfiles.cars")
-	vwTag := createTag("dotfiles.cars.vw")
-	mercedesTag := createTag("dotfiles.cars.mercedes")
-	a250Tag := createTag("dotfiles.cars.mercedes.a250")
+	fruitTag := mustCreateTag("dotfiles.fruit")
+	bananaTag := mustCreateTag("dotfiles.fruit.banana")
+	carsTag := mustCreateTag("dotfiles.cars")
+	vwTag := mustCreateTag("dotfiles.cars.vw")
+	mercedesTag := mustCreateTag("dotfiles.cars.mercedes")
+	a250Tag := mustCreateTag("dotfiles.cars.mercedes.a250")
 	appleNote := createNote("apple", "apple content")
 	yellowNote := createNote("yellow", "yellow content")
 	golfNote := createNote("golf.txt", "golf content")
@@ -218,7 +218,7 @@ func TestSync(t *testing.T) {
 		paths:   []string{},
 		exclude: []string{},
 		debug:   true,
-		close:   true,
+		close:   false,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, so.noPushed)
@@ -236,7 +236,7 @@ func TestSync(t *testing.T) {
 				if note.Content.GetTitle() == "apple" {
 					note.Content.SetText("new note content")
 					note.Content.SetUpdateTime(updateTime)
-					note.UpdatedAt = updateTime.Format("2006-01-02T15:04:05.000Z")
+					note.UpdatedAtTimestamp = updateTime.UnixMicro()
 				}
 				nnotes = append(nnotes, note)
 				x.notes = nnotes
@@ -284,12 +284,12 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 	}()
 	home := getTemporaryHome()
 
-	fruitTag := createTag("dotfiles.fruit")
-	bananaTag := createTag("dotfiles.fruit.banana")
-	carsTag := createTag("dotfiles.cars")
-	vwTag := createTag("dotfiles.cars.vw")
-	mercedesTag := createTag("dotfiles.cars.mercedes")
-	a250Tag := createTag("dotfiles.cars.mercedes.a250")
+	fruitTag := mustCreateTag("dotfiles.fruit")
+	bananaTag := mustCreateTag("dotfiles.fruit.banana")
+	carsTag := mustCreateTag("dotfiles.cars")
+	vwTag := mustCreateTag("dotfiles.cars.vw")
+	mercedesTag := mustCreateTag("dotfiles.cars.mercedes")
+	a250Tag := mustCreateTag("dotfiles.cars.mercedes.a250")
 	appleNote := createNote("apple", "apple content")
 	yellowNote := createNote("yellow", "yellow content")
 	golfNote := createNote("golf.txt", "golf content")
@@ -338,12 +338,12 @@ func TestSyncWithExcludeParentPaths(t *testing.T) {
 
 	home := getTemporaryHome()
 
-	fruitTag := createTag("dotfiles.fruit")
-	bananaTag := createTag("dotfiles.fruit.banana")
-	carsTag := createTag("dotfiles.cars")
-	vwTag := createTag("dotfiles.cars.vw")
-	mercedesTag := createTag("dotfiles.cars.mercedes")
-	a250Tag := createTag("dotfiles.cars.mercedes.a250")
+	fruitTag := mustCreateTag("dotfiles.fruit")
+	bananaTag := mustCreateTag("dotfiles.fruit.banana")
+	carsTag := mustCreateTag("dotfiles.cars")
+	vwTag := mustCreateTag("dotfiles.cars.vw")
+	mercedesTag := mustCreateTag("dotfiles.cars.mercedes")
+	a250Tag := mustCreateTag("dotfiles.cars.mercedes.a250")
 	appleNote := createNote("apple", "apple content")
 	yellowNote := createNote("yellow", "yellow content")
 	golfNote := createNote("golf.txt", "golf content")
