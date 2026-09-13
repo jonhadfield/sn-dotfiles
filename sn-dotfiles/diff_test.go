@@ -2,13 +2,14 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +39,7 @@ func TestNoteInPaths(t *testing.T) {
 }
 
 func testCompareSetup1and2(home string) (twn tagsWithNotes, fwc map[string]string) {
-	fruitTag := createTag("dotfiles.sn-dotfiles-test-fruit")
+	fruitTag := mustCreateTag("dotfiles.sn-dotfiles-test-fruit")
 	appleNote := createNote("apple", "apple content")
 	lemonNote := createNote("lemon", "lemon content")
 	grapeNote := createNote("grape", "grape content")
@@ -54,7 +55,7 @@ func testCompareSetup1and2(home string) (twn tagsWithNotes, fwc map[string]strin
 func TestTagExists(t *testing.T) {
 	tag1Content := gosn.NewTagContent()
 	tag1Content.Title = "rod"
-	tag1 := gosn.NewTag()
+	tag1 := newTestTag()
 	tag1.Content = *tag1Content
 	twn := tagsWithNotes{
 		tagWithNotes{
@@ -70,7 +71,7 @@ func TestDiff(t *testing.T) {
 	home := getTemporaryHome()
 	twn, fwc := testCompareSetup1and2(home)
 	// test when locals do not exist
-	diffs, _, err := diff(twn, home, []string{}, true)
+	diffs, _, err := diff(twn, home, []string{}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.Equal(t, diffs[0].diff, localMissing)
@@ -84,12 +85,12 @@ func TestDiff(t *testing.T) {
 			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
 		}
 	}()
-	diffs, _, err = diff(twn, home, []string{}, true)
+	diffs, _, err = diff(twn, home, []string{}, nil, true)
 	assert.Equal(t, diffs[0].diff, identical)
 	assert.Equal(t, diffs[1].diff, identical)
 	assert.Equal(t, diffs[2].diff, localMissing)
 	// test when no tags with notes supplied
-	diffs, _, err = diff(tagsWithNotes{}, home, []string{}, true)
+	diffs, _, err = diff(tagsWithNotes{}, home, []string{}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 0)
 }
@@ -107,12 +108,12 @@ func TestCompare1(t *testing.T) {
 	}()
 
 	// missing remote and missing local
-	_, err = compare(tagsWithNotes{}, home, []string{"missing-file"}, []string{}, true)
+	_, err = compare(tagsWithNotes{}, home, []string{"missing-file"}, []string{}, nil, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "tags with notes not supplied")
 
 	// existing remote and missing local
-	_, err = compare(twn, home, []string{"missing-file"}, []string{}, true)
+	_, err = compare(twn, home, []string{"missing-file"}, []string{}, nil, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no such file")
 
@@ -120,7 +121,7 @@ func TestCompare1(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)
 	lemonPath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)
 	allPaths := []string{applePath, lemonPath}
-	diffs, err = compare(twn, home, allPaths, []string{}, true)
+	diffs, err = compare(twn, home, allPaths, []string{}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 2)
 	assert.NotEmpty(t, diffs)
@@ -193,7 +194,7 @@ func TestCompare2(t *testing.T) {
 
 	// valid local, valid remote, grape not compare'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.sn-dotfiles-test-fruit/", home)}
-	diffs, err = compare(twn, home, paths, []string{}, true)
+	diffs, err = compare(twn, home, paths, []string{}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.NotEmpty(t, diffs)
@@ -224,7 +225,7 @@ func TestCompare2(t *testing.T) {
 
 func TestCompare3(t *testing.T) {
 	home := getTemporaryHome()
-	fruitTag := createTag("dotfiles")
+	fruitTag := mustCreateTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")
 	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
 	twn := tagsWithNotes{fruitTagWithNotes}
@@ -243,7 +244,7 @@ func TestCompare3(t *testing.T) {
 
 	// valid local, valid remote, grape not compare'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.apple", home)}
-	diffs, err = compare(twn, home, paths, []string{}, true)
+	diffs, err = compare(twn, home, paths, []string{}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, identical, diffs[0].diff)
@@ -263,7 +264,7 @@ func TestCompare3(t *testing.T) {
 
 func TestCompare4(t *testing.T) {
 	home := getTemporaryHome()
-	fruitTag := createTag("dotfiles")
+	fruitTag := mustCreateTag("dotfiles")
 	appleNote := createNote(".apple", "apple content")
 
 	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
@@ -284,7 +285,7 @@ func TestCompare4(t *testing.T) {
 	}()
 
 	paths := []string{fmt.Sprintf("%s/.apple", home), fmt.Sprintf("%s/.banana", home), fmt.Sprintf("%s/.cars", home)}
-	diffs, err = compare(twn, home, paths, []string{}, true)
+	diffs, err = compare(twn, home, paths, []string{}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.Equal(t, identical, diffs[0].diff)
@@ -308,9 +309,11 @@ func createNote(title, content string) gosn.Note {
 	noteContent := gosn.NewNoteContent()
 	noteContent.Title = title
 	noteContent.Text = content
-	note := gosn.NewNote()
+	note := newTestNote()
 	note.Content = *noteContent
 	note.ContentType = "Note"
+	// mimic a note that was last updated on the server now
+	note.UpdatedAtTimestamp = time.Now().UTC().UnixMicro()
 	return note
 }
 
@@ -345,4 +348,31 @@ func createPathWithContent(path, content string) error {
 		return err
 	}
 	return f.Close()
+}
+
+func mustCreateTag(title string) gosn.Tag {
+	tag, err := createTag(title)
+	if err != nil {
+		panic(err)
+	}
+
+	return tag
+}
+
+func newTestNote() gosn.Note {
+	note, err := gosn.NewNote("untitled", "", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return note
+}
+
+func newTestTag() gosn.Tag {
+	tag, err := gosn.NewTag("untitled", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return tag
 }

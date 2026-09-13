@@ -3,8 +3,9 @@ package sndotfiles
 import (
 	"fmt"
 	"github.com/asdine/storm/v3"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
+	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/pkg/errors"
 	"log"
 	"os"
@@ -16,7 +17,11 @@ import (
 
 func debugPrint(show bool, msg string) {
 	if show {
-		log.Println(msg)
+		if len(msg) > maxDebugChars {
+			msg = msg[:maxDebugChars] + "..."
+		}
+
+		log.Println(SNAppName, "|", msg)
 	}
 }
 
@@ -63,7 +68,7 @@ func addToDB(db *storm.DB, session *cache.Session, itemDiffs []ItemDiff, close b
 		return
 	}
 
-	return cache.SaveItems(db, session, dItems, close)
+	return cache.SaveItems(session, db, dItems, close)
 }
 
 func getTagIfExists(name string, twn tagsWithNotes) (tag gosn.Tag, found bool) {
@@ -98,12 +103,18 @@ func createMissingTags(db *storm.DB, session *cache.Session, pt string, twn tags
 	for _, f := range fts {
 		_, found := getTagIfExists(f, twn)
 		if !found {
-			nt := createTag(f)
+			var nt gosn.Tag
+
+			nt, err = createTag(f)
+			if err != nil {
+				return
+			}
+
 			itemsToPush = append(itemsToPush, &nt)
 		}
 	}
 
-	err = cache.SaveItems(db, session, itemsToPush, false)
+	err = cache.SaveItems(session, db, itemsToPush, false)
 	if err != nil {
 		return
 	}
@@ -163,7 +174,11 @@ func pushAndTag(db *storm.DB, session *cache.Session, tim map[string]gosn.Items,
 			}
 		}
 	}
-	err = cache.SaveItems(db, session, itemsToPush, true)
+	if len(itemsToPush) == 0 {
+		return 0, 0, nil
+	}
+
+	err = cache.SaveItems(session, db, itemsToPush, true)
 	tagsPushed, notesPushed = getItemCounts(itemsToPush)
 
 	return tagsPushed, notesPushed, err
@@ -173,14 +188,8 @@ func getItemCounts(items gosn.Items) (tags, notes int) {
 	return len(items.Tags()), len(items.Notes())
 }
 
-func createTag(name string) (tag gosn.Tag) {
-	dfTagContent := gosn.NewTagContent()
-	tag = gosn.NewTag()
-	dfTagContent.Title = name
-	tag.Content = *dfTagContent
-	tag.UUID = gosn.GenUUID()
-
-	return
+func createTag(name string) (gosn.Tag, error) {
+	return gosn.NewTag(name, nil)
 }
 
 func createLocal(itemDiffs []ItemDiff) error {
@@ -534,7 +543,7 @@ func isUnencryptedSession(in string) bool {
 	return false
 }
 
-func ParseSessionString(in string) (email string, session gosn.Session, err error) {
+func ParseSessionString(in string) (email string, sess session.Session, err error) {
 	if !isUnencryptedSession(in) {
 		err = errors.New("session invalid, or encrypted and key was not provided")
 		return
@@ -542,7 +551,7 @@ func ParseSessionString(in string) (email string, session gosn.Session, err erro
 
 	parts := strings.Split(in, ";")
 	email = parts[0]
-	session = gosn.Session{
+	sess = session.Session{
 		Token:  parts[2],
 		Server: parts[1],
 	}

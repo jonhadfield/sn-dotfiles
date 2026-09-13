@@ -6,8 +6,8 @@ import (
 	"github.com/asdine/storm/v3"
 	"github.com/asdine/storm/v3/q"
 	"github.com/fatih/color"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"regexp"
 )
 
@@ -24,6 +24,8 @@ const (
 	SpinnerDelay = 100
 
 	SNAppName = "sn-dotfiles"
+
+	maxDebugChars = 120 // number of characters to display when logging API response body
 )
 
 var (
@@ -42,9 +44,9 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 
 	var notesAndTags cache.Items
 
-	if e := db.Select(q.In("ContentType", []string{"Note", "Tag", "SN|Component", "Extension"})).Find(&notesAndTags); e != nil {
+	if e := db.Select(q.In("ContentType", []string{"Note", "Tag"})).Find(&notesAndTags); e != nil {
 		if e.Error() != "not found" {
-			return
+			return t, e
 		}
 	}
 
@@ -58,7 +60,7 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 
 	var notes gosn.Notes
 
-	r := regexp.MustCompile(fmt.Sprintf("%s.?.*", DotFilesTag))
+	r := regexp.MustCompile(fmt.Sprintf(`^%s(\..+)?$`, regexp.QuoteMeta(DotFilesTag)))
 
 	for _, item := range items {
 		if item.GetContent() != nil && item.GetContentType() == "Tag" && r.MatchString(item.GetContent().(*gosn.TagContent).Title) {
@@ -89,7 +91,6 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 	return t, err
 }
 
-//
 func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 	for _, ir := range itemRefs {
 		if ir.ContentType == "Note" {
@@ -100,7 +101,6 @@ func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {
 	return refIds
 }
 
-//
 type tagWithNotes struct {
 	tag   gosn.Tag
 	notes gosn.Notes

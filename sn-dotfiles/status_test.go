@@ -2,7 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -13,17 +13,17 @@ import (
 
 func TestStatusEmptyTWN(t *testing.T) {
 	home := getTemporaryHome()
-	_, msg, _ := status(tagsWithNotes{}, home, []string{}, true)
+	_, msg, _ := status(tagsWithNotes{}, home, []string{}, nil, true)
 	assert.Equal(t, "no dotfiles being tracked", msg)
 }
 
 func testStatusSetup() (twn tagsWithNotes) {
-	dotfilesTag := createTag("dotfiles")
+	dotfilesTag := mustCreateTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
 	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
 
-	fruitTag := createTag("dotfiles.fruit")
-	fruitBananaTag := createTag("dotfiles.fruit.banana")
+	fruitTag := mustCreateTag("dotfiles.fruit")
+	fruitBananaTag := mustCreateTag("dotfiles.fruit.banana")
 	appleNote := createNote("apple", "apple content")
 	lemonNote := createNote("lemon", "lemon content")
 	grapeNote := createNote("grape", "grape content")
@@ -33,7 +33,7 @@ func testStatusSetup() (twn tagsWithNotes) {
 	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Notes{yellowNote}}
 
 	premiumNote := createNote("premium", "premium content")
-	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
+	carsMercedesA250Tag := mustCreateTag("dotfiles.cars.mercedes.a250")
 	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{premiumNote}}
 
 	twn = tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
@@ -59,7 +59,7 @@ func TestStatus(t *testing.T) {
 	var diffs []ItemDiff
 	var err error
 
-	diffs, _, err = status(twn, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, true)
+	diffs, _, err = status(twn, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
 	var pDiff int
@@ -101,17 +101,17 @@ func TestStatus1(t *testing.T) {
 
 	assert.NoError(t, createTemporaryFiles(fwc))
 
-	dotfilesTag := createTag("dotfiles")
+	dotfilesTag := mustCreateTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
 	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
 
-	awsTag := createTag("dotfiles.aws")
+	awsTag := mustCreateTag("dotfiles.aws")
 	awsConfigNote := createNote("config", "aws config content")
 	awsTagWithNotes := tagWithNotes{tag: awsTag, notes: gosn.Notes{awsConfigNote}}
 
 	twn := tagsWithNotes{dotfilesTagWithNote, awsTagWithNotes}
 
-	diffs, _, err := status(twn, home, []string{gitConfigPath}, true)
+	diffs, _, err := status(twn, home, []string{gitConfigPath}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, ".gitconfig", diffs[0].noteTitle)
@@ -134,12 +134,12 @@ func TestStatus2(t *testing.T) {
 	fwc[premiumPath] = "premium content"
 	assert.NoError(t, createTemporaryFiles(fwc))
 
-	dotfilesTag := createTag("dotfiles")
+	dotfilesTag := mustCreateTag("dotfiles")
 	gitconfigNote := createNote(".gitconfig", "git config content")
 	dotfilesTagWithNote := tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfigNote}}
 
-	fruitTag := createTag("dotfiles.fruit")
-	fruitBananaTag := createTag("dotfiles.fruit.banana")
+	fruitTag := mustCreateTag("dotfiles.fruit")
+	fruitBananaTag := mustCreateTag("dotfiles.fruit.banana")
 	appleNote := createNote("apple", "apple content")
 	fruitTagWithNotes := tagWithNotes{tag: fruitTag, notes: gosn.Notes{appleNote}}
 
@@ -147,7 +147,7 @@ func TestStatus2(t *testing.T) {
 	fruitBananaTagWithNotes := tagWithNotes{tag: fruitBananaTag, notes: gosn.Notes{yellowNote}}
 
 	premiumNote := createNote("premium", "premium content")
-	carsMercedesA250Tag := createTag("dotfiles.cars.mercedes.a250")
+	carsMercedesA250Tag := mustCreateTag("dotfiles.cars.mercedes.a250")
 	carsMercedesA250TagWithNotes := tagWithNotes{tag: carsMercedesA250Tag, notes: gosn.Notes{premiumNote}}
 
 	twn := tagsWithNotes{dotfilesTagWithNote, fruitTagWithNotes, fruitBananaTagWithNotes, carsMercedesA250TagWithNotes}
@@ -177,7 +177,7 @@ func TestStatus2(t *testing.T) {
 
 	var diffs []ItemDiff
 
-	diffs, _, err = status(twn, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, true)
+	diffs, _, err = status(twn, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, nil, true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
 	var pDiff int

@@ -2,7 +2,7 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,9 +19,9 @@ func TestPreflightOverlaps(t *testing.T) {
 	// with overlap
 	noteOne := createNote("noteOne", "hello world")
 	twn := tagsWithNotes{tagWithNotes{
-		tag: createTag("something.else.noteOne"),
+		tag: mustCreateTag("something.else.noteOne"),
 	},
-		tagWithNotes{createTag("something.else"),
+		tagWithNotes{mustCreateTag("something.else"),
 			gosn.Notes{noteOne}},
 	}
 	err := checkNoteTagConflicts(twn)
@@ -32,9 +32,9 @@ func TestPreflightOverlaps1(t *testing.T) {
 	// without overlap
 	noteOne := createNote("noteTwo", "hello world")
 	twn := tagsWithNotes{tagWithNotes{
-		tag: createTag("something.else.noteOne"),
+		tag: mustCreateTag("something.else.noteOne"),
 	},
-		tagWithNotes{createTag("something.else"),
+		tagWithNotes{mustCreateTag("something.else"),
 			gosn.Notes{noteOne}},
 	}
 	err := checkNoteTagConflicts(twn)

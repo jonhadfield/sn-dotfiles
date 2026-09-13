@@ -1,8 +1,10 @@
 package sndotfiles
 
 import (
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/common"
+	"github.com/jonhadfield/gosn-v2/session"
+	"github.com/spf13/viper"
 	"os"
 	"testing"
 )
@@ -10,24 +12,17 @@ import (
 var testCacheSession *cache.Session
 
 func TestMain(m *testing.M) {
-	gs, err := gosn.CliSignIn(os.Getenv("SN_EMAIL"), os.Getenv("SN_PASSWORD"), os.Getenv("SN_SERVER"), true)
+	// sign in the same way the CLI does, using SN_EMAIL, SN_PASSWORD and SN_SERVER
+	viper.SetEnvPrefix("sn")
+	_ = viper.BindEnv("email")
+	_ = viper.BindEnv("password")
+
+	sess, _, err := session.GetSession(common.NewHTTPClient(), false, "", os.Getenv("SN_SERVER"), true)
 	if err != nil {
 		panic(err)
 	}
 
-	testCacheSession = &cache.Session{
-		Session: &gosn.Session{
-			Debug:             true,
-			Server:            gs.Server,
-			Token:             gs.Token,
-			MasterKey:         gs.MasterKey,
-			RefreshExpiration: gs.RefreshExpiration,
-			RefreshToken:      gs.RefreshToken,
-			AccessToken:       gs.AccessToken,
-			AccessExpiration:  gs.AccessExpiration,
-		},
-		CacheDBPath: "",
-	}
+	testCacheSession = &cache.Session{Session: &sess}
 
 	var path string
 

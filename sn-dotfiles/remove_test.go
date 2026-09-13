@@ -2,8 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
@@ -15,7 +15,7 @@ func TestRemoveNoItems(t *testing.T) {
 }
 
 func TestRemoveItemsInvalidSession(t *testing.T) {
-	tag := gosn.NewTag()
+	tag := newTestTag()
 	tagContent := gosn.NewTagContent()
 	tagContent.SetTitle("newTag")
 
@@ -211,7 +211,7 @@ func TestRemoveItems(t *testing.T) {
 		Session: testCacheSession,
 		Home:    home,
 		Paths:   []string{fmt.Sprintf("%s/.fruit", home)},
-		Debug:   false,
+		Debug:   true,
 	}
 
 	ro, err = Remove(ri, true)

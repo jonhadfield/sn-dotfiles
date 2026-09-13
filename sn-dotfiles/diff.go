@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/findexec"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +22,7 @@ const (
 	identical    = "identical"
 )
 
-func Diff(session *cache.Session, home string, paths []string, pageSize int, close, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+func Diff(session *cache.Session, home string, paths []string, filter *PathFilter, pageSize int, close, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(session.Debug, fmt.Sprintf("Diff | %d paths", len(paths)))
 
 	if !session.Debug {
@@ -45,6 +45,8 @@ func Diff(session *cache.Session, home string, paths []string, pageSize int, clo
 	si := cache.SyncInput{
 		Session: session,
 		Close:   false,
+		// always fetch, as dotfiles may have changed on another machine since the last sync
+		AlwaysSync: true,
 	}
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)
@@ -62,7 +64,7 @@ func Diff(session *cache.Session, home string, paths []string, pageSize int, clo
 		return
 	}
 
-	return diff(remote, home, paths, session.Debug)
+	return diff(remote, home, paths, filter, session.Debug)
 }
 
 type ItemDiff struct {
@@ -75,7 +77,7 @@ type ItemDiff struct {
 	local       string
 }
 
-func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []ItemDiff, msg string, err error) {
+func diff(twn tagsWithNotes, home string, paths []string, filter *PathFilter, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("diff | %d remote items", len(twn)))
 
 	err = checkNoteTagConflicts(twn)
@@ -94,7 +96,7 @@ func diff(twn tagsWithNotes, home string, paths []string, debug bool) (diffs []I
 		debugPrint(debug, fmt.Sprintf("diff | calling compare with Paths: %s", strings.Join(paths, ",")))
 	}
 
-	diffs, err = compare(twn, home, paths, []string{}, debug)
+	diffs, err = compare(twn, home, paths, []string{}, filter, debug)
 	if err != nil {
 		return diffs, msg, err
 	}

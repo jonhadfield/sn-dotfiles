@@ -2,8 +2,9 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
+	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
@@ -13,23 +14,23 @@ import (
 )
 
 func TestGetAllTagsWithoutNotes(t *testing.T) {
-	fiestaNote := gosn.NewNote()
+	fiestaNote := newTestNote()
 	fiestaNoteContent := gosn.NewNoteContent()
 	fiestaNoteContent.SetTitle("fiesta")
 	fiestaNote.Content = *fiestaNoteContent
 
-	focusNote := gosn.NewNote()
+	focusNote := newTestNote()
 	focusNoteContent := gosn.NewNoteContent()
 	focusNoteContent.SetTitle("focus")
 	focusNote.Content = *focusNoteContent
 
 	carsTagContent := gosn.NewTagContent()
-	carsTag := gosn.NewTag()
+	carsTag := newTestTag()
 	carsTagContent.SetTitle("cars")
 	carsTag.Content = *carsTagContent
 
 	carsFordTagContent := gosn.NewTagContent()
-	carsFordTag := gosn.NewTag()
+	carsFordTag := newTestTag()
 	carsFordTagContent.SetTitle("cars.ford")
 	carsFordTag.Content = *carsTagContent
 
@@ -83,7 +84,8 @@ func TestDeDupe(t *testing.T) {
 }
 
 func TestCreateTag(t *testing.T) {
-	newTag := createTag("my.test.tag")
+	newTag, err := createTag("my.test.tag")
+	assert.NoError(t, err)
 	assert.Equal(t, "my.test.tag", newTag.Content.GetTitle())
 	assert.Equal(t, "Tag", newTag.ContentType)
 	assert.NotEmpty(t, newTag.UUID)
@@ -131,11 +133,12 @@ func TestCompareIdentical(t *testing.T) {
 func TestCompareRemoteNewer(t *testing.T) {
 	home := getTemporaryHome()
 	err := os.MkdirAll(home, os.ModePerm)
-	// setup
+
 	lemonNote := createNote("lemon", "lemon content 2")
-	lemonNote.UpdatedAt = time.Now().Add(1 * time.Hour).Format("2006-01-02T15:04:05.000Z")
+	lemonNote.UpdatedAtTimestamp = time.Now().Add(1 * time.Hour).UnixMicro()
 	lemonPath := fmt.Sprintf("%s/lemon", home)
 	assert.NoError(t, err)
+
 	var f *os.File
 	f, err = os.Create(lemonPath)
 	assert.NoError(t, err)
@@ -155,7 +158,7 @@ func TestCompareLocalNewer(t *testing.T) {
 	err := os.MkdirAll(home, os.ModePerm)
 	// setup
 	lemonNote := createNote("lemon", "lemon content 2")
-	lemonNote.UpdatedAt = time.Now().Add(-1 * time.Hour).Format("2006-01-02T15:04:05.000Z")
+	lemonNote.UpdatedAtTimestamp = time.Now().Add(-1 * time.Hour).UnixMicro()
 	lemonPath := fmt.Sprintf("%s/lemon", home)
 	assert.NoError(t, err)
 	var f *os.File
@@ -190,25 +193,25 @@ func TestParsesessionString(t *testing.T) {
 	assert.Contains(t, err.Error(), "session invalid")
 	assert.Empty(t, email)
 	assert.NotNil(t, sess)
-	assert.Equal(t, gosn.Session{}, sess)
+	assert.Equal(t, session.Session{}, sess)
 
 	// ensure an invalid session returns an error, no email address, and an empty session
 	email, sess, err = ParseSessionString("someone@example.com;https://sync.standardnotes.org;eyJhbGciOiJKUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c;8f0f5166841ca4dee2975c74cc7e0a4345ce24b54d7b215677a3d540303aa203;6d5ffc6f8e337e6e3ae6d0c3201d9e2d00ffee64672bc4fe1886ad31770c19f1")
 	assert.NoError(t, err)
 	assert.Equal(t, "someone@example.com", email)
 	assert.NotNil(t, sess)
-	assert.Equal(t, gosn.Session{Server: "https://sync.standardnotes.org",
+	assert.Equal(t, session.Session{Server: "https://sync.standardnotes.org",
 		Token: "eyJhbGciOiJKUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"},
 		sess)
 }
 
 func TestNoteWithTagExists(t *testing.T) {
-	note := gosn.NewNote()
+	note := newTestNote()
 	nContent := gosn.NewNoteContent()
 	nContent.SetTitle("apple")
 	note.Content = *nContent
 	tContent := gosn.NewTagContent()
-	tag := gosn.NewTag()
+	tag := newTestTag()
 	tContent.SetTitle("fruit")
 	tag.Content = *tContent
 	twn := tagsWithNotes{

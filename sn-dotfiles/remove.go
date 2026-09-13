@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/ryanuber/columnize"
 	"os"
 	"time"
@@ -26,6 +26,10 @@ type RemoveOutput struct {
 
 // Remove stops tracking local Paths by removing the related notes from SN
 func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
+	if !ri.Session.Valid() {
+		return ro, errors.New("invalid session")
+	}
+
 	if StringInSlice(ri.Home, []string{"/", "/home"}, true) {
 		err = fmt.Errorf("not a good idea to use '%s' as home dir", ri.Home)
 		return
@@ -67,6 +71,8 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	si := cache.SyncInput{
 		Session: ri.Session,
 		Close:   false,
+		// always fetch, as dotfiles may have changed on another machine since the last sync
+		AlwaysSync: true,
 	}
 
 	var cso cache.SyncOutput
@@ -185,7 +191,7 @@ func removeFromDB(input removeInput) error {
 	}
 
 	var err error
-	if err = cache.SaveItems(input.session.CacheDB, input.session, items, true); err != nil {
+	if err = cache.SaveItems(input.session, input.session.CacheDB, items, true); err != nil {
 		return err
 	}
 

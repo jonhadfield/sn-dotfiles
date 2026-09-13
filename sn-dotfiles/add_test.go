@@ -2,8 +2,8 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/jonhadfield/gosn-v2"
 	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/lithammer/shortuuid"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -22,15 +22,7 @@ func removeDB(dbPath string) {
 
 func CleanUp(session cache.Session) error {
 	removeDB(session.CacheDBPath)
-	err := gosn.DeleteContent(&gosn.Session{
-		Token:             testCacheSession.Token,
-		MasterKey:         testCacheSession.MasterKey,
-		Server:            testCacheSession.Server,
-		AccessToken:       testCacheSession.AccessToken,
-		AccessExpiration:  testCacheSession.AccessExpiration,
-		RefreshExpiration: testCacheSession.RefreshExpiration,
-		RefreshToken:      testCacheSession.RefreshToken,
-	})
+	_, err := gosn.DeleteContent(testCacheSession.Session, false)
 	return err
 }
 
