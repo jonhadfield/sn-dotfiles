@@ -1,6 +1,6 @@
 module github.com/jonhadfield/dotfiles-sn
 
-go 1.25.1
+go 1.26.0
 
 require (
 	github.com/asdine/storm/v3 v3.2.1
@@ -8,7 +8,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/fatih/set v0.2.1
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
-	github.com/jonhadfield/gosn-v2 v0.0.0-20260913213348-be38c415f1c6
+	github.com/jonhadfield/gosn-v2 v0.0.0-20260919164852-88d667c2cfe7
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/ryanuber/columnize v2.1.2+incompatible
@@ -25,6 +25,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
@@ -44,12 +45,12 @@ require (
 	github.com/zalando/go-keyring v0.2.8 // indirect
 	go.etcd.io/bbolt v1.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/term v0.43.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/term v0.45.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

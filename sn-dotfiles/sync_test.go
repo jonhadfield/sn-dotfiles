@@ -125,6 +125,10 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 	assert.NoError(t, createPathWithContent(applePath, "apple content updated"))
 	assert.NoError(t, createPathWithContent(lemonPath, "lemon content updated"))
+	// set local times ahead of the remote ones so skew between the local and server clocks can't make the remote look newer
+	updateTime := time.Now().Add(time.Minute * 10)
+	assert.NoError(t, os.Chtimes(applePath, updateTime, updateTime))
+	assert.NoError(t, os.Chtimes(lemonPath, updateTime, updateTime))
 
 	var so SyncOutput
 	so, err = Sync(SNDotfilesSyncInput{
@@ -136,7 +140,7 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 	}, true)
 
 	require.NoError(t, err)
-	require.Equal(t, so.NoPushed, 2)
+	require.Equal(t, 2, so.NoPushed)
 }
 
 // TestSync creates local dotfiles
