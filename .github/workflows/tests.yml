@@ -32,6 +32,5 @@ jobs:
           go mod tidy
           go test -cover -v -failfast -p 1 $(go list ./...)
         env:
-          SN_SERVER: ${{ secrets.SN_SERVER }}
           SN_EMAIL: ${{ secrets.SN_EMAIL }}
           SN_PASSWORD: ${{ secrets.SN_PASSWORD }}
