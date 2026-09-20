@@ -1,18 +1,21 @@
 package sndotfiles
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/asdine/storm/v3"
 	"github.com/jonhadfield/gosn-v2/cache"
 	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/pkg/errors"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 func debugPrint(show bool, msg string) {
@@ -594,4 +597,50 @@ func colourDiff(diff string) string {
 	default:
 		return diff
 	}
+}
+
+// binarySniffBytes is how much of a file is examined to decide whether it is
+// text, matching the size git uses for the same decision.
+const binarySniffBytes = 8000
+
+// isBinaryFile reports whether a file's content cannot survive being stored as
+// note text. A note is encoded as JSON, and encoding/json replaces invalid
+// UTF-8 with U+FFFD rather than failing, so pushing such a file would appear to
+// succeed and return corrupted content on the way back. A NUL byte is the
+// usual marker of a binary file and is treated the same way.
+func isBinaryFile(path string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+
+	defer func() {
+		_ = f.Close()
+	}()
+
+	buf := make([]byte, binarySniffBytes)
+
+	n, err := f.Read(buf)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, err
+	}
+
+	buf = buf[:n]
+
+	if bytes.IndexByte(buf, 0) >= 0 {
+		return true, nil
+	}
+
+	// A rune can straddle the end of the window, so drop a trailing partial one
+	// rather than reporting the file binary because it was cut mid-character.
+	for len(buf) > 0 && !utf8.Valid(buf) {
+		r, size := utf8.DecodeLastRune(buf)
+		if r != utf8.RuneError || size != 1 || len(buf) < binarySniffBytes {
+			break
+		}
+
+		buf = buf[:len(buf)-1]
+	}
+
+	return !utf8.Valid(buf), nil
 }

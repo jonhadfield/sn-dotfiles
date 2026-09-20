@@ -264,6 +264,7 @@ Wipe deletes every dotfiles note and tag in the account. It shows the account em
 - **Only files under your home directory** whose path relative to it starts with a dot. Anything else is rejected with `is not a valid dotfile path`.
 - **Symlinks are an error, not a skip**: `symlink not supported`. The same goes for sockets, devices, named pipes and other irregular files.
 - **Files over 10MB**, rejected with `file too large`.
+- **Binary files**, reported as `skipped: binary file`. A note stores text, so a binary file would come back different to how it went in. `add` leaves it untracked, and `sync` skips a tracked file that has since become binary, rather than overwriting the note with content it cannot store. A file counts as binary if its first 8000 bytes contain a NUL byte or are not valid UTF-8.
 - **Anything not matching your include patterns**, or matching an exclude pattern.
 
 Two things worth knowing about what a pull does:
