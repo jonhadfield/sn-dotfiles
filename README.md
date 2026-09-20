@@ -21,19 +21,49 @@ I wanted a simple way of securely storing, managing, and syncing my dotfiles acr
 
 ## installation
 
-### macOS
+On macOS and linux, using [homebrew](https://brew.sh):
 
-```
-$ curl -L -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_darwin_amd64  
-$ install ./sn-dotfiles_darwin_amd64 /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles_darwin_amd64
+```bash
+brew install jonhadfield/tap/sn-dotfiles
 ```
 
-### Linux
+That installs the `sn-dotfiles` binary and clears the macOS quarantine flag for
+you.
 
+**Or in one line**, which picks the right archive for your platform, verifies
+its checksum against the published list, and installs to `/usr/local/bin`
+(prompting for sudo only for that last step):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jonhadfield/sn-dotfiles/main/install.sh | sh
 ```
-$ curl -L -O https://github.com/jonhadfield/sn-dotfiles/releases/latest/download/sn-dotfiles_linux_amd64  
-$ sudo install ./sn-dotfiles_linux_amd64 /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles_linux_amd64
-``` 
+
+Set `BIN_DIR` to install somewhere else, or `VERSION` to pin a release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jonhadfield/sn-dotfiles/main/install.sh | BIN_DIR="$HOME/.local/bin" sh
+curl -fsSL https://raw.githubusercontent.com/jonhadfield/sn-dotfiles/main/install.sh | VERSION=0.2.0 sh
+```
+
+If you would rather read it before running it, [install.sh](install.sh) is in
+this repository.
+
+**Or download the latest release** from the
+[releases page](https://github.com/jonhadfield/sn-dotfiles/releases) and install
+the binary from the archive matching your platform:
+
+```bash
+tar -xzf sn-dotfiles_Darwin_universal.tar.gz sn-dotfiles
+sudo install -m 755 ./sn-dotfiles /usr/local/bin/sn-dotfiles && rm ./sn-dotfiles
+```
+
+The darwin binaries are not signed. A browser download is quarantined, so
+Gatekeeper refuses to run it; homebrew and the install script both clear that
+flag, but for a browser download clear it yourself:
+
+```bash
+xattr -d com.apple.quarantine /usr/local/bin/sn-dotfiles
+```
 
 ## running
 
