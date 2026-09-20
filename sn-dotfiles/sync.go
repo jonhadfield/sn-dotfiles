@@ -145,7 +145,7 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 		return
 	}
 
-	var itemsToPush, itemsToPull, itemsUnchanged []ItemDiff
+	var itemsToPush, itemsToPull, itemsUnchanged, itemsBinary []ItemDiff
 
 	var itemsToSync bool
 	for _, itemDiff := range itemDiffs {
@@ -157,6 +157,22 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 
 		switch itemDiff.diff {
 		case localNewer:
+			// A tracked file can become binary after it was added, and note
+			// content is text, so pushing it would store corrupted content.
+			var binary bool
+
+			binary, err = isBinaryFile(itemDiff.path)
+			if err != nil {
+				return so, err
+			}
+
+			if binary {
+				debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | skipping binary: %s", itemDiff.homeRelPath))
+				itemsBinary = append(itemsBinary, itemDiff)
+
+				continue
+			}
+
 			//addToDB
 			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | local %s is newer", itemDiff.homeRelPath))
 			itemDiff.remote.Content.SetText(itemDiff.local)
@@ -183,14 +199,21 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 	if si.dryRun {
 		so.noPushed = len(itemsToPush)
 		so.noPulled = len(itemsToPull)
-		so.msg = dryRunMsg(itemsToPush, itemsToPull, itemsUnchanged)
+		so.msg = dryRunMsg(itemsToPush, itemsToPull, itemsUnchanged, itemsBinary)
 
 		return so, nil
 	}
 
 	// check items to sync
 	if !itemsToSync {
+		if len(itemsBinary) > 0 {
+			so.msg = fmt.Sprint(columnize.SimpleFormat(binaryLines(itemsBinary)))
+
+			return
+		}
+
 		so.msg = fmt.Sprint(bold("nothing to do"))
+
 		return
 	}
 
@@ -224,19 +247,33 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 		res = append(res, line)
 	}
 
+	res = append(res, binaryLines(itemsBinary)...)
+
 	so.msg = fmt.Sprint(columnize.SimpleFormat(res))
 
 	return so, err
 }
 
+// binaryLines renders the paths a sync left alone because their content is not
+// text, so they are not silently missing from its output.
+func binaryLines(itemsBinary []ItemDiff) []string {
+	lines := make([]string, 0, len(itemsBinary))
+
+	for _, item := range itemsBinary {
+		lines = append(lines, fmt.Sprintf("%s | %s\n", bold(addDot(item.homeRelPath)), yellow("skipped: binary file")))
+	}
+
+	return lines
+}
+
 // dryRunMsg renders what a real sync would have done to each path, followed by
 // a summary making it plain that nothing was written.
-func dryRunMsg(itemsToPush, itemsToPull, itemsUnchanged []ItemDiff) string {
-	if len(itemsToPush)+len(itemsToPull)+len(itemsUnchanged) == 0 {
+func dryRunMsg(itemsToPush, itemsToPull, itemsUnchanged, itemsBinary []ItemDiff) string {
+	if len(itemsToPush)+len(itemsToPull)+len(itemsUnchanged)+len(itemsBinary) == 0 {
 		return fmt.Sprint(bold("nothing to do"))
 	}
 
-	lines := make([]string, 0, len(itemsToPush)+len(itemsToPull)+len(itemsUnchanged))
+	lines := make([]string, 0, len(itemsToPush)+len(itemsToPull)+len(itemsUnchanged)+len(itemsBinary))
 
 	for _, item := range itemsToPush {
 		lines = append(lines, fmt.Sprintf("%s | %s", bold(addDot(item.homeRelPath)), green("would push")))
@@ -248,6 +285,10 @@ func dryRunMsg(itemsToPush, itemsToPull, itemsUnchanged []ItemDiff) string {
 
 	for _, item := range itemsUnchanged {
 		lines = append(lines, fmt.Sprintf("%s | %s", bold(addDot(item.homeRelPath)), "unchanged"))
+	}
+
+	for _, item := range itemsBinary {
+		lines = append(lines, fmt.Sprintf("%s | %s", bold(addDot(item.homeRelPath)), yellow("skipped: binary file")))
 	}
 
 	summary := fmt.Sprintf("dry run: nothing was written (%d to push, %d to pull)",

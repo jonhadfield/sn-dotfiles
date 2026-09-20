@@ -7,6 +7,7 @@ import (
 	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/stretchr/testify/require"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -238,4 +239,41 @@ func TestPushNoItems(t *testing.T) {
 	err = addToDB(cso.DB, testCacheSession, []ItemDiff{}, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no items")
+}
+
+func TestIsBinaryFile(t *testing.T) {
+	dir := t.TempDir()
+
+	// a multi-byte rune straddling the end of the sniff window must not be read
+	// as binary just because it was cut in half
+	straddling := strings.Repeat("a", binarySniffBytes-1) + "é" + strings.Repeat("a", 100)
+
+	cases := []struct {
+		name    string
+		content []byte
+		binary  bool
+	}{
+		{name: "plain text", content: []byte("export EDITOR=vim\n"), binary: false},
+		{name: "empty", content: []byte{}, binary: false},
+		{name: "utf8 text", content: []byte("# ~/.config with héllo and 日本語\n"), binary: false},
+		{name: "rune straddling sniff window", content: []byte(straddling), binary: false},
+		{name: "nul byte", content: []byte("text\x00more"), binary: true},
+		{name: "invalid utf8", content: []byte{0x7f, 'E', 'L', 'F', 0xff, 0xfe}, binary: true},
+		// only the start of a file is examined, as git does
+		{name: "binary past the sniff window", content: append([]byte(strings.Repeat("a", binarySniffBytes+10)), 0x00), binary: false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			path := fmt.Sprintf("%s/%s", dir, strings.ReplaceAll(c.name, " ", "_"))
+			require.NoError(t, os.WriteFile(path, c.content, 0o600))
+
+			binary, err := isBinaryFile(path)
+			require.NoError(t, err)
+			require.Equal(t, c.binary, binary)
+		})
+	}
+
+	_, err := isBinaryFile(fmt.Sprintf("%s/does-not-exist", dir))
+	require.Error(t, err)
 }

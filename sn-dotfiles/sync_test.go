@@ -143,6 +143,52 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 	require.Equal(t, 2, so.NoPushed)
 }
 
+// TestSyncSkipsBinary checks that a tracked file which has become binary is
+// not pushed, as note content is text and would be stored corrupted
+func TestSyncSkipsBinary(t *testing.T) {
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NotEmpty(t, testCacheSession.AccessToken)
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.apple", home)
+	fwc[applePath] = "apple content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	ao, err := Add(ai, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(ao.PathsAdded))
+
+	// the tracked file is replaced with binary content, newer than the remote
+	require.NoError(t, os.WriteFile(applePath, []byte{0x7f, 'E', 'L', 'F', 0x00, 0x01}, 0o600))
+	updateTime := time.Now().Add(time.Minute * 10)
+	require.NoError(t, os.Chtimes(applePath, updateTime, updateTime))
+
+	var so SyncOutput
+	so, err = Sync(SNDotfilesSyncInput{
+		Session: testCacheSession,
+		Home:    home,
+		Paths:   []string{applePath},
+		Exclude: []string{},
+		Debug:   true,
+	}, true)
+
+	require.NoError(t, err)
+	require.Equal(t, 0, so.NoPushed)
+	require.Equal(t, 0, so.NoPulled)
+	require.Contains(t, so.Msg, "binary")
+
+	// the local file is left as it is, rather than overwritten by the remote
+	content, err := os.ReadFile(applePath)
+	require.NoError(t, err)
+	require.Equal(t, []byte{0x7f, 'E', 'L', 'F', 0x00, 0x01}, content)
+}
+
 // TestSyncDryRunWritesNothing checks that a dry run reports the push a real
 // sync would make, and leaves it for that sync to actually make
 func TestSyncDryRunWritesNothing(t *testing.T) {

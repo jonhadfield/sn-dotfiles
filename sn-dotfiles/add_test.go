@@ -109,6 +109,36 @@ func TestAddOne(t *testing.T) {
 	assert.Equal(t, 0, len(ao.PathsInvalid))
 }
 
+// TestAddSkipsBinary checks a binary file is left untracked, as note content is
+// text and would come back corrupted
+func TestAddSkipsBinary(t *testing.T) {
+	var err error
+	defer func() {
+		if err = CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	textPath := fmt.Sprintf("%s/.apple", home)
+	fwc[textPath] = "apple content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+
+	binaryPath := fmt.Sprintf("%s/.binary", home)
+	assert.NoError(t, os.WriteFile(binaryPath, []byte{0x7f, 'E', 'L', 'F', 0x00, 0x01}, 0o600))
+
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{textPath, binaryPath}}
+
+	var ao AddOutput
+	ao, err = Add(ai, true)
+	assert.NoError(t, err)
+
+	assert.Equal(t, []string{textPath}, ao.PathsAdded)
+	assert.Equal(t, []string{binaryPath}, ao.PathsSkipped)
+	assert.Contains(t, ao.Msg, "binary")
+}
+
 func TestAddTwoSameTag(t *testing.T) {
 	var err error
 	defer func() {

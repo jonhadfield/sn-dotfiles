@@ -195,6 +195,22 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes, filter
 			continue
 		}
 
+		var binary bool
+
+		binary, err = isBinaryFile(path)
+		if err != nil {
+			return statusLines, tagToItemMap, pathsAdded, pathsExisting, pathsSkipped, err
+		}
+
+		// Note content is stored as text, so a binary file would come back
+		// corrupted rather than as it went in.
+		if binary {
+			skipped = append(skipped, fmt.Sprintf("%s | %s", boldHomeRelPath, yellow("skipped: binary file")))
+			pathsSkipped = append(pathsSkipped, path)
+
+			continue
+		}
+
 		var remoteTagTitleWithoutHome, remoteTagTitle string
 		remoteTagTitleWithoutHome = stripHome(dir, home)
 		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
