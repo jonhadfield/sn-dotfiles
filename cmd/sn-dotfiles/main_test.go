@@ -145,11 +145,25 @@ func TestStripHome(t *testing.T) {
 
 func TestIsValidDotfilePath(t *testing.T) {
 	home := getHome()
-	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test", home)))
-	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test/file.txt", home)))
-	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test/test2/file.txt", home)))
-	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test/test2/file.txt", home)))
-	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test", home)))
+	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test", home), home))
+	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test/file.txt", home), home))
+	assert.True(t, isValidDotfilePath(fmt.Sprintf("%s/.test/test2/file.txt", home), home))
+	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test/test2/file.txt", home), home))
+	assert.False(t, isValidDotfilePath(fmt.Sprintf("%s/test", home), home))
+}
+
+// TestIsValidDotfilePathHonoursHome checks paths are judged against the home
+// the caller passes, which is what --home-dir sets, rather than the real one
+func TestIsValidDotfilePathHonoursHome(t *testing.T) {
+	otherHome := filepath.Join(os.TempDir(), "sn-dotfiles-home")
+
+	// a dotfile under the given home is valid even though it is not under $HOME
+	assert.True(t, isValidDotfilePath(filepath.Join(otherHome, ".zshrc"), otherHome))
+	assert.True(t, isValidDotfilePath(filepath.Join(otherHome, ".config", "fish", "config.fish"), otherHome))
+
+	// and a path outside that home is not, whatever the real home is
+	assert.False(t, isValidDotfilePath(filepath.Join(getHome(), ".zshrc"), otherHome))
+	assert.False(t, isValidDotfilePath(filepath.Join(otherHome, "notadotfile"), otherHome))
 }
 
 func TestAdd(t *testing.T) {

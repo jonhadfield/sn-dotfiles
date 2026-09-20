@@ -51,9 +51,10 @@ func getOpts(c *cli.Context) (out configOptsOutput, err error) {
 		out.server = viper.GetString("server")
 	}
 
-	out.cacheDBDir = viper.GetString("cachedb_dir")
-	if out.cacheDBDir != "" {
-		out.cacheDBDir = c.GlobalString("cachedb-dir")
+	// the flag wins, then SN_CACHEDB_DIR, then the default the cache picks
+	out.cacheDBDir = c.GlobalString("cachedb-dir")
+	if out.cacheDBDir == "" {
+		out.cacheDBDir = viper.GetString("cachedb_dir")
 	}
 
 	out.display = true
@@ -120,6 +121,11 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		return "", false, err
 	}
 
+	err = viper.BindEnv("cachedb_dir")
+	if err != nil {
+		return "", false, err
+	}
+
 	if tag != "" && buildDate != "" {
 		versionOutput = fmt.Sprintf("[%s-%s] %s UTC", tag, sha, buildDate)
 	} else {
@@ -152,6 +158,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.BoolFlag{Name: "quiet"},
 		cli.BoolFlag{Name: "no-stdout"},
 		cli.StringFlag{Name: "config", Usage: "path to config file (default: ~/.config/sn-dotfiles/config.yaml)"},
+		cli.StringFlag{Name: "cachedb-dir", Usage: "directory holding the local cache database (default: ~/.sn-dotfiles)"},
 		cli.StringSliceFlag{Name: "include-regex", Usage: "only sync paths matching this pattern, replacing the config file's include list"},
 		cli.StringSliceFlag{Name: "exclude-regex", Usage: "never sync paths matching this pattern, replacing the config file's exclude list"},
 	}
@@ -304,7 +311,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				if err != nil {
 					return err
 				}
-				if !isValidDotfilePath(ap) {
+				if !isValidDotfilePath(ap, opts.home) {
 					msg = fmt.Sprintf("\"%s\" is not a valid dotfile path", path)
 					return nil
 				}
@@ -677,9 +684,9 @@ func getHome() string {
 	return home
 }
 
-func isValidDotfilePath(path string) bool {
-	home := getHome()
-
+// isValidDotfilePath reports whether path is a dotfile under home. home comes
+// from the caller rather than the environment so that --home-dir is honoured.
+func isValidDotfilePath(path, home string) bool {
 	dir, filename := filepath.Split(path)
 
 	homeRelPath, err := stripHome(dir+filename, home)
