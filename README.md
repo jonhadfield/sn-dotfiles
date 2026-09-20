@@ -146,6 +146,20 @@ Sync will compare any dotfiles currently tracked in Standard Notes with their lo
 The example command would sync the /home/me/dir1 path and the file it contains, but ignore /home/me/.file1.
 Only files matching the [configuration](#configuration) patterns are synced. 
 
+To see what a sync would do before letting it do anything, add `--dry-run`:
+```
+sn-dotfiles sync --dry-run
+```
+```
+.zshrc      | would push
+.vimrc      | would pull
+.gitconfig  | unchanged
+
+dry run: nothing was written (1 to push, 1 to pull)
+```
+It compares exactly as a real sync does, honouring `--exclude`, any paths you
+name and the configuration patterns, then stops before writing anything.
+
 ### remove
 example:
 ```

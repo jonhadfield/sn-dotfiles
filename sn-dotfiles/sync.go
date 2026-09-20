@@ -50,6 +50,7 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 		filter:  si.Filter,
 		debug:   si.Debug,
 		close:   false,
+		dryRun:  si.DryRun,
 	})
 
 	return SyncOutput{
@@ -93,7 +94,8 @@ func sync(input syncInput) (output syncOutput, err error) {
 		paths:   input.paths,
 		exclude: input.exclude,
 		filter:  input.filter,
-		debug:   input.debug})
+		debug:   input.debug,
+		dryRun:  input.dryRun})
 	if err != nil {
 
 		return
@@ -120,6 +122,8 @@ type SNDotfilesSyncInput struct {
 	Filter   *PathFilter
 	PageSize int
 	Debug    bool
+	// DryRun reports what a sync would do without writing anything
+	DryRun bool
 }
 type SyncOutput struct {
 	NoPushed, NoPulled int
@@ -141,7 +145,7 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 		return
 	}
 
-	var itemsToPush, itemsToPull []ItemDiff
+	var itemsToPush, itemsToPull, itemsUnchanged []ItemDiff
 
 	var itemsToSync bool
 	for _, itemDiff := range itemDiffs {
@@ -168,7 +172,20 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | remote %s is newer", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
+		case identical:
+			// only reported by a dry run, which lists what it leaves alone
+			itemsUnchanged = append(itemsUnchanged, itemDiff)
 		}
+	}
+
+	// A dry run answers "what would sync do" from the same comparison a real
+	// sync acts on, so it has to return before anything is written.
+	if si.dryRun {
+		so.noPushed = len(itemsToPush)
+		so.noPulled = len(itemsToPull)
+		so.msg = dryRunMsg(itemsToPush, itemsToPull, itemsUnchanged)
+
+		return so, nil
 	}
 
 	// check items to sync
@@ -212,6 +229,33 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 	return so, err
 }
 
+// dryRunMsg renders what a real sync would have done to each path, followed by
+// a summary making it plain that nothing was written.
+func dryRunMsg(itemsToPush, itemsToPull, itemsUnchanged []ItemDiff) string {
+	if len(itemsToPush)+len(itemsToPull)+len(itemsUnchanged) == 0 {
+		return fmt.Sprint(bold("nothing to do"))
+	}
+
+	lines := make([]string, 0, len(itemsToPush)+len(itemsToPull)+len(itemsUnchanged))
+
+	for _, item := range itemsToPush {
+		lines = append(lines, fmt.Sprintf("%s | %s", bold(addDot(item.homeRelPath)), green("would push")))
+	}
+
+	for _, item := range itemsToPull {
+		lines = append(lines, fmt.Sprintf("%s | %s", bold(addDot(item.homeRelPath)), green("would pull")))
+	}
+
+	for _, item := range itemsUnchanged {
+		lines = append(lines, fmt.Sprintf("%s | %s", bold(addDot(item.homeRelPath)), "unchanged"))
+	}
+
+	summary := fmt.Sprintf("dry run: nothing was written (%d to push, %d to pull)",
+		len(itemsToPush), len(itemsToPull))
+
+	return fmt.Sprintf("%s\n\n%s", columnize.SimpleFormat(lines), bold(summary))
+}
+
 type syncInput struct {
 	db             *storm.DB
 	session        *cache.Session
@@ -221,6 +265,7 @@ type syncInput struct {
 	filter         *PathFilter
 	debug          bool
 	close          bool
+	dryRun         bool
 }
 
 type syncOutput struct {
