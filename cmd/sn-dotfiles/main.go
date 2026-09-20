@@ -202,9 +202,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				Name:  "exclude",
 				Usage: "exlude path from sync",
 			},
+			cli.BoolFlag{
+				Name:  "dry-run",
+				Usage: "show what sync would do, without changing anything",
+			},
 		},
 		BashComplete: func(c *cli.Context) {
-			syncTasks := []string{"--exclude"}
+			syncTasks := []string{"--exclude", "--dry-run"}
 			for _, t := range syncTasks {
 				fmt.Println(t)
 			}
@@ -246,6 +250,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				Filter:   filter,
 				PageSize: opts.pageSize,
 				Debug:    opts.debug,
+				DryRun:   c.Bool("dry-run"),
 			}, c.GlobalBool("no-stdout"))
 
 			if err != nil {

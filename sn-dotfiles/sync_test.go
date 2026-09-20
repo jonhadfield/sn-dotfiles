@@ -143,6 +143,65 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 	require.Equal(t, 2, so.NoPushed)
 }
 
+// TestSyncDryRunWritesNothing checks that a dry run reports the push a real
+// sync would make, and leaves it for that sync to actually make
+func TestSyncDryRunWritesNothing(t *testing.T) {
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NotEmpty(t, testCacheSession.AccessToken)
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.apple", home)
+	fwc[applePath] = "apple content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	ao, err := Add(ai, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(ao.PathsAdded))
+
+	assert.NoError(t, createPathWithContent(applePath, "apple content updated"))
+	// set the local time ahead of the remote one so skew between the local and server clocks can't make the remote look newer
+	updateTime := time.Now().Add(time.Minute * 10)
+	assert.NoError(t, os.Chtimes(applePath, updateTime, updateTime))
+
+	si := SNDotfilesSyncInput{
+		Session: testCacheSession,
+		Home:    home,
+		Paths:   []string{applePath},
+		Exclude: []string{},
+		Debug:   true,
+	}
+
+	si.DryRun = true
+
+	var dry SyncOutput
+	dry, err = Sync(si, true)
+	require.NoError(t, err)
+	require.Equal(t, 1, dry.NoPushed)
+	require.Equal(t, 0, dry.NoPulled)
+	require.Contains(t, dry.Msg, "would push")
+	require.Contains(t, dry.Msg, "dry run")
+
+	// the local file is untouched by a dry run
+	content, err := os.ReadFile(applePath)
+	require.NoError(t, err)
+	require.Equal(t, "apple content updated", string(content))
+
+	// and the remote still needs the push, which only a real sync makes
+	si.DryRun = false
+
+	var wet SyncOutput
+	wet, err = Sync(si, true)
+	require.NoError(t, err)
+	require.Equal(t, 1, wet.NoPushed)
+	require.Contains(t, wet.Msg, "pushed")
+}
+
 // TestSync creates local dotfiles
 func TestSync(t *testing.T) {
 	assert.NotEmpty(t, testCacheSession.AccessToken)
