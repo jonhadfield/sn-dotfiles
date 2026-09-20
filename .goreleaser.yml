@@ -1,3 +1,8 @@
+# GoReleaser configuration - v2 syntax
+# Documentation: https://goreleaser.com
+
+version: 2
+
 project_name: sn-dotfiles
 
 env:
@@ -9,9 +14,20 @@ before:
   hooks:
     - make clean
     - go mod tidy
+    - go mod download
+
+# Universal macOS binary, so the cask serves both architectures from one archive
+universal_binaries:
+  - id: sn-dotfiles-macos-universal
+    ids:
+      - sn-dotfiles-macos-amd64
+      - sn-dotfiles-macos-arm64
+    name_template: "sn-dotfiles"
+    replace: true
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 builds:
-  - id: sn-dotfiles-macos
+  - id: sn-dotfiles-macos-amd64
     main: ./cmd/sn-dotfiles/
     binary: sn-dotfiles
     goos:
@@ -21,28 +37,15 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - "-s -w -X main.version={{ .Version }} -X main.sha={{ .ShortCommit }} -X main.buildDate={{ .Date }} -X main.tag={{ .Tag }}"
-    hooks:
-      post: |
-        sh -c '
-        cat > /tmp/sn-dotfiles-gon-amd64.hcl << EOF
-        source = ["./dist/sn-dotfiles-macos_darwin_amd64/sn-dotfiles"]
-        bundle_id = "uk.co.lessknown.sn-dotfiles"
-        apple_id {
-          username = "jon@lessknown.co.uk"
-          password = "@env:AC_PASSWORD"
-        }
-        sign {
-          application_identity = "Developer ID Application: Jonathan Hadfield (VBZY8FBYR5)"
-        }
-        zip {
-          output_path = "./dist/sn-dotfiles_Darwin_amd64.zip"
-        }
-        EOF
-        gon /tmp/sn-dotfiles-gon-amd64.hcl
-        '
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.sha={{ .ShortCommit }}
+      - -X main.buildDate={{ .Date }}
+      - -X main.tag={{ .Tag }}
+    env:
+      - CGO_ENABLED=0
 
-  - id: sn-dotfiles-macos-arm
+  - id: sn-dotfiles-macos-arm64
     main: ./cmd/sn-dotfiles/
     binary: sn-dotfiles
     goos:
@@ -52,26 +55,14 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - "-s -w -X main.version={{ .Version }} -X main.sha={{ .ShortCommit }} -X main.buildDate={{ .Date }} -X main.tag={{ .Tag }}"
-    hooks:
-      post: |
-        sh -c '
-        cat > /tmp/sn-dotfiles-gon-arm64.hcl << EOF
-        source = ["./dist/sn-dotfiles-macos-arm_darwin_arm64/sn-dotfiles"]
-        bundle_id = "uk.co.lessknown.sn-dotfiles"
-        apple_id {
-          username = "jon@lessknown.co.uk"
-          password = "@env:AC_PASSWORD"
-        }
-        sign {
-          application_identity = "Developer ID Application: Jonathan Hadfield (VBZY8FBYR5)"
-        }
-        zip {
-          output_path = "./dist/sn-dotfiles_Darwin_arm64.zip"
-        }
-        EOF
-        gon /tmp/sn-dotfiles-gon-arm64.hcl
-        '
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.sha={{ .ShortCommit }}
+      - -X main.buildDate={{ .Date }}
+      - -X main.tag={{ .Tag }}
+    env:
+      - CGO_ENABLED=0
+
   - id: sn-dotfiles
     main: ./cmd/sn-dotfiles/
     binary: sn-dotfiles
@@ -84,47 +75,89 @@ builds:
       - amd64
       - arm64
     goarm:
-      - 6
-      - 7
+      - "6"
+      - "7"
     flags:
       - -trimpath
     ldflags:
-      - "-s -w -X main.version={{ .Version }} -X main.sha={{ .ShortCommit }} -X main.buildDate={{ .Date }} -X main.tag={{ .Tag }}"
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.sha={{ .ShortCommit }}
+      - -X main.buildDate={{ .Date }}
+      - -X main.tag={{ .Tag }}
+    env:
+      - CGO_ENABLED=0
 
 archives:
-  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    replacements:
-      linux: Linux
-      386: i386
-      amd64: x86_64
-    builds:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    ids:
       - sn-dotfiles
-    format: tar.gz
     files:
-      - none*
+      - LICENSE
+      - README.md
+
+  - id: macos
+    name_template: "{{ .ProjectName }}_Darwin_universal"
+    ids:
+      - sn-dotfiles-macos-universal
+    files:
+      - LICENSE
+      - README.md
+
+homebrew_casks:
+  - name: sn-dotfiles
+    binaries: [sn-dotfiles]
+    repository:
+      owner: jonhadfield
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/jonhadfield/sn-dotfiles
+    description: Manage your dotfiles with Standard Notes
+    # The darwin binaries are not signed, and casks set the quarantine flag on
+    # download, so Gatekeeper blocks the first run. Clear it here.
+    #
+    # goreleaser's hooks.post.install emits a `postflight` block, which
+    # Homebrew 7 deprecates in favour of `postflight_steps`, warning on every
+    # install and update. That is not a rename: postflight_steps takes
+    # declarative steps rather than arbitrary Ruby, so the body is rewritten
+    # and injected through custom_block instead. Revert to hooks once
+    # goreleaser emits postflight_steps itself.
+    custom_block: |
+      # staged_path is a Homebrew template token, not the Ruby method the
+      # postflight block used, and goreleaser renders this through Go's
+      # templating first, so the braces are escaped to survive it.
+      postflight_steps do
+        run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ `{{staged_path}}` }}/sn-dotfiles"], must_succeed: false
+      end
 
 release:
   github:
     owner: jonhadfield
     name: sn-dotfiles
+
   prerelease: auto
   name_template: '{{ .Tag }}'
-  extra_files:
-    - glob: ./dist/sn-dotfiles_Darwin*.zip
 
 announce:
   skip: true
 
 snapshot:
-  name_template: "{{ .Tag }}-devel"
+  version_template: "{{ .Tag }}-devel"
 
 changelog:
   sort: asc
   filters:
     exclude:
-    - README
-    - test
-    - ignore
+      - README
+      - test
+      - ignore
 
 checksum:
   name_template: 'checksums.txt'
