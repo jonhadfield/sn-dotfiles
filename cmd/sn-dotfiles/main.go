@@ -200,7 +200,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		Flags: []cli.Flag{
 			cli.StringSliceFlag{
 				Name:  "exclude",
-				Usage: "exlude path from sync",
+				Usage: "exclude path from sync",
 			},
 			cli.BoolFlag{
 				Name:  "dry-run",
