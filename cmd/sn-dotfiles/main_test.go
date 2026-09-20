@@ -157,10 +157,6 @@ func TestAdd(t *testing.T) {
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
 	assert.NoError(t, viper.BindEnv("server"))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -243,10 +239,6 @@ func TestWipe(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	fwc[applePath] = "apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -276,10 +268,6 @@ func TestStatus(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	fwc[applePath] = "apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -310,10 +298,6 @@ func TestSync(t *testing.T) {
 	lemonPath := fmt.Sprintf("%s/.fruit/lemon", home)
 	fwc[lemonPath] = "lemon content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -371,10 +355,6 @@ func TestDiff(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	fwc[applePath] = "apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -406,10 +386,6 @@ func TestSyncExclude(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	fwc[applePath] = "apple content"
 	assert.NoError(t, createTemporaryFiles(fwc))
-	serverURL := os.Getenv("SN_SERVER")
-	if serverURL == "" {
-		serverURL = sndotfiles2.SNServerURL
-	}
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")

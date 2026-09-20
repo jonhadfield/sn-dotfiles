@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	// SNServerURL defines the default URL for making calls to syncDBwithFS with SN
-	SNServerURL = "https://syncDBwithFS.standardnotes.org"
 	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
 	DotFilesTag = "dotfiles"
 	// DefaultPageSize defines the number of items to attempt to syncDBwithFS per request
