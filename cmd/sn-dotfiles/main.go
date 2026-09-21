@@ -144,7 +144,6 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			Email: "jon@lessknown.co.uk",
 		},
 	}
-	app.HelpName = "-"
 	app.Usage = "sync dotfiles with Standard Notes"
 	app.Description = ""
 
