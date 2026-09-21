@@ -7,9 +7,14 @@ on:
     branches: [ master, main ]
 jobs:
   test:
+    # The tests share one Standard Notes account, so two runs at once would
+    # fight over the same notes: the group is deliberately global rather than
+    # per-branch. Queue behind a running job rather than cancelling it, or a
+    # merge to main kills whatever a pull request is in the middle of, and
+    # a cancelled run leaves its test data behind for the next one to trip on.
     concurrency:
       group: test
-      cancel-in-progress: true
+      cancel-in-progress: false
     strategy:
       max-parallel: 1
       matrix:
