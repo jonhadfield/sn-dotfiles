@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -249,4 +250,69 @@ func TestCheckPathValid(t *testing.T) {
 func TestCreateItemInvalidPath(t *testing.T) {
 	_, err := createItem("invalid", "title")
 	assert.Error(t, err)
+}
+
+// TestRootTagsIsolateDotfileSets is the point of the root tag: two sets living
+// in one account, each syncing only its own files.
+func TestRootTagsIsolateDotfileSets(t *testing.T) {
+	var err error
+	defer func() {
+		if err = CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	personalPath := fmt.Sprintf("%s/.personalrc", home)
+	fwc[personalPath] = "personal content"
+	workPath := fmt.Sprintf("%s/.workrc", home)
+	fwc[workPath] = "work content"
+	assert.NoError(t, createTemporaryFiles(fwc))
+
+	// each file is tracked under a different root
+	personalAdd := AddInput{Session: testCacheSession, Home: home, Paths: []string{personalPath}, RootTag: "PersonalDotfiles"}
+	ao, err := Add(personalAdd, true)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{personalPath}, ao.PathsAdded)
+
+	workAdd := AddInput{Session: testCacheSession, Home: home, Paths: []string{workPath}, RootTag: "WorkDotfiles"}
+	ao, err = Add(workAdd, true)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{workPath}, ao.PathsAdded)
+
+	// status under one root sees only that root's file
+	personalDiffs, _, err := Status(testCacheSession, home, []string{}, nil, "PersonalDotfiles", DefaultPageSize, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{".personalrc"}, homeRelPaths(personalDiffs))
+
+	workDiffs, _, err := Status(testCacheSession, home, []string{}, nil, "WorkDotfiles", DefaultPageSize, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{".workrc"}, homeRelPaths(workDiffs))
+
+	// and the default root sees neither, as nothing was added under it
+	defaultDiffs, _, err := Status(testCacheSession, home, []string{}, nil, "", DefaultPageSize, true, true)
+	assert.NoError(t, err)
+	assert.Empty(t, homeRelPaths(defaultDiffs))
+
+	// removing one root's file leaves the other's alone
+	_, err = Remove(RemoveInput{Session: testCacheSession, Home: home, Paths: []string{personalPath}, RootTag: "PersonalDotfiles"}, true)
+	assert.NoError(t, err)
+
+	workDiffs, _, err = Status(testCacheSession, home, []string{}, nil, "WorkDotfiles", DefaultPageSize, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{".workrc"}, homeRelPaths(workDiffs))
+}
+
+func homeRelPaths(diffs []ItemDiff) []string {
+	var paths []string
+
+	for _, d := range diffs {
+		paths = append(paths, addDot(d.homeRelPath))
+	}
+
+	sort.Strings(paths)
+
+	return paths
 }

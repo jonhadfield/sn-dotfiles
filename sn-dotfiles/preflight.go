@@ -46,7 +46,9 @@ func preflight(home string, in []string) (out []string, err error) {
 	return
 }
 
-func checkNoteTagConflicts(twn tagsWithNotes) error {
+func checkNoteTagConflicts(twn tagsWithNotes, rootTag string) error {
+	rootTag = normalizeRootTag(rootTag)
+
 	// check for path conflict where tag and note overlap
 	tagPaths := set.New(set.NonThreadSafe)
 	notePaths := set.New(set.NonThreadSafe)
@@ -58,12 +60,12 @@ func checkNoteTagConflicts(twn tagsWithNotes) error {
 		// of all combinations to check for duplicates
 		for _, n := range t.notes {
 			var notePath string
-			// if tag path is not root (DotFilesTag) then it's a sub tag/dir
+			// if tag path is not root then it's a sub tag/dir
 			// so add tag path (plus period) to note title
-			if tagPath != DotFilesTag {
+			if tagPath != rootTag {
 				notePath = tagPath + "." + n.Content.GetTitle()
 			} else {
-				// otherwise, just add note title to DotFilesTag
+				// otherwise, just add note title to root tag (note titles at home start with '.')
 				notePath = tagPath + n.Content.GetTitle()
 			}
 

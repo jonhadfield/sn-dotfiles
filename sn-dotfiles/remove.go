@@ -15,6 +15,7 @@ type RemoveInput struct {
 	Session  *cache.Session
 	Home     string
 	Paths    []string
+	RootTag  string
 	PageSize int
 	Debug    bool
 }
@@ -28,6 +29,10 @@ type RemoveOutput struct {
 func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	if !ri.Session.Valid() {
 		return ro, errors.New("invalid session")
+	}
+
+	if ri.RootTag, err = ResolveRootTag(ri.RootTag); err != nil {
+		return
 	}
 
 	if StringInSlice(ri.Home, []string{"/", "/home"}, true) {
@@ -83,12 +88,12 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	}
 
 	var twn tagsWithNotes
-	twn, err = getTagsWithNotes(cso.DB, ri.Session)
+	twn, err = getTagsWithNotes(cso.DB, ri.Session, ri.RootTag)
 	if err != nil {
 		return
 	}
 
-	err = checkNoteTagConflicts(twn)
+	err = checkNoteTagConflicts(twn, ri.RootTag)
 	if err != nil {
 		return
 	}
@@ -98,7 +103,7 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	var notesToRemove gosn.Notes
 
 	for _, path := range ri.Paths {
-		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, twn, ri.Debug)
+		homeRelPath, pathsToRemove, matchingItems := getNotesToRemove(path, ri.Home, twn, ri.RootTag, ri.Debug)
 
 		debugPrint(ri.Debug, fmt.Sprintf("Remove | items matching path '%s': %d", path, len(matchingItems)))
 
@@ -126,7 +131,7 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	}
 
 	// find any empty tags to delete
-	emptyTags := findEmptyTags(twn, notesToRemove, ri.Debug)
+	emptyTags := findEmptyTags(twn, notesToRemove, ri.RootTag, ri.Debug)
 
 	// dedupe any tags to removeFromDB
 	if emptyTags != nil {

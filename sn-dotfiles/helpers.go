@@ -288,7 +288,9 @@ func removeStringFromSlice(item string, slice []string) (updatedSlice []string) 
 
 // findEmptyTags takes a set of tags with notes and a list of notes being deleted
 // in order to find all tags that are already empty or will be empty once the notes are deleted
-func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) gosn.Tags {
+func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, rootTag string, debug bool) gosn.Tags {
+	rootTag = normalizeRootTag(rootTag)
+
 	// getTagsWithNotes a list of tags without notes (including those that have just become noteless)
 	allTagsWithoutNotes := getAllTagsWithoutNotes(twn, deletedNotes, debug)
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allTagsWithoutNotes: %s", allTagsWithoutNotes))
@@ -298,13 +300,12 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) gosn.
 
 	var tagsToRemove []string
 
-	var allDotfileChildTags []string
+	var allRootChildTags []string
 	// loop through all identified tags with their associated notes and generate a map of them
 	// for each tag, the last item is the child
 	for _, atwn := range twn {
-		//if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") || atwn.tag.Content.GetTitle() == DotFilesTag {
-		if strings.HasPrefix(atwn.tag.Content.GetTitle(), DotFilesTag+".") {
-			allDotfileChildTags = append(allDotfileChildTags, atwn.tag.Content.GetTitle())
+		if strings.HasPrefix(atwn.tag.Content.GetTitle(), rootTag+".") {
+			allRootChildTags = append(allRootChildTags, atwn.tag.Content.GetTitle())
 		}
 
 		tagTitle := atwn.tag.Content.GetTitle()
@@ -356,13 +357,13 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, debug bool) gosn.
 
 	tagsToRemove = dedupe(tagsToRemove)
 
-	// now removeFromDB dotfiles tag if it has no children
+	// now removeFromDB root tag if it has no children
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | tagsToRemove: %s", tagsToRemove))
-	debugPrint(debug, fmt.Sprintf("findEmptyTags | allDotfileChildTags: %s", allDotfileChildTags))
+	debugPrint(debug, fmt.Sprintf("findEmptyTags | allRootChildTags: %s", allRootChildTags))
 
-	if len(tagsToRemove) == len(allDotfileChildTags) {
-		tagsToRemove = append(tagsToRemove, DotFilesTag)
-		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", DotFilesTag))
+	if len(tagsToRemove) == len(allRootChildTags) {
+		tagsToRemove = append(tagsToRemove, rootTag)
+		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", rootTag))
 	}
 
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | tags to removeFromDB (deduped): %s", tagsToRemove))
@@ -382,7 +383,9 @@ func tagTitlesToTags(tagTitles []string, twn tagsWithNotes) (res gosn.Tags) {
 	return
 }
 
-func getNotesToRemove(path, home string, twn tagsWithNotes, debug bool) (homeRelPath string, pathsToRemove []string, res gosn.Notes) {
+func getNotesToRemove(path, home string, twn tagsWithNotes, rootTag string, debug bool) (homeRelPath string, pathsToRemove []string, res gosn.Notes) {
+	rootTag = normalizeRootTag(rootTag)
+
 	pathType, err := getPathType(path)
 	if err != nil {
 		return
@@ -393,7 +396,7 @@ func getNotesToRemove(path, home string, twn tagsWithNotes, debug bool) (homeRel
 
 	debugPrint(debug, fmt.Sprintf("getNotesToRemove | path: '%s': %s", path, remoteEquiv))
 
-	// getTagsWithNotes item tags from remoteEquiv by stripping <DotFilesTag> and filename from remoteEquiv
+	// getTagsWithNotes item tags from remoteEquiv by stripping <rootTag> and filename from remoteEquiv
 	var noteTag, noteTitle string
 
 	debugPrint(debug, fmt.Sprintf("getNotesToRemove | path type: %s", pathType))
@@ -403,9 +406,9 @@ func getNotesToRemove(path, home string, twn tagsWithNotes, debug bool) (homeRel
 		if strings.Contains(remoteEquiv, string(os.PathSeparator)) {
 			remoteEquiv = stripDot(remoteEquiv)
 			noteTag, noteTitle = filepath.Split(remoteEquiv)
-			noteTag = DotFilesTag + "." + strings.ReplaceAll(noteTag[:len(noteTag)-1], string(os.PathSeparator), ".")
+			noteTag = rootTag + "." + strings.ReplaceAll(noteTag[:len(noteTag)-1], string(os.PathSeparator), ".")
 		} else {
-			noteTag = DotFilesTag
+			noteTag = rootTag
 			noteTitle = remoteEquiv
 		}
 
@@ -433,14 +436,14 @@ func getNotesToRemove(path, home string, twn tagsWithNotes, debug bool) (homeRel
 		// replace path separatators with dots
 		remoteEquiv = strings.ReplaceAll(remoteEquiv, string(os.PathSeparator), ".")
 
-		noteTag = DotFilesTag + "." + remoteEquiv
+		noteTag = rootTag + "." + remoteEquiv
 		debugPrint(debug, fmt.Sprintf("getNotesToRemove | find notes matching tag: %s", noteTag))
 
 		// find notes matching tag
 		for _, t := range twn {
 			tagTitle := t.tag.Content.GetTitle()
 			var tp string
-			tp, err = tagTitleToFSDir(tagTitle, home)
+			tp, err = tagTitleToFSDir(tagTitle, home, rootTag)
 			if err != nil {
 				return
 			}
@@ -499,7 +502,7 @@ func dedupe(in []string) []string {
 	return in[:j+1]
 }
 
-func tagTitleToFSDir(title, home string) (path string, err error) {
+func tagTitleToFSDir(title, home, rootTag string) (path string, err error) {
 	if title == "" {
 		err = errors.New("tag title required")
 		return
@@ -510,24 +513,27 @@ func tagTitleToFSDir(title, home string) (path string, err error) {
 		return
 	}
 
-	if !strings.HasPrefix(title, DotFilesTag) {
+	rootTag = normalizeRootTag(rootTag)
+
+	if title != rootTag && !strings.HasPrefix(title, rootTag+".") {
 		return
 	}
 
-	if title == DotFilesTag {
+	if title == rootTag {
 		return home + string(os.PathSeparator), nil
 	}
 
-	a := title[len(DotFilesTag)+1:]
+	a := title[len(rootTag)+1:]
 	b := strings.ReplaceAll(a, ".", string(os.PathSeparator))
 	c := addDot(b)
 
 	return home + string(os.PathSeparator) + c + string(os.PathSeparator), err
 }
 
-func pathToTag(homeRelPath string) string {
-	// prepend dotfiles path
-	r := DotFilesTag + homeRelPath
+func pathToTag(homeRelPath, rootTag string) string {
+	rootTag = normalizeRootTag(rootTag)
+	// prepend root tag
+	r := rootTag + homeRelPath
 	// replace path separators with dots
 	r = strings.ReplaceAll(r, string(os.PathSeparator), ".")
 	if strings.HasSuffix(r, ".") {

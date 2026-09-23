@@ -199,7 +199,7 @@ func TestRemoveItems(t *testing.T) {
 	require.NoError(t, err)
 
 	var all tagsWithNotes
-	all, err = getTagsWithNotes(cso.DB, testCacheSession)
+	all, err = getTagsWithNotes(cso.DB, testCacheSession, "")
 	debugPrint(true, "after removing all .cars we have")
 	for k, v := range all {
 		debugPrint(true, fmt.Sprint(k, v))
@@ -437,7 +437,7 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
+	twn, _ := getTagsWithNotes(cso.DB, testCacheSession, "")
 	require.Len(t, twn, 0)
 	require.NoError(t, cso.DB.Close())
 }
@@ -488,7 +488,7 @@ func TestRemoveAndCheckRemovedOne(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	twn, _ := getTagsWithNotes(cso.DB, testCacheSession)
+	twn, _ := getTagsWithNotes(cso.DB, testCacheSession, "")
 	// dotfiles tag and .gitconfig note should exist
 	require.Len(t, twn, 2)
 	require.NoError(t, cso.DB.Close())

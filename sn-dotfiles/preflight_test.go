@@ -24,7 +24,7 @@ func TestPreflightOverlaps(t *testing.T) {
 		tagWithNotes{mustCreateTag("something.else"),
 			gosn.Notes{noteOne}},
 	}
-	err := checkNoteTagConflicts(twn)
+	err := checkNoteTagConflicts(twn, "")
 	assert.Error(t, err)
 }
 
@@ -37,6 +37,6 @@ func TestPreflightOverlaps1(t *testing.T) {
 		tagWithNotes{mustCreateTag("something.else"),
 			gosn.Notes{noteOne}},
 	}
-	err := checkNoteTagConflicts(twn)
+	err := checkNoteTagConflicts(twn, "")
 	assert.NoError(t, err)
 }

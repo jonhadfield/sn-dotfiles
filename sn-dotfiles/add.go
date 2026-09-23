@@ -23,6 +23,10 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 		return
 	}
 
+	if ai.RootTag, err = ResolveRootTag(ai.RootTag); err != nil {
+		return
+	}
+
 	if StringInSlice(ai.Home, []string{"/", "/home"}, true) {
 		err = errors.New(fmt.Sprintf("not a good idea to use '%s' as home dir", ai.Home))
 		return
@@ -83,12 +87,12 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 
 	var twn tagsWithNotes
 
-	twn, err = getTagsWithNotes(cso.DB, ai.Session)
+	twn, err = getTagsWithNotes(cso.DB, ai.Session, ai.RootTag)
 	if err != nil {
 		return
 	}
 	// run pre-checks
-	err = checkNoteTagConflicts(twn)
+	err = checkNoteTagConflicts(twn, ai.RootTag)
 	if err != nil {
 		return
 	}
@@ -119,7 +123,9 @@ type AddInput struct {
 	Paths   []string
 	All     bool
 	// Filter skips paths that would never be synced; nil adds everything
-	Filter   *PathFilter
+	Filter *PathFilter
+	// RootTag is the Standard Notes root tag; empty defaults to DotFilesTag
+	RootTag  string
 	Twn      tagsWithNotes
 	PageSize int
 }
@@ -148,16 +154,17 @@ func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 
 	var statusLines []string
 
-	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, ao.PathsSkipped, err = generateTagItemMap(fsPathsToAdd, ai.Home, ai.Twn, ai.Filter)
+	statusLines, tagToItemMap, ao.PathsAdded, ao.PathsExisting, ao.PathsSkipped, err = generateTagItemMap(fsPathsToAdd, ai.Home, ai.Twn, ai.Filter, ai.RootTag)
 	if err != nil {
 		return
 	}
-	// add DotFilesTag tag if missing
-	_, dotFilesTagInTagToItemMap := tagToItemMap[DotFilesTag]
-	if !tagExists("dotfiles", ai.Twn) && !dotFilesTagInTagToItemMap {
-		debugPrint(ai.Session.Debug, "Add | adding missing dotfiles tag")
+	// add root tag if missing
+	rootTag := normalizeRootTag(ai.RootTag)
+	_, rootTagInTagToItemMap := tagToItemMap[rootTag]
+	if !tagExists(rootTag, ai.Twn) && !rootTagInTagToItemMap {
+		debugPrint(ai.Session.Debug, fmt.Sprintf("Add | adding missing %s tag", rootTag))
 
-		tagToItemMap[DotFilesTag] = gosn.Items{}
+		tagToItemMap[rootTag] = gosn.Items{}
 	}
 
 	// addToDB and tag items
@@ -173,9 +180,10 @@ func add(db *storm.DB, ai AddInput, noRecurse bool) (ao AddOutput, err error) {
 	return ao, err
 }
 
-func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes, filter *PathFilter) (statusLines []string,
+func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes, filter *PathFilter, rootTag string) (statusLines []string,
 	tagToItemMap map[string]gosn.Items, pathsAdded, pathsExisting, pathsSkipped []string, err error) {
 	tagToItemMap = make(map[string]gosn.Items)
+	rootTag = normalizeRootTag(rootTag)
 
 	var added []string
 
@@ -213,7 +221,7 @@ func generateTagItemMap(fsPaths []string, home string, twn tagsWithNotes, filter
 
 		var remoteTagTitleWithoutHome, remoteTagTitle string
 		remoteTagTitleWithoutHome = stripHome(dir, home)
-		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome)
+		remoteTagTitle = pathToTag(remoteTagTitleWithoutHome, rootTag)
 
 		existingCount := noteWithTagExists(remoteTagTitle, filename, twn)
 		if existingCount > 0 {

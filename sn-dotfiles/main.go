@@ -9,10 +9,11 @@ import (
 	"github.com/jonhadfield/gosn-v2/cache"
 	gosn "github.com/jonhadfield/gosn-v2/items"
 	"regexp"
+	"strings"
 )
 
 const (
-	// DotFilesTag defines the default tag that all SN Dotfiles will be prefixed with
+	// DotFilesTag is the default root tag that all SN Dotfiles are prefixed with
 	DotFilesTag = "dotfiles"
 	// DefaultPageSize defines the number of items to attempt to syncDBwithFS per request
 	DefaultPageSize = 500
@@ -26,6 +27,48 @@ const (
 	maxDebugChars = 120 // number of characters to display when logging API response body
 )
 
+// ResolveRootTag returns rootTag when set, otherwise DotFilesTag.
+// Root tags must not contain '.' because dots separate path segments in SN tag titles.
+func ResolveRootTag(rootTag string) (string, error) {
+	rootTag = strings.TrimSpace(rootTag)
+	if rootTag == "" {
+		return DotFilesTag, nil
+	}
+
+	if err := ValidateRootTag(rootTag); err != nil {
+		return "", err
+	}
+
+	return rootTag, nil
+}
+
+// ValidateRootTag reports whether rootTag is a valid SN root tag name.
+func ValidateRootTag(rootTag string) error {
+	if strings.TrimSpace(rootTag) == "" {
+		return errors.New("root tag must not be empty")
+	}
+
+	if strings.Contains(rootTag, ".") {
+		return fmt.Errorf("root tag %q must not contain '.' (dots separate path segments in Standard Notes tags)", rootTag)
+	}
+
+	if strings.ContainsAny(rootTag, `/\`) {
+		return fmt.Errorf("root tag %q must not contain path separators", rootTag)
+	}
+
+	return nil
+}
+
+// normalizeRootTag returns DotFilesTag when rootTag is empty; it does not validate.
+// Callers that accept user input should use ResolveRootTag instead.
+func normalizeRootTag(rootTag string) string {
+	if rootTag == "" {
+		return DotFilesTag
+	}
+
+	return rootTag
+}
+
 var (
 	bold   = color.New(color.Bold).SprintFunc()
 	red    = color.New(color.FgRed).SprintFunc()
@@ -33,12 +76,14 @@ var (
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
-func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, err error) {
+func getTagsWithNotes(db *storm.DB, session *cache.Session, rootTag string) (t tagsWithNotes, err error) {
 	// validate session
 	if !session.Valid() {
 		err = errors.New("invalid session")
 		return
 	}
+
+	rootTag = normalizeRootTag(rootTag)
 
 	var notesAndTags cache.Items
 
@@ -58,7 +103,7 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 
 	var notes gosn.Notes
 
-	r := regexp.MustCompile(fmt.Sprintf(`^%s(\..+)?$`, regexp.QuoteMeta(DotFilesTag)))
+	r := regexp.MustCompile(fmt.Sprintf(`^%s(\..+)?$`, regexp.QuoteMeta(rootTag)))
 
 	for _, item := range items {
 		if item.GetContent() != nil && item.GetContentType() == "Tag" && r.MatchString(item.GetContent().(*gosn.TagContent).Title) {
@@ -87,6 +132,95 @@ func getTagsWithNotes(db *storm.DB, session *cache.Session) (t tagsWithNotes, er
 	}
 
 	return t, err
+}
+
+// ListRootTags returns candidate root tags found in the account: undotted tag titles that
+// either have a child tag (title.*) or a note whose title starts with '.'.
+func ListRootTags(session *cache.Session) ([]string, error) {
+	if !session.Valid() {
+		return nil, errors.New("invalid session")
+	}
+
+	csi := cache.SyncInput{
+		Session:    session,
+		Close:      false,
+		AlwaysSync: true,
+	}
+
+	cso, err := cache.Sync(csi)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = cso.DB.Close() }()
+
+	var notesAndTags cache.Items
+	if e := cso.DB.Select(q.In("ContentType", []string{"Note", "Tag"})).Find(&notesAndTags); e != nil {
+		if e.Error() != "not found" {
+			return nil, e
+		}
+	}
+
+	items, err := notesAndTags.ToItems(session)
+	if err != nil {
+		return nil, err
+	}
+
+	return rootTagsFromItems(items), nil
+}
+
+// rootTagsFromItems picks the candidate root tags out of a set of items: undotted
+// tag titles that either have a child tag (title.*) or a note whose title starts
+// with '.'. Separated from ListRootTags so it can be tested without an account.
+func rootTagsFromItems(items gosn.Items) []string {
+	notesByUUID := make(map[string]gosn.Note)
+	childPrefix := make(map[string]bool)
+
+	for _, item := range items {
+		if item.GetContent() == nil {
+			continue
+		}
+
+		switch item.GetContentType() {
+		case "Note":
+			n := item.(*gosn.Note)
+			notesByUUID[n.GetUUID()] = *n
+		case "Tag":
+			title := item.GetContent().(*gosn.TagContent).Title
+			if i := strings.Index(title, "."); i > 0 {
+				childPrefix[title[:i]] = true
+			}
+		}
+	}
+
+	var roots []string
+	seen := make(map[string]bool)
+
+	for _, item := range items {
+		if item.GetContent() == nil || item.GetContentType() != "Tag" {
+			continue
+		}
+
+		title := item.GetContent().(*gosn.TagContent).Title
+		if strings.Contains(title, ".") || seen[title] {
+			continue
+		}
+
+		hasDotfileNote := false
+		tag := item.(*gosn.Tag)
+		for _, refID := range getItemNoteRefIds(tag.GetContent().References()) {
+			if n, ok := notesByUUID[refID]; ok && strings.HasPrefix(n.Content.GetTitle(), ".") {
+				hasDotfileNote = true
+				break
+			}
+		}
+
+		if hasDotfileNote || childPrefix[title] {
+			roots = append(roots, title)
+			seen[title] = true
+		}
+	}
+
+	return roots
 }
 
 func getItemNoteRefIds(itemRefs gosn.ItemReferences) (refIds []string) {

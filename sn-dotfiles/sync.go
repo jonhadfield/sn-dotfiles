@@ -20,8 +20,12 @@ var (
 
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
-// - pushes locals if remotes are newer
+// - pushes locals if locals are newer
 func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
+	if si.RootTag, err = ResolveRootTag(si.RootTag); err != nil {
+		return
+	}
+
 	if err = checkPathsExist(si.Exclude); err != nil {
 		return
 	}
@@ -48,6 +52,7 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 		paths:   si.Paths,
 		exclude: si.Exclude,
 		filter:  si.Filter,
+		rootTag: si.RootTag,
 		debug:   si.Debug,
 		close:   false,
 		dryRun:  si.DryRun,
@@ -76,12 +81,12 @@ func sync(input syncInput) (output syncOutput, err error) {
 	}
 
 	var remote tagsWithNotes
-	remote, err = getTagsWithNotes(cso.DB, input.session)
+	remote, err = getTagsWithNotes(cso.DB, input.session, input.rootTag)
 	if err != nil {
 		return
 	}
 
-	err = checkNoteTagConflicts(remote)
+	err = checkNoteTagConflicts(remote, input.rootTag)
 	if err != nil {
 		return
 	}
@@ -94,6 +99,7 @@ func sync(input syncInput) (output syncOutput, err error) {
 		paths:   input.paths,
 		exclude: input.exclude,
 		filter:  input.filter,
+		rootTag: input.rootTag,
 		debug:   input.debug,
 		dryRun:  input.dryRun})
 	if err != nil {
@@ -119,7 +125,9 @@ type SNDotfilesSyncInput struct {
 	Home           string
 	Paths, Exclude []string
 	// Filter limits the sync to matching paths; nil syncs everything
-	Filter   *PathFilter
+	Filter *PathFilter
+	// RootTag is the Standard Notes root tag for this sync; empty defaults to DotFilesTag
+	RootTag  string
 	PageSize int
 	Debug    bool
 	// DryRun reports what a sync would do without writing anything
@@ -136,7 +144,7 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 	}
 	var itemDiffs []ItemDiff
 
-	itemDiffs, err = compare(si.twn, si.home, si.paths, si.exclude, si.filter, si.debug)
+	itemDiffs, err = compare(si.twn, si.home, si.paths, si.exclude, si.filter, si.rootTag, si.debug)
 	if err != nil {
 		if strings.Contains(err.Error(), "tags with notes not supplied") {
 			err = errors.New("no remote dotfiles found")
@@ -304,6 +312,7 @@ type syncInput struct {
 	home           string
 	paths, exclude []string
 	filter         *PathFilter
+	rootTag        string
 	debug          bool
 	close          bool
 	dryRun         bool

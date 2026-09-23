@@ -158,6 +158,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		cli.BoolFlag{Name: "no-stdout"},
 		cli.StringFlag{Name: "config", Usage: "path to config file (default: ~/.config/sn-dotfiles/config.yaml)"},
 		cli.StringFlag{Name: "cachedb-dir", Usage: "directory holding the local cache database (default: ~/.sn-dotfiles)"},
+		cli.StringFlag{Name: "root-tag", Usage: "Standard Notes root tag for this dotfile set (overrides config root_tag; default: dotfiles)"},
 		cli.StringSliceFlag{Name: "include-regex", Usage: "only sync paths matching this pattern, replacing the config file's include list"},
 		cli.StringSliceFlag{Name: "exclude-regex", Usage: "never sync paths matching this pattern, replacing the config file's exclude list"},
 	}
@@ -176,8 +177,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var filter *sndotfiles.PathFilter
-			filter, err = loadFilter(c)
+			var cfg appConfig
+			cfg, err = loadAppConfig(c)
 			if err != nil {
 				return err
 			}
@@ -195,7 +196,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			sess.CacheDBPath = cacheDBPath
 
-			_, msg, err = sndotfiles.Status(&sess, opts.home, c.Args(), filter, opts.pageSize, opts.debug, false)
+			_, msg, err = sndotfiles.Status(&sess, opts.home, c.Args(), cfg.filter, cfg.rootTag, opts.pageSize, opts.debug, false)
 			return err
 		},
 	}
@@ -227,8 +228,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var filter *sndotfiles.PathFilter
-			filter, err = loadFilter(c)
+			var cfg appConfig
+			cfg, err = loadAppConfig(c)
 			if err != nil {
 				return err
 			}
@@ -253,7 +254,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				Home:     opts.home,
 				Paths:    c.Args(),
 				Exclude:  c.StringSlice("exclude"),
-				Filter:   filter,
+				Filter:   cfg.filter,
+				RootTag:  cfg.rootTag,
 				PageSize: opts.pageSize,
 				Debug:    opts.debug,
 				DryRun:   c.Bool("dry-run"),
@@ -285,8 +287,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var filter *sndotfiles.PathFilter
-			filter, err = loadFilter(c)
+			var cfg appConfig
+			cfg, err = loadAppConfig(c)
 			if err != nil {
 				return err
 			}
@@ -332,7 +334,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			sess.CacheDBPath = cacheDBPath
 
 			ai := sndotfiles.AddInput{Session: &sess, Home: opts.home, Paths: absPaths,
-				PageSize: opts.pageSize, All: c.Bool("all"), Filter: filter}
+				PageSize: opts.pageSize, All: c.Bool("all"), Filter: cfg.filter, RootTag: cfg.rootTag}
 
 			var ao sndotfiles.AddOutput
 
@@ -364,7 +366,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			display = opts.display
 
 			// config is required even though these commands don't filter
-			if _, err = loadFilter(c); err != nil {
+			var cfg appConfig
+			if cfg, err = loadAppConfig(c); err != nil {
 				return err
 			}
 
@@ -393,6 +396,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				Session:  &sess,
 				Home:     opts.home,
 				Paths:    c.Args(),
+				RootTag:  cfg.rootTag,
 				PageSize: opts.pageSize,
 				Debug:    opts.debug,
 			}
@@ -420,8 +424,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			var filter *sndotfiles.PathFilter
-			filter, err = loadFilter(c)
+			var cfg appConfig
+			cfg, err = loadAppConfig(c)
 			if err != nil {
 				return err
 			}
@@ -442,7 +446,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			sess.CacheDBPath = cacheDBPath
 
-			_, msg, err = sndotfiles.Diff(&sess, opts.home, c.Args(), filter, opts.pageSize, true, c.Bool("no-stdout"))
+			_, msg, err = sndotfiles.Diff(&sess, opts.home, c.Args(), cfg.filter, cfg.rootTag, opts.pageSize, true, c.Bool("no-stdout"))
 
 			return err
 		},
@@ -540,8 +544,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			display = opts.display
 
-			// config is required even though these commands don't filter
-			if _, err = loadFilter(c); err != nil {
+			var cfg appConfig
+			if cfg, err = loadAppConfig(c); err != nil {
 				return err
 			}
 
@@ -565,7 +569,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			if c.Bool("force") {
 				proceed = true
 			} else {
-				fmt.Printf("wipe all dotfiles for account %s? ", email)
+				fmt.Printf("wipe all dotfiles under root tag %q for account %s? ", cfg.rootTag, email)
 				var input string
 				_, err = fmt.Scanln(&input)
 				if err == nil && sndotfiles.StringInSlice(input, []string{"y", "yes"}, false) {
@@ -574,7 +578,7 @@ func startCLI(args []string) (msg string, display bool, err error) {
 			}
 			if proceed {
 				var num int
-				num, err = sndotfiles.WipeDotfileTagsAndNotes(&sess, opts.pageSize, c.Bool("no-stdout"))
+				num, err = sndotfiles.WipeDotfileTagsAndNotes(&sess, cfg.rootTag, opts.pageSize, c.Bool("no-stdout"))
 				if err != nil {
 					return err
 				}
@@ -587,12 +591,81 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		},
 	}
 
+	rootTagsCmd := cli.Command{
+		Name:  "root-tags",
+		Usage: "list candidate root tags in the Standard Notes account",
+		Action: func(c *cli.Context) error {
+			var opts configOptsOutput
+			opts, err = getOpts(c)
+			if err != nil {
+				return err
+			}
+			display = opts.display
+
+			// Discovery has to work before a config file exists, so a missing
+			// one is not an error here. A config file that exists but cannot
+			// be read or is invalid still is: silently ignoring it would hide
+			// a typo in root_tag behind an unrelated list of tags.
+			var activeRoot string
+
+			cfg, cfgErr := loadAppConfig(c)
+
+			switch {
+			case cfgErr == nil:
+				activeRoot = cfg.rootTag
+			case errors.Is(cfgErr, sndotfiles.ErrConfigNotFound):
+				if activeRoot, err = sndotfiles.ResolveRootTag(c.GlobalString("root-tag")); err != nil {
+					return err
+				}
+			default:
+				return cfgErr
+			}
+
+			var sess cache.Session
+			sess, _, err = cache.GetSession(common.NewHTTPClient(), opts.useSession,
+				opts.sessKey, opts.server, opts.debug)
+			if err != nil {
+				return err
+			}
+
+			var cacheDBPath string
+			cacheDBPath, err = cache.GenCacheDBPath(sess, opts.cacheDBDir, sndotfiles.SNAppName)
+			if err != nil {
+				return err
+			}
+			sess.CacheDBPath = cacheDBPath
+
+			var roots []string
+			roots, err = sndotfiles.ListRootTags(&sess)
+			if err != nil {
+				return err
+			}
+
+			if len(roots) == 0 {
+				msg = "no root tags found"
+				return nil
+			}
+
+			var lines []string
+			for _, r := range roots {
+				if r == activeRoot {
+					lines = append(lines, r+" (active)")
+				} else {
+					lines = append(lines, r)
+				}
+			}
+			msg = strings.Join(lines, "\n")
+			return nil
+		},
+	}
+
 	app.Commands = []cli.Command{
 		statusCmd,
 		syncCmd,
 		addCmd,
 		removeCmd,
 		diffCmd,
+		rootTagsCmd,
 		sessionCmd,
 		wipeCmd,
 	}
@@ -607,20 +680,26 @@ func startCLI(args []string) (msg string, display bool, err error) {
 	return msg, display, err
 }
 
-// loadFilter reads the required config file and applies any --include-regex and --exclude-regex overrides
-func loadFilter(c *cli.Context) (*sndotfiles.PathFilter, error) {
+// appConfig holds path filter and root tag resolved from config file and CLI flags
+type appConfig struct {
+	filter  *sndotfiles.PathFilter
+	rootTag string
+}
+
+// loadAppConfig reads the required config file and applies --include-regex, --exclude-regex, and --root-tag overrides
+func loadAppConfig(c *cli.Context) (appConfig, error) {
 	path := c.GlobalString("config")
 	if path == "" {
 		var err error
 
 		if path, err = sndotfiles.DefaultConfigPath(); err != nil {
-			return nil, err
+			return appConfig{}, err
 		}
 	}
 
 	cfg, err := sndotfiles.LoadConfig(path)
 	if err != nil {
-		return nil, err
+		return appConfig{}, err
 	}
 
 	include, exclude := cfg.Include, cfg.Exclude
@@ -635,10 +714,20 @@ func loadFilter(c *cli.Context) (*sndotfiles.PathFilter, error) {
 
 	filter, err := sndotfiles.NewPathFilter(include, exclude)
 	if err != nil {
-		return nil, fmt.Errorf("config file %s: %w", path, err)
+		return appConfig{}, fmt.Errorf("config file %s: %w", path, err)
 	}
 
-	return filter, nil
+	rootTag := cfg.RootTag
+	if override := c.GlobalString("root-tag"); override != "" {
+		rootTag = override
+	}
+
+	rootTag, err = sndotfiles.ResolveRootTag(rootTag)
+	if err != nil {
+		return appConfig{}, err
+	}
+
+	return appConfig{filter: filter, rootTag: rootTag}, nil
 }
 
 func numTrue(in ...bool) (total int) {

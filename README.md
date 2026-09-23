@@ -9,7 +9,7 @@
 ## About
 
 sn-dotfiles is a command-line tool to sync [dotfiles](https://www.thegeekyway.com/what-are-dotfiles/) with a [Standard Notes](https://standardnotes.com/) account.
-It works by creating a tag called 'dotfiles' and then maps dotfile directories with tags and dotfiles as notes.
+It works by creating a root tag (default `dotfiles`, configurable via `root_tag`) and then maps dotfile directories with tags and dotfiles as notes.
 
 ## Why?
 
@@ -134,21 +134,30 @@ export SN_DEBUG=true                              # same as passing --debug
 
 A config file is required. By default it is read from `$XDG_CONFIG_HOME/sn-dotfiles/config.yaml`, falling back to `~/.config/sn-dotfiles/config.yaml`; use `--config <path>` to read another file.
 
-It lists regular expressions that decide which dotfiles are synced:
+It lists regular expressions that decide which dotfiles are synced, and optionally a root tag that names the set in Standard Notes:
 
 ```yaml
-include:              # required: sync paths matching at least one of these
+root_tag: PersonalDotfiles  # optional; default is "dotfiles". Must not contain '.'
+include:                    # required: sync paths matching at least one of these
   - '^\.gitconfig$'
   - '^\.config/fish/'
-exclude:              # optional: never sync paths matching any of these
+exclude:                    # optional: never sync paths matching any of these
   - '\.swp$'
+```
+
+**Root tag:** each machine syncs against one Standard Notes root tag (for example `PersonalDotfiles` or `WorkDotfiles`). Nested directory tags are built under that root (`PersonalDotfiles.config.fish`). On a new device, set `root_tag` (or pass `--root-tag`) and run `sync` to pull the latest files under that root. Use `sn-dotfiles root-tags` to list candidate roots already in the account. Multiple roots can coexist in one account; only the active root is synced.
+
+To override the root tag for a single run:
+
+```bash
+sn-dotfiles --root-tag WorkDotfiles sync
 ```
 
 Patterns are matched against each file's path relative to your home directory, using `/` as the separator, for example `.config/fish/config.fish`. To match everything in a folder, match its path as a prefix, e.g. `^\.config/fish/`.
 
 - `status`, `sync` and `diff` only show and sync matching files. Notes in Standard Notes that don't match are left untouched.
 - `add` skips files that don't match, so it never tracks something that would not be synced.
-- `remove` and `wipe` are not filtered, so anything can still be removed.
+- `remove` and `wipe` are not filtered, so anything can still be removed (they still respect the active root tag).
 
 To replace either list for a single run, pass the patterns before the command:
 
@@ -166,6 +175,7 @@ sn-dotfiles --include-regex '^\.config/nvim/' --exclude-regex '\.bak$' status
 | `remove` | Stop tracking file(s), leaving the local files alone |
 | `diff` | Show the differences between local files and remote notes |
 | `session` | Add or remove a stored session |
+| `root-tags` | List candidate root tags already in the account |
 | `wipe` | Remove every dotfiles note and tag from the account |
 
 Global flags: `--config`, `--home-dir`, `--server`, `--use-session`, `--session-key`, `--include-regex`, `--exclude-regex`, `--debug`, `--quiet`, `--no-stdout`.
@@ -192,10 +202,10 @@ Status compares each tracked dotfile with its remote note and reports one of fiv
 sn-dotfiles add ~/.file1 ~/.dir1/file2
 ```
 
-Add will take a copy of the specified file(s) and convert the files to Notes and each path to a Tag. Files that don't match the [configuration](#configuration) patterns are skipped. The above command would generate the following structure:
+Add will take a copy of the specified file(s) and convert the files to Notes and each path to a Tag. Files that don't match the [configuration](#configuration) patterns are skipped. The above command would generate the following structure (with the default root tag):
 
 ```
-dotfiles           <- tag
+dotfiles           <- root tag
     - .file1       <- note 
     - dir1         <- tag
         - file2    <- note
@@ -209,7 +219,7 @@ dotfiles           <- tag
 sn-dotfiles sync --exclude ~/.file1
 ```
 
-Sync will compare any dotfiles currently tracked in Standard Notes with their local equivalents and:
+Sync will compare any dotfiles currently tracked under the active root tag in Standard Notes with their local equivalents and:
 - Update the filesystem dotfile if the remote was updated more recently
 - Update the remote if the filesystem dotfile is newer
 - Create any missing dotfiles and paths that exist remotely  
@@ -242,6 +252,14 @@ sn-dotfiles remove ~/.dir1
 
 Remove will recursively (if path specified) remove the remote Notes for the specified filesystem path.
 In the above example, the Note file2 and the Tag dir1 will be deleted. Remove will never change files on the filesystem.
+
+### root-tags
+
+```bash
+sn-dotfiles root-tags
+```
+
+Lists candidate root tags already present in the Standard Notes account (undotted tags that look like dotfile roots). The active root from config or `--root-tag` is marked `(active)`.
 
 ### diff
 
