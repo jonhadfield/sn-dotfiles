@@ -49,13 +49,25 @@ func DefaultConfigPath() (string, error) {
 // config file which exists but is broken is still reported rather than ignored.
 var ErrConfigNotFound = errors.New("config file not found")
 
+// configNotFoundError carries the full message, which names the path and shows
+// an example config, while unwrapping to ErrConfigNotFound for errors.Is.
+type configNotFoundError struct {
+	detail string
+}
+
+func (e *configNotFoundError) Error() string { return e.detail }
+
+func (e *configNotFoundError) Unwrap() error { return ErrConfigNotFound }
+
 // LoadConfig reads and validates the config file at path
 func LoadConfig(path string) (Config, error) {
 	var cfg Config
 
 	if _, err := os.Stat(path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return cfg, fmt.Errorf("%w: %s; create it with at least one include pattern, for example:\n\n%s", ErrConfigNotFound, path, exampleConfig)
+			return cfg, &configNotFoundError{
+				detail: fmt.Sprintf("config file %s not found; create it with at least one include pattern, for example:\n\n%s", path, exampleConfig),
+			}
 		}
 
 		return cfg, fmt.Errorf("failed to read config file %s: %w", path, err)
