@@ -22,7 +22,11 @@ const (
 	identical    = "identical"
 )
 
-func Diff(session *cache.Session, home string, paths []string, filter *PathFilter, pageSize int, close, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+func Diff(session *cache.Session, home string, paths []string, filter *PathFilter, rootTag string, pageSize int, close, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+	if rootTag, err = ResolveRootTag(rootTag); err != nil {
+		return
+	}
+
 	debugPrint(session.Debug, fmt.Sprintf("Diff | %d paths", len(paths)))
 
 	if !session.Debug {
@@ -56,7 +60,7 @@ func Diff(session *cache.Session, home string, paths []string, filter *PathFilte
 
 	var remote tagsWithNotes
 
-	remote, err = getTagsWithNotes(cso.DB, session)
+	remote, err = getTagsWithNotes(cso.DB, session, rootTag)
 	if err != nil {
 		return diffs, msg, err
 	}
@@ -64,7 +68,7 @@ func Diff(session *cache.Session, home string, paths []string, filter *PathFilte
 		return
 	}
 
-	return diff(remote, home, paths, filter, session.Debug)
+	return diff(remote, home, paths, filter, rootTag, session.Debug)
 }
 
 type ItemDiff struct {
@@ -77,10 +81,10 @@ type ItemDiff struct {
 	local       string
 }
 
-func diff(twn tagsWithNotes, home string, paths []string, filter *PathFilter, debug bool) (diffs []ItemDiff, msg string, err error) {
+func diff(twn tagsWithNotes, home string, paths []string, filter *PathFilter, rootTag string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("diff | %d remote items", len(twn)))
 
-	err = checkNoteTagConflicts(twn)
+	err = checkNoteTagConflicts(twn, rootTag)
 	if err != nil {
 		return
 	}
@@ -96,7 +100,7 @@ func diff(twn tagsWithNotes, home string, paths []string, filter *PathFilter, de
 		debugPrint(debug, fmt.Sprintf("diff | calling compare with Paths: %s", strings.Join(paths, ",")))
 	}
 
-	diffs, err = compare(twn, home, paths, []string{}, filter, debug)
+	diffs, err = compare(twn, home, paths, []string{}, filter, rootTag, debug)
 	if err != nil {
 		return diffs, msg, err
 	}

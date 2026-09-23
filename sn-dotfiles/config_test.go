@@ -47,6 +47,16 @@ func TestLoadConfig(t *testing.T) {
 			want:    Config{Include: []string{`^\.gitconfig$`, `^\.config/fish/`}, Exclude: []string{`\.swp$`}},
 		},
 		{
+			name:    "with root_tag",
+			content: "root_tag: PersonalDotfiles\ninclude:\n  - '.*'\n",
+			want:    Config{RootTag: "PersonalDotfiles", Include: []string{".*"}},
+		},
+		{
+			name:    "invalid root_tag with dot",
+			content: "root_tag: Personal.Dotfiles\ninclude:\n  - '.*'\n",
+			wantErr: "must not contain '.'",
+		},
+		{
 			name:    "include only",
 			content: "include:\n  - '.*'\n",
 			want:    Config{Include: []string{".*"}},
@@ -142,7 +152,7 @@ func TestCompareWithFilter(t *testing.T) {
 		fmt.Sprintf("%s/.untracked-fruit", home),
 	}
 
-	diffs, err := compare(twn, home, paths, []string{}, filter, true)
+	diffs, err := compare(twn, home, paths, []string{}, filter, "", true)
 	require.NoError(t, err)
 
 	var got []string
@@ -173,7 +183,7 @@ func TestGenerateTagItemMapSkipsFilteredPaths(t *testing.T) {
 	filter, err := NewPathFilter([]string{`^\.gitconfig$`}, nil)
 	require.NoError(t, err)
 
-	statusLines, tim, added, existing, skipped, err := generateTagItemMap([]string{gitConfigPath, sshConfigPath}, home, tagsWithNotes{}, filter)
+	statusLines, tim, added, existing, skipped, err := generateTagItemMap([]string{gitConfigPath, sshConfigPath}, home, tagsWithNotes{}, filter, "")
 	require.NoError(t, err)
 	require.Equal(t, []string{gitConfigPath}, added)
 	require.Empty(t, existing)
@@ -182,4 +192,33 @@ func TestGenerateTagItemMapSkipsFilteredPaths(t *testing.T) {
 	require.Equal(t, ".gitconfig", tim[DotFilesTag][0].(*gosn.Note).Content.GetTitle())
 	require.NotContains(t, tim, DotFilesTag+".ssh")
 	require.Len(t, statusLines, 2)
+}
+
+func TestLoadConfigMissingFileIsIdentifiable(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "no-such-config.yaml")
+
+	_, err := LoadConfig(missing)
+	require.Error(t, err)
+	// commands that can run without configuration rely on this
+	require.ErrorIs(t, err, ErrConfigNotFound)
+	require.Contains(t, err.Error(), missing)
+}
+
+func TestLoadConfigBrokenFileIsNotMistakenForMissing(t *testing.T) {
+	dir := t.TempDir()
+
+	invalidYAML := filepath.Join(dir, "invalid.yaml")
+	require.NoError(t, os.WriteFile(invalidYAML, []byte("include: [unclosed\n"), 0o600))
+
+	_, err := LoadConfig(invalidYAML)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrConfigNotFound)
+
+	badRoot := filepath.Join(dir, "bad-root.yaml")
+	require.NoError(t, os.WriteFile(badRoot, []byte("root_tag: has.dot\ninclude:\n  - '^\\.gitconfig$'\n"), 0o600))
+
+	_, err = LoadConfig(badRoot)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrConfigNotFound)
+	require.Contains(t, err.Error(), "must not contain '.'")
 }

@@ -9,7 +9,12 @@ import (
 	"time"
 )
 
-func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr bool) (int, error) {
+func WipeDotfileTagsAndNotes(session *cache.Session, rootTag string, pageSize int, useStdErr bool) (int, error) {
+	var err error
+	if rootTag, err = ResolveRootTag(rootTag); err != nil {
+		return 0, err
+	}
+
 	if session.Valid() && !session.Debug {
 		prefix := HiWhite("syncing ")
 		if _, err := os.Stat(session.CacheDBPath); os.IsNotExist(err) {
@@ -34,7 +39,6 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr boo
 		AlwaysSync: true,
 	}
 
-	var err error
 	var cso cache.SyncOutput
 	cso, err = cache.Sync(si)
 	if err != nil {
@@ -43,7 +47,7 @@ func WipeDotfileTagsAndNotes(session *cache.Session, pageSize int, useStdErr boo
 
 	var remote tagsWithNotes
 
-	remote, err = getTagsWithNotes(cso.DB, session)
+	remote, err = getTagsWithNotes(cso.DB, session, rootTag)
 	if err != nil {
 		_ = cso.DB.Close()
 

@@ -49,21 +49,48 @@ func TestGetAllTagsWithoutNotes(t *testing.T) {
 func TestTagTitleToFSDIR(t *testing.T) {
 	home := getTemporaryHome()
 	// missing Home should return err
-	p, err := tagTitleToFSDir(fmt.Sprintf("%s.fruit.lemon", DotFilesTag), "")
+	p, err := tagTitleToFSDir(fmt.Sprintf("%s.fruit.lemon", DotFilesTag), "", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "home directory required")
 	assert.Empty(t, p)
 
 	// check result for supplied title and Home
-	p, err = tagTitleToFSDir(DotFilesTag, home)
+	p, err = tagTitleToFSDir(DotFilesTag, home, "")
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("%s/", home), p)
 
+	// custom root tag
+	p, err = tagTitleToFSDir("PersonalDotfiles.config.fish", home, "PersonalDotfiles")
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("%s/.config/fish/", home), p)
+
 	// missing title should generate error
-	p, err = tagTitleToFSDir("", home)
+	p, err = tagTitleToFSDir("", home, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "tag title required")
 	assert.Equal(t, "", p)
+}
+
+func TestPathToTagRootTag(t *testing.T) {
+	assert.Equal(t, "dotfiles.config.fish", pathToTag(".config/fish/", ""))
+	assert.Equal(t, "PersonalDotfiles.config.fish", pathToTag(".config/fish/", "PersonalDotfiles"))
+	assert.Equal(t, "WorkDotfiles", pathToTag("", "WorkDotfiles"))
+}
+
+func TestResolveRootTag(t *testing.T) {
+	got, err := ResolveRootTag("")
+	require.NoError(t, err)
+	assert.Equal(t, DotFilesTag, got)
+
+	got, err = ResolveRootTag("  PersonalDotfiles  ")
+	require.NoError(t, err)
+	assert.Equal(t, "PersonalDotfiles", got)
+
+	_, err = ResolveRootTag("Personal.Dotfiles")
+	require.ErrorContains(t, err, "must not contain '.'")
+
+	_, err = ResolveRootTag("a/b")
+	require.ErrorContains(t, err, "path separators")
 }
 
 func TestDeDupe(t *testing.T) {
@@ -276,4 +303,84 @@ func TestIsBinaryFile(t *testing.T) {
 
 	_, err := isBinaryFile(fmt.Sprintf("%s/does-not-exist", dir))
 	require.Error(t, err)
+}
+
+func TestValidateRootTag(t *testing.T) {
+	for _, valid := range []string{"dotfiles", "PersonalDotfiles", "work-dotfiles", "dot_files", "df2"} {
+		assert.NoErrorf(t, ValidateRootTag(valid), "expected %q to be a valid root tag", valid)
+	}
+
+	// a dot would be read as a path separator in the tag hierarchy
+	require.ErrorContains(t, ValidateRootTag("Personal.Dotfiles"), "must not contain '.'")
+	require.ErrorContains(t, ValidateRootTag(".dotfiles"), "must not contain '.'")
+
+	require.ErrorContains(t, ValidateRootTag("work/dotfiles"), "path separators")
+	require.ErrorContains(t, ValidateRootTag(`work\dotfiles`), "path separators")
+
+	require.ErrorContains(t, ValidateRootTag(""), "must not be empty")
+	require.ErrorContains(t, ValidateRootTag("   "), "must not be empty")
+}
+
+// rootTagFixture builds a tag with the given title, optionally referencing notes.
+func rootTagFixture(t *testing.T, title string, notes ...gosn.Note) *gosn.Tag {
+	t.Helper()
+
+	tag := newTestTag()
+	content := gosn.NewTagContent()
+	content.SetTitle(title)
+
+	var refs gosn.ItemReferences
+	for _, note := range notes {
+		refs = append(refs, gosn.ItemReference{UUID: note.GetUUID(), ContentType: "Note"})
+	}
+
+	if refs != nil {
+		content.UpsertReferences(refs)
+	}
+
+	tag.Content = *content
+
+	return &tag
+}
+
+func noteFixture(t *testing.T, title string) gosn.Note {
+	t.Helper()
+
+	note := newTestNote()
+	content := gosn.NewNoteContent()
+	content.SetTitle(title)
+	note.Content = *content
+
+	return note
+}
+
+func TestRootTagsFromItems(t *testing.T) {
+	gitconfig := noteFixture(t, ".gitconfig")
+	shoppingList := noteFixture(t, "shopping list")
+
+	items := gosn.Items{
+		&gitconfig,
+		&shoppingList,
+		// a root: it holds a note whose title starts with a dot
+		rootTagFixture(t, "PersonalDotfiles", gitconfig),
+		// a root: it has a child tag, even with no notes of its own
+		rootTagFixture(t, "WorkDotfiles"),
+		rootTagFixture(t, "WorkDotfiles.config"),
+		// not a root: an ordinary tag holding an ordinary note
+		rootTagFixture(t, "recipes", shoppingList),
+		// not a root: dotted titles are children, not roots
+		rootTagFixture(t, "PersonalDotfiles.config.fish"),
+	}
+
+	roots := rootTagsFromItems(items)
+
+	assert.ElementsMatch(t, []string{"PersonalDotfiles", "WorkDotfiles"}, roots)
+}
+
+func TestRootTagsFromItemsEmpty(t *testing.T) {
+	assert.Empty(t, rootTagsFromItems(gosn.Items{}))
+
+	// tags with neither dotfile notes nor children are not roots
+	plain := noteFixture(t, "notes to self")
+	assert.Empty(t, rootTagsFromItems(gosn.Items{&plain, rootTagFixture(t, "misc", plain)}))
 }

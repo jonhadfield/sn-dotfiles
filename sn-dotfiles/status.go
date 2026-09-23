@@ -15,7 +15,11 @@ import (
 // - remote items that are newer
 // - local items that are untracked (if Paths specified)
 // - identical local and remote items
-func Status(session *cache.Session, home string, paths []string, filter *PathFilter, pageSize int, debug bool, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+func Status(session *cache.Session, home string, paths []string, filter *PathFilter, rootTag string, pageSize int, debug bool, useStdErr bool) (diffs []ItemDiff, msg string, err error) {
+	if rootTag, err = ResolveRootTag(rootTag); err != nil {
+		return
+	}
+
 	// preflight checks
 	paths, err = preflight(home, paths)
 	if err != nil {
@@ -53,7 +57,7 @@ func Status(session *cache.Session, home string, paths []string, filter *PathFil
 
 	var remote tagsWithNotes
 
-	remote, err = getTagsWithNotes(cso.DB, session)
+	remote, err = getTagsWithNotes(cso.DB, session, rootTag)
 	if err != nil {
 		_ = cso.DB.Close()
 
@@ -64,13 +68,13 @@ func Status(session *cache.Session, home string, paths []string, filter *PathFil
 		return
 	}
 
-	return status(remote, home, paths, filter, debug)
+	return status(remote, home, paths, filter, rootTag, debug)
 }
 
-func status(twn tagsWithNotes, home string, paths []string, filter *PathFilter, debug bool) (diffs []ItemDiff, msg string, err error) {
+func status(twn tagsWithNotes, home string, paths []string, filter *PathFilter, rootTag string, debug bool) (diffs []ItemDiff, msg string, err error) {
 	debugPrint(debug, fmt.Sprintf("status | %d remote items", len(twn)))
 
-	err = checkNoteTagConflicts(twn)
+	err = checkNoteTagConflicts(twn, rootTag)
 	if err != nil {
 		return
 	}
@@ -80,7 +84,7 @@ func status(twn tagsWithNotes, home string, paths []string, filter *PathFilter, 
 		return
 	}
 
-	diffs, err = compare(twn, home, paths, []string{}, filter, debug)
+	diffs, err = compare(twn, home, paths, []string{}, filter, rootTag, debug)
 	if err != nil {
 		return diffs, msg, err
 	}

@@ -13,7 +13,7 @@ import (
 
 func TestStatusEmptyTWN(t *testing.T) {
 	home := getTemporaryHome()
-	_, msg, _ := status(tagsWithNotes{}, home, []string{}, nil, true)
+	_, msg, _ := status(tagsWithNotes{}, home, []string{}, nil, "", true)
 	assert.Equal(t, "no dotfiles being tracked", msg)
 }
 
@@ -59,7 +59,7 @@ func TestStatus(t *testing.T) {
 	var diffs []ItemDiff
 	var err error
 
-	diffs, _, err = status(twn, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, nil, true)
+	diffs, _, err = status(twn, home, []string{gitConfigPath, applePath, yellowPath, premiumPath}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
 	var pDiff int
@@ -111,7 +111,7 @@ func TestStatus1(t *testing.T) {
 
 	twn := tagsWithNotes{dotfilesTagWithNote, awsTagWithNotes}
 
-	diffs, _, err := status(twn, home, []string{gitConfigPath}, nil, true)
+	diffs, _, err := status(twn, home, []string{gitConfigPath}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, ".gitconfig", diffs[0].noteTitle)
@@ -177,7 +177,7 @@ func TestStatus2(t *testing.T) {
 
 	var diffs []ItemDiff
 
-	diffs, _, err = status(twn, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, nil, true)
+	diffs, _, err = status(twn, home, []string{fmt.Sprintf("%s/.fruit", home), fmt.Sprintf("%s/.cars", home)}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 4)
 	var pDiff int

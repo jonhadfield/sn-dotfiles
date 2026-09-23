@@ -9,7 +9,9 @@ import (
 )
 
 // compare generates diffs for tracked and untracked paths, keeping only those matching filter
-func compare(remote tagsWithNotes, home string, paths, exclude []string, filter *PathFilter, debug bool) (diffs []ItemDiff, err error) {
+func compare(remote tagsWithNotes, home string, paths, exclude []string, filter *PathFilter, rootTag string, debug bool) (diffs []ItemDiff, err error) {
+	rootTag = normalizeRootTag(rootTag)
+
 	debugPrint(debug, fmt.Sprintf("compare | Home: %s", home))
 	debugPrint(debug, fmt.Sprintf("compare | %d Paths to include supplied", len(paths)))
 	debugPrint(debug, fmt.Sprintf("compare | %d Paths to Exclude supplied", len(exclude)))
@@ -27,7 +29,7 @@ func compare(remote tagsWithNotes, home string, paths, exclude []string, filter 
 
 	var remotePaths []string
 	// check remotes against local filesystem
-	itemDiffs, remotePaths, err = compareRemoteWithLocalFS(remote, paths, home, debug)
+	itemDiffs, remotePaths, err = compareRemoteWithLocalFS(remote, paths, home, rootTag, debug)
 	if err != nil {
 		return
 	}
@@ -41,7 +43,7 @@ func compare(remote tagsWithNotes, home string, paths, exclude []string, filter 
 	return filter.filterDiffs(itemDiffs), err
 }
 
-func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string, debug bool) (itemDiffs []ItemDiff, remotePaths []string, err error) {
+func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home, rootTag string, debug bool) (itemDiffs []ItemDiff, remotePaths []string, err error) {
 	// loop through remotes to generate a list of diffs for:
 	// - existing local and remotes
 	// - missing local files
@@ -52,7 +54,7 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home string,
 
 		var dir string
 
-		dir, err = tagTitleToFSDir(twn.tag.Content.GetTitle(), home)
+		dir, err = tagTitleToFSDir(twn.tag.Content.GetTitle(), home, rootTag)
 		if err != nil {
 			return
 		}

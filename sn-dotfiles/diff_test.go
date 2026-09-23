@@ -71,7 +71,7 @@ func TestDiff(t *testing.T) {
 	home := getTemporaryHome()
 	twn, fwc := testCompareSetup1and2(home)
 	// test when locals do not exist
-	diffs, _, err := diff(twn, home, []string{}, nil, true)
+	diffs, _, err := diff(twn, home, []string{}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.Equal(t, diffs[0].diff, localMissing)
@@ -85,12 +85,12 @@ func TestDiff(t *testing.T) {
 			fmt.Printf("failed to clean-up: %s\ndetails: %v\n", home, err)
 		}
 	}()
-	diffs, _, err = diff(twn, home, []string{}, nil, true)
+	diffs, _, err = diff(twn, home, []string{}, nil, "", true)
 	assert.Equal(t, diffs[0].diff, identical)
 	assert.Equal(t, diffs[1].diff, identical)
 	assert.Equal(t, diffs[2].diff, localMissing)
 	// test when no tags with notes supplied
-	diffs, _, err = diff(tagsWithNotes{}, home, []string{}, nil, true)
+	diffs, _, err = diff(tagsWithNotes{}, home, []string{}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 0)
 }
@@ -108,12 +108,12 @@ func TestCompare1(t *testing.T) {
 	}()
 
 	// missing remote and missing local
-	_, err = compare(tagsWithNotes{}, home, []string{"missing-file"}, []string{}, nil, true)
+	_, err = compare(tagsWithNotes{}, home, []string{"missing-file"}, []string{}, nil, "", true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "tags with notes not supplied")
 
 	// existing remote and missing local
-	_, err = compare(twn, home, []string{"missing-file"}, []string{}, nil, true)
+	_, err = compare(twn, home, []string{"missing-file"}, []string{}, nil, "", true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no such file")
 
@@ -121,7 +121,7 @@ func TestCompare1(t *testing.T) {
 	applePath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/apple", home)
 	lemonPath := fmt.Sprintf("%s/.sn-dotfiles-test-fruit/lemon", home)
 	allPaths := []string{applePath, lemonPath}
-	diffs, err = compare(twn, home, allPaths, []string{}, nil, true)
+	diffs, err = compare(twn, home, allPaths, []string{}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 2)
 	assert.NotEmpty(t, diffs)
@@ -194,7 +194,7 @@ func TestCompare2(t *testing.T) {
 
 	// valid local, valid remote, grape not compare'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.sn-dotfiles-test-fruit/", home)}
-	diffs, err = compare(twn, home, paths, []string{}, nil, true)
+	diffs, err = compare(twn, home, paths, []string{}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.NotEmpty(t, diffs)
@@ -244,7 +244,7 @@ func TestCompare3(t *testing.T) {
 
 	// valid local, valid remote, grape not compare'd as not specified in path
 	paths := []string{fmt.Sprintf("%s/.apple", home)}
-	diffs, err = compare(twn, home, paths, []string{}, nil, true)
+	diffs, err = compare(twn, home, paths, []string{}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 1)
 	assert.Equal(t, identical, diffs[0].diff)
@@ -285,7 +285,7 @@ func TestCompare4(t *testing.T) {
 	}()
 
 	paths := []string{fmt.Sprintf("%s/.apple", home), fmt.Sprintf("%s/.banana", home), fmt.Sprintf("%s/.cars", home)}
-	diffs, err = compare(twn, home, paths, []string{}, nil, true)
+	diffs, err = compare(twn, home, paths, []string{}, nil, "", true)
 	assert.NoError(t, err)
 	assert.Len(t, diffs, 3)
 	assert.Equal(t, identical, diffs[0].diff)

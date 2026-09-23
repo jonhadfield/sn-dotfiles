@@ -12,13 +12,17 @@ import (
 
 // Config defines the settings read from the sn-dotfiles config file
 type Config struct {
+	// RootTag is the Standard Notes root tag for this machine's dotfile set.
+	// Empty defaults to DotFilesTag ("dotfiles"). Must not contain '.'.
+	RootTag string `mapstructure:"root_tag"`
 	// Include lists regular expressions of home-relative paths to sync; at least one is required
 	Include []string `mapstructure:"include"`
 	// Exclude lists regular expressions of home-relative paths never to sync
 	Exclude []string `mapstructure:"exclude"`
 }
 
-const exampleConfig = `include:
+const exampleConfig = `root_tag: dotfiles   # optional; default is "dotfiles". Examples: PersonalDotfiles, WorkDotfiles
+include:
   - '^\.gitconfig$'
   - '^\.config/fish/'
 exclude:
@@ -40,13 +44,18 @@ func DefaultConfigPath() (string, error) {
 	return filepath.Join(dir, SNAppName, "config.yaml"), nil
 }
 
+// ErrConfigNotFound is returned by LoadConfig when the config file is absent.
+// Commands that can run without one test for it with errors.Is, so that a
+// config file which exists but is broken is still reported rather than ignored.
+var ErrConfigNotFound = errors.New("config file not found")
+
 // LoadConfig reads and validates the config file at path
 func LoadConfig(path string) (Config, error) {
 	var cfg Config
 
 	if _, err := os.Stat(path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return cfg, fmt.Errorf("config file %s not found; create it with at least one include pattern, for example:\n\n%s", path, exampleConfig)
+			return cfg, fmt.Errorf("%w: %s; create it with at least one include pattern, for example:\n\n%s", ErrConfigNotFound, path, exampleConfig)
 		}
 
 		return cfg, fmt.Errorf("failed to read config file %s: %w", path, err)
@@ -62,6 +71,12 @@ func LoadConfig(path string) (Config, error) {
 
 	if err := v.UnmarshalExact(&cfg); err != nil {
 		return cfg, fmt.Errorf("invalid config file %s: %w", path, err)
+	}
+
+	if cfg.RootTag != "" {
+		if _, err := ResolveRootTag(cfg.RootTag); err != nil {
+			return cfg, fmt.Errorf("invalid config file %s: %w", path, err)
+		}
 	}
 
 	return cfg, nil
