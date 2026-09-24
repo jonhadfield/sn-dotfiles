@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/asdine/storm/v3 v3.2.1
-	github.com/briandowns/spinner v1.12.0
+	github.com/briandowns/spinner v1.23.2
 	github.com/fatih/color v1.16.0
 	github.com/fatih/set v0.2.1
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
