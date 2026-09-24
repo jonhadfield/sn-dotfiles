@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/jonhadfield/dotfiles-sn/internal/snmock"
 	sndotfiles2 "github.com/jonhadfield/dotfiles-sn/sn-dotfiles"
+	"github.com/jonhadfield/gosn-v2/auth"
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/jonhadfield/gosn-v2/common"
 	gosn "github.com/jonhadfield/gosn-v2/items"
@@ -62,13 +65,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// Do not sign in or touch a real account unless asked to. The config file
-	// written above is still set up, because unit tests here rely on it.
+	// Without SN_INTEGRATION_TESTS, run against an in-memory server rather
+	// than a real account. The CLI reads its credentials and server from the
+	// environment, so pointing it at the mock is a matter of setting those.
 	if !integrationEnabled() {
-		fmt.Fprintln(os.Stderr,
-			"SN_INTEGRATION_TESTS not set: running cmd/sn-dotfiles unit tests only")
-
-		os.Exit(m.Run())
+		os.Exit(runAgainstMock(m))
 	}
 
 	// sign in the same way the CLI does, using SN_EMAIL, SN_PASSWORD and SN_SERVER
@@ -176,7 +177,6 @@ func TestIsValidDotfilePathHonoursHome(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	requireIntegration(t)
 
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -227,7 +227,6 @@ func TestAddNoArgs(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	requireIntegration(t)
 
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -256,7 +255,6 @@ func TestRemove(t *testing.T) {
 }
 
 func TestWipe(t *testing.T) {
-	requireIntegration(t)
 
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -287,7 +285,6 @@ func TestWipe(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	requireIntegration(t)
 
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -317,7 +314,6 @@ func TestStatus(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
-	requireIntegration(t)
 
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -378,7 +374,6 @@ func TestSync(t *testing.T) {
 }
 
 func TestDiff(t *testing.T) {
-	requireIntegration(t)
 
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -411,7 +406,6 @@ func TestDiff(t *testing.T) {
 }
 
 func TestSyncExclude(t *testing.T) {
-	requireIntegration(t)
 
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
@@ -498,7 +492,6 @@ func TestInvalidConfigPattern(t *testing.T) {
 }
 
 func TestStatusIncludeRegex(t *testing.T) {
-	requireIntegration(t)
 
 	home := getHome()
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
@@ -527,4 +520,62 @@ func TestStatusIncludeRegex(t *testing.T) {
 	require.NoError(t, err)
 	require.NotContains(t, msg, ".fruit/apple")
 	require.Contains(t, msg, ".fruit/lemon")
+}
+
+// runAgainstMock points the CLI at a mock Standard Notes server. It returns the
+// exit code rather than calling os.Exit so that the server's cleanup runs.
+func runAgainstMock(m *testing.M) int {
+	srv, err := snmock.New()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to start the mock Standard Notes server:", err)
+
+		return 1
+	}
+
+	defer srv.Close()
+
+	// the CLI signs in with these, exactly as it would against a real account
+	for k, v := range map[string]string{
+		"SN_SERVER":   srv.URL,
+		"SN_EMAIL":    snmock.Email,
+		"SN_PASSWORD": snmock.Password,
+	} {
+		if err = os.Setenv(k, v); err != nil {
+			fmt.Fprintln(os.Stderr, "failed to set", k, err)
+
+			return 1
+		}
+	}
+
+	in, err := auth.CliSignIn(snmock.Email, snmock.Password, srv.URL, false)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to sign in to the mock server:", err)
+
+		return 1
+	}
+
+	testCacheSession = &cache.Session{
+		Session: &session.Session{
+			Debug:             true,
+			HTTPClient:        common.NewHTTPClient(),
+			Server:            srv.URL,
+			MasterKey:         in.MasterKey,
+			KeyParams:         in.KeyParams,
+			AccessToken:       in.AccessToken,
+			RefreshToken:      in.RefreshToken,
+			AccessExpiration:  in.AccessExpiration,
+			RefreshExpiration: in.RefreshExpiration,
+		},
+	}
+
+	path, err := cache.GenCacheDBPath(*testCacheSession, os.TempDir(), sndotfiles2.SNAppName)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to create the cache db path:", err)
+
+		return 1
+	}
+
+	testCacheSession.CacheDBPath = path
+
+	return m.Run()
 }

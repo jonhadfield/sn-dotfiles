@@ -361,9 +361,15 @@ func findEmptyTags(twn tagsWithNotes, deletedNotes gosn.Notes, rootTag string, d
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | tagsToRemove: %s", tagsToRemove))
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | allRootChildTags: %s", allRootChildTags))
 
-	if len(tagsToRemove) == len(allRootChildTags) {
+	// Remove the root tag only when it is left holding nothing: no notes of its
+	// own, and every child tag going too. Comparing the lengths alone matched
+	// when both were empty, so a remove that found nothing to do still took the
+	// root tag with it, and everything under it stopped being tracked.
+	rootTagIsEmpty := StringInSlice(rootTag, allTagsWithoutNotes, true)
+
+	if rootTagIsEmpty && len(tagsToRemove) == len(allRootChildTags) {
 		tagsToRemove = append(tagsToRemove, rootTag)
-		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as all children being removed", rootTag))
+		debugPrint(debug, fmt.Sprintf("findEmptyTags | removing '%s' tag as it has no notes and all children are being removed", rootTag))
 	}
 
 	debugPrint(debug, fmt.Sprintf("findEmptyTags | tags to removeFromDB (deduped): %s", tagsToRemove))

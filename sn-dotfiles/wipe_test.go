@@ -13,7 +13,6 @@ func TestWipeInvalidSession(t *testing.T) {
 }
 
 func TestWipeNoItems(t *testing.T) {
-	requireIntegration(t)
 
 	var num int
 	var err error

@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"strings"
-	"testing"
 )
 
 // Most tests in this package talk to a live Standard Notes account: they sign
@@ -16,14 +15,5 @@ func integrationEnabled() bool {
 		return true
 	default:
 		return false
-	}
-}
-
-// requireIntegration skips a test that needs a live Standard Notes server.
-func requireIntegration(t *testing.T) {
-	t.Helper()
-
-	if !integrationEnabled() {
-		t.Skip("live-server test: set SN_INTEGRATION_TESTS=1 to run it")
 	}
 }

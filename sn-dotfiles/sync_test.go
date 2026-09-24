@@ -29,7 +29,6 @@ func TestSyncInvalidSession(t *testing.T) {
 }
 
 func TestSyncNoItems(t *testing.T) {
-	requireIntegration(t)
 
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -56,7 +55,6 @@ func TestSyncNoItems(t *testing.T) {
 // TestBasicSync adds a file to the remote, deletes the local file and then
 // performs a sync to check it was added back
 func TestBasicSync(t *testing.T) {
-	requireIntegration(t)
 
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -103,7 +101,6 @@ func TestBasicSync(t *testing.T) {
 
 // TestSyncTwoUpdatesFiles adds two files, updates them locally and syncs them back
 func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
-	requireIntegration(t)
 
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -152,7 +149,6 @@ func TestSyncTwoFilesUpdatedFiles(t *testing.T) {
 // TestSyncSkipsBinary checks that a tracked file which has become binary is
 // not pushed, as note content is text and would be stored corrupted
 func TestSyncSkipsBinary(t *testing.T) {
-	requireIntegration(t)
 
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -200,7 +196,6 @@ func TestSyncSkipsBinary(t *testing.T) {
 // TestSyncDryRunWritesNothing checks that a dry run reports the push a real
 // sync would make, and leaves it for that sync to actually make
 func TestSyncDryRunWritesNothing(t *testing.T) {
-	requireIntegration(t)
 
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -260,7 +255,6 @@ func TestSyncDryRunWritesNothing(t *testing.T) {
 
 // TestSync creates local dotfiles
 func TestSync(t *testing.T) {
-	requireIntegration(t)
 
 	assert.NotEmpty(t, testCacheSession.AccessToken)
 	defer func() {
@@ -398,7 +392,6 @@ func TestSync(t *testing.T) {
 }
 
 func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
-	requireIntegration(t)
 
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
@@ -453,7 +446,6 @@ func TestSyncWithExcludeAbsolutePaths(t *testing.T) {
 }
 
 func TestSyncWithExcludeParentPaths(t *testing.T) {
-	requireIntegration(t)
 
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
