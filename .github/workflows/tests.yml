@@ -37,5 +37,8 @@ jobs:
           go mod tidy
           go test -cover -v -failfast -p 1 $(go list ./...)
         env:
+          # The live-server tests are opt-in so that `go test ./...` works on a
+          # machine with no credentials; CI opts in, and has the account.
+          SN_INTEGRATION_TESTS: true
           SN_EMAIL: ${{ secrets.SN_EMAIL }}
           SN_PASSWORD: ${{ secrets.SN_PASSWORD }}

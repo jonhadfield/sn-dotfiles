@@ -324,6 +324,29 @@ sudo cp autocomplete/bash_autocomplete /etc/bash_completion.d/sn-dotfiles
 
 Then `sn-dotfiles <tab>` completes commands and flags.
 
+## Development
+
+The tests run offline by default, so a clone with no Standard Notes credentials
+still passes:
+
+```bash
+go test ./...
+```
+
+Most of the suite talks to a real account, though: it signs in, then creates and
+deletes notes and tags. Those tests are opt-in, and they need an account you do
+not mind losing the contents of:
+
+```bash
+export SN_INTEGRATION_TESTS=1
+export SN_EMAIL=<email address>
+export SN_PASSWORD=<password>
+export SN_SERVER=<https://myserver.example.com>   # optional
+go test ./...
+```
+
+CI sets `SN_INTEGRATION_TESTS`, so the full suite runs there on every push.
+
 ## Known issues
 
 - Notes moved to trash using the Standard Notes app will still be managed by sn-dotfiles until they are permanently deleted

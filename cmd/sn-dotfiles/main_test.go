@@ -62,6 +62,15 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	// Do not sign in or touch a real account unless asked to. The config file
+	// written above is still set up, because unit tests here rely on it.
+	if !integrationEnabled() {
+		fmt.Fprintln(os.Stderr,
+			"SN_INTEGRATION_TESTS not set: running cmd/sn-dotfiles unit tests only")
+
+		os.Exit(m.Run())
+	}
+
 	// sign in the same way the CLI does, using SN_EMAIL, SN_PASSWORD and SN_SERVER
 	viper.SetEnvPrefix("sn")
 	_ = viper.BindEnv("email")
@@ -167,6 +176,8 @@ func TestIsValidDotfilePathHonoursHome(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
+	requireIntegration(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -216,6 +227,8 @@ func TestAddNoArgs(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	requireIntegration(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -243,6 +256,8 @@ func TestRemove(t *testing.T) {
 }
 
 func TestWipe(t *testing.T) {
+	requireIntegration(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -272,6 +287,8 @@ func TestWipe(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
+	requireIntegration(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -300,6 +317,8 @@ func TestStatus(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
+	requireIntegration(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -359,6 +378,8 @@ func TestSync(t *testing.T) {
 }
 
 func TestDiff(t *testing.T) {
+	requireIntegration(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -390,6 +411,8 @@ func TestDiff(t *testing.T) {
 }
 
 func TestSyncExclude(t *testing.T) {
+	requireIntegration(t)
+
 	viper.SetEnvPrefix("sn")
 	assert.NoError(t, viper.BindEnv("email"))
 	assert.NoError(t, viper.BindEnv("password"))
@@ -475,6 +498,8 @@ func TestInvalidConfigPattern(t *testing.T) {
 }
 
 func TestStatusIncludeRegex(t *testing.T) {
+	requireIntegration(t)
+
 	home := getHome()
 	applePath := fmt.Sprintf("%s/.fruit/apple", home)
 	lemonPath := fmt.Sprintf("%s/.fruit/lemon", home)

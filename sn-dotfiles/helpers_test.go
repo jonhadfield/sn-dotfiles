@@ -249,6 +249,8 @@ func TestNoteWithTagExists(t *testing.T) {
 }
 
 func TestPushNoItems(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
