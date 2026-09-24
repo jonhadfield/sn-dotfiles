@@ -145,6 +145,14 @@ release:
   prerelease: auto
   name_template: '{{ .Tag }}'
 
+  # Linked at the tag rather than at main, so the notes for an old release keep
+  # pointing at the changelog as it stood for that release.
+  footer: |
+    ---
+    **Changelog:** https://github.com/jonhadfield/sn-dotfiles/blob/{{ .Tag }}/CHANGELOG.md
+
+    **Installation:** https://github.com/jonhadfield/sn-dotfiles#installation
+
 announce:
   skip: true
 
