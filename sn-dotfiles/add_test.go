@@ -33,7 +33,6 @@ func getTemporaryHome() string {
 }
 
 func TestAddNoPaths(t *testing.T) {
-	requireIntegration(t)
 
 	ai := AddInput{
 		Session: testCacheSession,
@@ -62,7 +61,6 @@ func TestAddInvalidSession(t *testing.T) {
 }
 
 func TestAddInvalidPath(t *testing.T) {
-	requireIntegration(t)
 
 	var err error
 	defer func() {
@@ -90,7 +88,6 @@ func TestAddInvalidPath(t *testing.T) {
 }
 
 func TestAddOne(t *testing.T) {
-	requireIntegration(t)
 
 	var err error
 	defer func() {
@@ -119,7 +116,6 @@ func TestAddOne(t *testing.T) {
 // TestAddSkipsBinary checks a binary file is left untracked, as note content is
 // text and would come back corrupted
 func TestAddSkipsBinary(t *testing.T) {
-	requireIntegration(t)
 
 	var err error
 	defer func() {
@@ -149,7 +145,6 @@ func TestAddSkipsBinary(t *testing.T) {
 }
 
 func TestAddTwoSameTag(t *testing.T) {
-	requireIntegration(t)
 
 	var err error
 	defer func() {
@@ -181,7 +176,6 @@ func TestAddTwoSameTag(t *testing.T) {
 }
 
 func TestAddRecursive(t *testing.T) {
-	requireIntegration(t)
 
 	var err error
 	defer func() {
@@ -213,7 +207,6 @@ func TestAddRecursive(t *testing.T) {
 }
 
 func TestAddAll(t *testing.T) {
-	requireIntegration(t)
 
 	var err error
 	defer func() {
@@ -269,7 +262,6 @@ func TestCreateItemInvalidPath(t *testing.T) {
 // TestRootTagsIsolateDotfileSets is the point of the root tag: two sets living
 // in one account, each syncing only its own files.
 func TestRootTagsIsolateDotfileSets(t *testing.T) {
-	requireIntegration(t)
 
 	var err error
 	defer func() {

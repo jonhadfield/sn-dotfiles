@@ -155,6 +155,18 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	for i := range emptyTags {
 		a = append(a, &emptyTags[i])
 	}
+	// Nothing matched, so there is nothing to delete: report what was not
+	// tracked rather than treating an empty removal as a failure.
+	if len(a) == 0 {
+		if err = cso.DB.Close(); err != nil {
+			return
+		}
+
+		ro.Msg = fmt.Sprint(columnize.SimpleFormat(results))
+
+		return ro, nil
+	}
+
 	ri.Session.CacheDB = cso.DB
 	x := removeInput{items: a, session: ri.Session}
 	if err = removeFromDB(x); err != nil {
