@@ -10,6 +10,8 @@ import (
 )
 
 func TestRemoveNoItems(t *testing.T) {
+	requireIntegration(t)
+
 	err := removeFromDB(removeInput{session: testCacheSession, items: gosn.Items{}})
 	require.Error(t, err)
 }
@@ -50,6 +52,8 @@ func TestRemoveInvalidSession(t *testing.T) {
 }
 
 func TestRemoveInvalidPath(t *testing.T) {
+	requireIntegration(t)
+
 	ri := RemoveInput{
 		Session: testCacheSession,
 		Home:    getTemporaryHome(),
@@ -61,6 +65,8 @@ func TestRemoveInvalidPath(t *testing.T) {
 }
 
 func TestRemoveNoPaths(t *testing.T) {
+	requireIntegration(t)
+
 	ri := RemoveInput{
 		Session: testCacheSession,
 		Home:    getTemporaryHome(),
@@ -73,6 +79,8 @@ func TestRemoveNoPaths(t *testing.T) {
 }
 
 func TestRemoveTags(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -120,6 +128,8 @@ func TestRemoveTags(t *testing.T) {
 }
 
 func TestRemoveItems(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -250,6 +260,8 @@ func TestRemoveItems(t *testing.T) {
 }
 
 func TestRemoveItemsRecursive(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -298,6 +310,8 @@ func TestRemoveItemsRecursive(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveTwo(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -343,6 +357,8 @@ func TestRemoveItemsRecursiveTwo(t *testing.T) {
 }
 
 func TestRemoveItemsRecursiveThree(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -395,6 +411,8 @@ func TestRemoveItemsRecursiveThree(t *testing.T) {
 }
 
 func TestRemoveAndCheckRemoved(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
@@ -443,6 +461,8 @@ func TestRemoveAndCheckRemoved(t *testing.T) {
 }
 
 func TestRemoveAndCheckRemovedOne(t *testing.T) {
+	requireIntegration(t)
+
 	defer func() {
 		if err := CleanUp(*testCacheSession); err != nil {
 			fmt.Println("failed to wipe")
