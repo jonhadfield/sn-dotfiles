@@ -7,6 +7,7 @@ import (
 	"github.com/asdine/storm/v3/q"
 	"github.com/fatih/color"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/common"
 	gosn "github.com/jonhadfield/gosn-v2/items"
 	"regexp"
 	"strings"
@@ -249,4 +250,25 @@ type GetNoteConfig struct {
 	TagUUIDs   []string
 	PageSize   int
 	Debug      bool
+}
+
+// getEditorAssociations reports tracked notes that an editor component claims,
+// so that a sync or status can warn before an editor rewrites one.
+func getEditorAssociations(db *storm.DB, session *cache.Session, twn tagsWithNotes, home, rootTag string) ([]EditorAssociation, error) {
+	var components cache.Items
+
+	if e := db.Select(q.In("ContentType", []string{common.SNItemTypeComponent})).Find(&components); e != nil {
+		if e.Error() != "not found" {
+			return nil, e
+		}
+
+		return nil, nil
+	}
+
+	items, err := components.ToItems(session)
+	if err != nil {
+		return nil, err
+	}
+
+	return findEditorAssociations(items, twn, home, rootTag), nil
 }

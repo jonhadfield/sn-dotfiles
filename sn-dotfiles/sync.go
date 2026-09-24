@@ -107,11 +107,18 @@ func sync(input syncInput) (output syncOutput, err error) {
 		return
 	}
 
+	editors, err := getEditorAssociations(cso.DB, input.session, remote, input.home, input.rootTag)
+	if err != nil {
+		_ = cso.DB.Close()
+
+		return output, err
+	}
+
 	if err = cso.DB.Close(); err != nil {
 		return
 	}
 
-	// TODO: Check every editor component and ensure no dotfiles are associated (ensure plain text editor)
+	output.msg += editorAssociationWarning(editors)
 
 	// persist changes
 	csi.Close = true

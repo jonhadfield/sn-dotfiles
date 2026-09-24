@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/asdine/storm/v3"
 	"github.com/jonhadfield/gosn-v2/cache"
+	"github.com/jonhadfield/gosn-v2/common"
 	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/pkg/errors"
@@ -655,4 +656,91 @@ func isBinaryFile(path string) (bool, error) {
 	}
 
 	return !utf8.Valid(buf), nil
+}
+
+// editorArea is the component area Standard Notes uses for editors.
+const editorArea = "editor-editor"
+
+// EditorAssociation is a tracked note that a Standard Notes editor has been
+// associated with.
+type EditorAssociation struct {
+	// NotePath is the note's path relative to home, for example .gitconfig
+	NotePath string
+	// Editor is the editor's name, falling back to its identifier
+	Editor string
+}
+
+// findEditorAssociations reports tracked notes that an editor component claims.
+// Dotfiles are plain text, and an editor that stores anything else - Super
+// keeps JSON, Rich Text keeps HTML - rewrites the note's content when it saves,
+// so the file pulled back is not the file that was pushed.
+func findEditorAssociations(items gosn.Items, twn tagsWithNotes, home, rootTag string) []EditorAssociation {
+	rootTag = normalizeRootTag(rootTag)
+
+	// the notes sn-dotfiles tracks, by uuid
+	tracked := make(map[string]string)
+
+	for _, t := range twn {
+		for _, note := range t.notes {
+			path, err := tagTitleToFSDir(t.tag.Content.GetTitle(), home, rootTag)
+			if err != nil {
+				continue
+			}
+
+			tracked[note.GetUUID()] = stripHome(path+note.Content.GetTitle(), home)
+		}
+	}
+
+	var found []EditorAssociation
+
+	for _, item := range items {
+		if item.GetContentType() != common.SNItemTypeComponent || item.GetContent() == nil {
+			continue
+		}
+
+		content, ok := item.GetContent().(*gosn.ComponentContent)
+		if !ok || content.Area != editorArea {
+			continue
+		}
+
+		editor := content.Name
+		if editor == "" {
+			editor = "an editor"
+		}
+
+		for _, uuid := range content.GetItemAssociations() {
+			if path, isTracked := tracked[uuid]; isTracked {
+				found = append(found, EditorAssociation{NotePath: path, Editor: editor})
+			}
+		}
+	}
+
+	sort.Slice(found, func(i, j int) bool { return found[i].NotePath < found[j].NotePath })
+
+	return found
+}
+
+// editorAssociationWarning renders the warning appended to status and sync
+// output, and is empty when nothing is associated.
+func editorAssociationWarning(associations []EditorAssociation) string {
+	if len(associations) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+
+	sb.WriteString("\n\n")
+	sb.WriteString(yellow("warning: an editor is associated with tracked dotfiles"))
+	sb.WriteString("\n")
+
+	for _, a := range associations {
+		fmt.Fprintf(&sb, "  %s | %s\n", bold(addDot(a.NotePath)), a.Editor)
+	}
+
+	sb.WriteString("\nDotfiles are plain text. An editor that stores anything else rewrites the\n")
+	sb.WriteString("note when it saves, and the file pulled back will not be the file pushed.\n")
+	sb.WriteString("Remove the association in the Standard Notes app, or set the note to use\n")
+	sb.WriteString("the plain text editor.\n")
+
+	return sb.String()
 }

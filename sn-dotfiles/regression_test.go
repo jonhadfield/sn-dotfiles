@@ -239,3 +239,58 @@ func TestContentRoundTripsThroughTheServer(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, content, string(restored))
 }
+
+// TestStatusWarnsAboutEditorAssociations covers the check that replaced the
+// long-standing TODO in sync: an editor that stores anything but plain text
+// rewrites a dotfile when it saves, so the association is worth reporting.
+func TestStatusWarnsAboutEditorAssociations(t *testing.T) {
+	requireLiveSession(t)
+
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+
+	home := getTemporaryHome()
+	addFile(t, home, ".gitconfig", "git config content")
+
+	// find the note the add created, so the component can claim it
+	so, err := cache.Sync(cache.SyncInput{Session: testCacheSession, Close: false})
+	require.NoError(t, err)
+
+	var cached cache.Items
+	require.NoError(t, so.DB.All(&cached))
+	require.NoError(t, so.DB.Close())
+
+	testCacheSession.CacheDB = nil
+
+	all, err := cached.ToItems(testCacheSession)
+	require.NoError(t, err)
+
+	var noteUUID string
+
+	for _, item := range all {
+		if item.GetContentType() == common.SNItemTypeNote && item.GetContent() != nil {
+			noteUUID = item.GetUUID()
+		}
+	}
+
+	require.NotEmpty(t, noteUUID, "expected the added note to be in the account")
+
+	component := items.NewComponent()
+	content := items.NewComponentContent()
+	content.Name = "Super"
+	content.Area = editorArea
+	content.AssociateItems([]string{noteUUID})
+	component.Content = *content
+
+	seedRemote(t, items.Items{&component})
+
+	_, msg, err := Status(testCacheSession, home, []string{}, nil, "", DefaultPageSize, false, true)
+	require.NoError(t, err)
+
+	assert.Contains(t, msg, "an editor is associated with tracked dotfiles")
+	assert.Contains(t, msg, ".gitconfig")
+	assert.Contains(t, msg, "Super")
+}

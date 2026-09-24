@@ -64,11 +64,27 @@ func Status(session *cache.Session, home string, paths []string, filter *PathFil
 		return diffs, msg, err
 	}
 
+	var editors []EditorAssociation
+
+	editors, err = getEditorAssociations(cso.DB, session, remote, home, rootTag)
+	if err != nil {
+		_ = cso.DB.Close()
+
+		return diffs, msg, err
+	}
+
 	if err = cso.DB.Close(); err != nil {
 		return
 	}
 
-	return status(remote, home, paths, filter, rootTag, debug)
+	diffs, msg, err = status(remote, home, paths, filter, rootTag, debug)
+	if err != nil {
+		return
+	}
+
+	msg += editorAssociationWarning(editors)
+
+	return diffs, msg, err
 }
 
 func status(twn tagsWithNotes, home string, paths []string, filter *PathFilter, rootTag string, debug bool) (diffs []ItemDiff, msg string, err error) {
