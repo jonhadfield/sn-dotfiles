@@ -385,3 +385,64 @@ func TestRootTagsFromItemsEmpty(t *testing.T) {
 	plain := noteFixture(t, "notes to self")
 	assert.Empty(t, rootTagsFromItems(gosn.Items{&plain, rootTagFixture(t, "misc", plain)}))
 }
+
+// editorComponentFixture builds an editor component claiming the given notes.
+func editorComponentFixture(t *testing.T, name string, area string, noteUUIDs ...string) *gosn.Component {
+	t.Helper()
+
+	component := gosn.NewComponent()
+
+	content := gosn.NewComponentContent()
+	content.Name = name
+	content.Area = area
+	content.AssociateItems(noteUUIDs)
+
+	component.Content = *content
+
+	return &component
+}
+
+func TestFindEditorAssociations(t *testing.T) {
+	home := "/home/me"
+
+	gitconfig := noteFixture(t, ".gitconfig")
+	vimrc := noteFixture(t, ".vimrc")
+	unrelated := noteFixture(t, "shopping list")
+
+	dotfilesTag := newTestTag()
+	tagContent := gosn.NewTagContent()
+	tagContent.SetTitle(DotFilesTag)
+	dotfilesTag.Content = *tagContent
+
+	twn := tagsWithNotes{
+		tagWithNotes{tag: dotfilesTag, notes: gosn.Notes{gitconfig, vimrc}},
+	}
+
+	items := gosn.Items{
+		// claims a tracked note: this is what we want reported
+		editorComponentFixture(t, "Super", editorArea, gitconfig.GetUUID()),
+		// a note that is not tracked, so not our concern
+		editorComponentFixture(t, "Rich Text", editorArea, unrelated.GetUUID()),
+		// not an editor, so ignored even though it claims a tracked note
+		editorComponentFixture(t, "Some Theme", "themes", vimrc.GetUUID()),
+	}
+
+	found := findEditorAssociations(items, twn, home, "")
+
+	require.Len(t, found, 1)
+	assert.Equal(t, ".gitconfig", found[0].NotePath)
+	assert.Equal(t, "Super", found[0].Editor)
+}
+
+func TestFindEditorAssociationsNone(t *testing.T) {
+	assert.Empty(t, findEditorAssociations(gosn.Items{}, tagsWithNotes{}, "/home/me", ""))
+}
+
+func TestEditorAssociationWarning(t *testing.T) {
+	assert.Empty(t, editorAssociationWarning(nil))
+
+	msg := editorAssociationWarning([]EditorAssociation{{NotePath: ".gitconfig", Editor: "Super"}})
+	assert.Contains(t, msg, ".gitconfig")
+	assert.Contains(t, msg, "Super")
+	assert.Contains(t, msg, "plain text")
+}
