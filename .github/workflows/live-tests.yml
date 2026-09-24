@@ -1,0 +1,52 @@
+name: Live tests
+
+# The tests in tests.yml run against an in-memory Standard Notes server. This
+# runs the same suite against a real account, which is the only way to catch a
+# change in the server's behaviour rather than in ours.
+#
+# Daily rather than per-push: the suite makes enough API calls that running it
+# on every push exhausted the account's rate limit, and there is only one
+# account to share.
+on:
+  schedule:
+    # early morning UK time, when nothing else is likely to be using the account
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Live tests
+    # One account, so one run at a time, and never cancel a run part way
+    # through: a cancelled run leaves its notes behind for the next one.
+    concurrency:
+      group: live-tests
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      -
+        name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.26.8'
+      -
+        name: Tests
+        run: |
+          go mod tidy
+          go test -cover -v -failfast -p 1 $(go list ./...)
+        env:
+          SN_INTEGRATION_TESTS: true
+          SN_EMAIL: ${{ secrets.SN_EMAIL }}
+          SN_PASSWORD: ${{ secrets.SN_PASSWORD }}
