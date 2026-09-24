@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/asdine/storm/v3 v3.2.1
 	github.com/briandowns/spinner v1.23.2
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.19.0
 	github.com/fatih/set v0.2.1
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
 	github.com/jonhadfield/gosn-v2 v0.0.0-20260919164852-88d667c2cfe7
@@ -29,7 +29,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
