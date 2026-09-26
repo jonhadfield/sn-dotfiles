@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-26
+
+### Added
+
+- `status` and `sync` warn when a Standard Notes editor is associated with a
+  tracked dotfile. Notes hold plain text, and an editor that stores anything
+  else — Super keeps JSON, Rich Text keeps HTML — rewrites the note when it
+  saves, so the file pulled back would not be the file pushed. Nothing is
+  changed remotely; the warning names the file and the editor
+
+### Fixed
+
+- A relative path was validated against the working directory rather than the
+  home directory it had been resolved against, so `add .gitconfig` failed with
+  `lstat .gitconfig: no such file or directory` for a file that existed
+- Removing a path that was never tracked deleted the root tag and untracked
+  everything beneath it. The root tag is now removed only when it holds no
+  notes of its own and every child tag is going too
+- `remove` reported an error when it found nothing to remove, rather than
+  saying the path was not tracked
+- A failed read while comparing a note with its file exited the process
+  through `log.Fatal` instead of reporting the problem
+- `wipe` accepted an invalid session, failing later and less clearly
+
+### Changed
+
+- The test suite runs without a Standard Notes account, against an in-memory
+  server that exercises the real sign-in, encryption and sync paths: 115 tests,
+  none skipped. CI runs against it, and a scheduled job runs the same suite
+  against a real account daily
+- Dependabot now raises version updates, not only security ones
+- Conflicting note and tag paths are reported in a stable order
+- Dropped the `fatih/set` dependency
+
 ## [0.3.0] - 2026-09-24
 
 ### Added
