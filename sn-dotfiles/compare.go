@@ -3,8 +3,6 @@ package sndotfiles
 import (
 	"fmt"
 	gosn "github.com/jonhadfield/gosn-v2/items"
-	"io/ioutil"
-	"log"
 	"os"
 )
 
@@ -91,7 +89,14 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home, rootTa
 				// local does exist, so compareNoteWithFile and store generated compare
 				debugPrint(debug, fmt.Sprintf("compare | local found: <home>/%s", stripHome(fullPath, home)))
 				remotePaths = append(remotePaths, fullPath)
-				itemDiffs = append(itemDiffs, compareNoteWithFile(tagTitle, fullPath, home, d, debug))
+				var itemDiff ItemDiff
+
+				itemDiff, err = compareNoteWithFile(tagTitle, fullPath, home, d, debug)
+				if err != nil {
+					return
+				}
+
+				itemDiffs = append(itemDiffs, itemDiff)
 			}
 		}
 	}
@@ -99,45 +104,28 @@ func compareRemoteWithLocalFS(remote tagsWithNotes, paths []string, home, rootTa
 	return itemDiffs, remotePaths, err
 }
 
-func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bool) ItemDiff {
+// compareNoteWithFile compares a note with the file it is tracking. It returns
+// an error rather than exiting: a file that has been removed or is unreadable
+// since the walk is a condition to report, not a reason to kill the process.
+func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bool) (ItemDiff, error) {
 	debugPrint(debug, fmt.Sprintf("compareNoteWithFile | title: %s path: <home>/%s",
 		tagTitle, stripHome(path, home)))
 
 	localStat, err := os.Stat(path)
 	if err != nil {
-		log.Fatal(err)
+		return ItemDiff{}, fmt.Errorf("failed to read %s: %w", path, err)
 	}
 
-	var file *os.File
-
-	file, err = os.Open(path)
+	localBytes, err := os.ReadFile(path)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer func() {
-		if err = file.Close(); err != nil {
-			fmt.Println("failed to close file:", path)
-		}
-	}()
-
-	var localBytes []byte
-
-	localBytes, err = ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatal(err)
+		return ItemDiff{}, fmt.Errorf("failed to read %s: %w", path, err)
 	}
 
 	homeRelPath := stripHome(path, home)
 
 	localStr := string(localBytes)
 	if localStr != remote.Content.GetText() {
-		var remoteUpdated int64
-
-		remoteUpdated = remote.UpdatedAtTimestamp
-		if err != nil {
-			log.Fatal(err)
-		}
+		remoteUpdated := remote.UpdatedAtTimestamp
 
 		debugPrint(debug, fmt.Sprintf("compareNoteWithFile | remote updated UTC): %v", remoteUpdated))
 		// if content different and local file was updated more recently
@@ -152,7 +140,7 @@ func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bo
 				diff:        localNewer,
 				local:       string(localBytes),
 				remote:      remote,
-			}
+			}, nil
 		}
 		// content different remote content was updated more recently
 		return ItemDiff{
@@ -163,7 +151,7 @@ func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bo
 			diff:        remoteNewer,
 			local:       string(localBytes),
 			remote:      remote,
-		}
+		}, nil
 	}
 	// local and remote identical
 	return ItemDiff{
@@ -174,5 +162,5 @@ func compareNoteWithFile(tagTitle, path, home string, remote gosn.Note, debug bo
 		diff:        identical,
 		local:       string(localBytes),
 		remote:      remote,
-	}
+	}, nil
 }

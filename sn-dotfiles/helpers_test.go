@@ -7,6 +7,7 @@ import (
 	"github.com/jonhadfield/gosn-v2/session"
 	"github.com/stretchr/testify/require"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -150,7 +151,8 @@ func TestCompareIdentical(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote identical produces correct ItemDiff
-	iDiff := compareNoteWithFile("apple", applePath, home, appleNote, true)
+	iDiff, err := compareNoteWithFile("apple", applePath, home, appleNote, true)
+	require.NoError(t, err)
 	assert.Equal(t, identical, iDiff.diff)
 	assert.Equal(t, "apple", iDiff.tagTitle)
 	assert.Equal(t, "apple", iDiff.noteTitle)
@@ -174,7 +176,8 @@ func TestCompareRemoteNewer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote differ and remote newer produces correct ItemDiff
-	iDiff := compareNoteWithFile("lemon", lemonPath, home, lemonNote, true)
+	iDiff, cErr := compareNoteWithFile("lemon", lemonPath, home, lemonNote, true)
+	require.NoError(t, cErr)
 	assert.Equal(t, remoteNewer, iDiff.diff)
 	assert.Equal(t, "lemon", iDiff.tagTitle)
 	assert.Equal(t, "lemon", iDiff.noteTitle)
@@ -196,7 +199,8 @@ func TestCompareLocalNewer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 	// verify local and remote differ and local newer produces correct ItemDiff
-	iDiff := compareNoteWithFile("lemon", lemonPath, home, lemonNote, true)
+	iDiff, cErr := compareNoteWithFile("lemon", lemonPath, home, lemonNote, true)
+	require.NoError(t, cErr)
 	assert.Equal(t, localNewer, iDiff.diff)
 	assert.Equal(t, "lemon", iDiff.tagTitle)
 	assert.Equal(t, "lemon", iDiff.noteTitle)
@@ -445,4 +449,32 @@ func TestEditorAssociationWarning(t *testing.T) {
 	assert.Contains(t, msg, ".gitconfig")
 	assert.Contains(t, msg, "Super")
 	assert.Contains(t, msg, "plain text")
+}
+
+// TestCompareNoteWithFileReturnsErrors covers compareNoteWithFile having called
+// log.Fatal on a read failure, which exited the process - and, under test, the
+// test binary - instead of reporting the problem.
+func TestCompareNoteWithFileReturnsErrors(t *testing.T) {
+	home := t.TempDir()
+
+	note := noteFixture(t, "apple")
+
+	// a path that does not exist
+	_, err := compareNoteWithFile("apple", filepath.Join(home, ".missing"), home, note, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to read")
+
+	// and one that exists but cannot be read
+	unreadable := filepath.Join(home, ".unreadable")
+	require.NoError(t, os.WriteFile(unreadable, []byte("secret"), 0o000))
+
+	t.Cleanup(func() { _ = os.Chmod(unreadable, 0o600) })
+
+	if os.Geteuid() == 0 {
+		t.Skip("running as root, which can read a 0000 file")
+	}
+
+	_, err = compareNoteWithFile("apple", unreadable, home, note, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to read")
 }

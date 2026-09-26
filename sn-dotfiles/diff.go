@@ -31,7 +31,7 @@ func Diff(session *cache.Session, home string, paths []string, filter *PathFilte
 
 	if !session.Debug {
 		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(session.CacheDBPath); os.IsNotExist(err) {
+		if _, sErr := os.Stat(session.CacheDBPath); os.IsNotExist(sErr) {
 			prefix = HiWhite("initializing ")
 		}
 

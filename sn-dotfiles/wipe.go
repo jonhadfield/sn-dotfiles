@@ -1,6 +1,7 @@
 package sndotfiles
 
 import (
+	"errors"
 	"fmt"
 	"github.com/briandowns/spinner"
 	"github.com/jonhadfield/gosn-v2/cache"
@@ -15,7 +16,11 @@ func WipeDotfileTagsAndNotes(session *cache.Session, rootTag string, pageSize in
 		return 0, err
 	}
 
-	if session.Valid() && !session.Debug {
+	if !session.Valid() {
+		return 0, errors.New("invalid session")
+	}
+
+	if !session.Debug {
 		prefix := HiWhite("syncing ")
 		if _, err := os.Stat(session.CacheDBPath); os.IsNotExist(err) {
 			prefix = HiWhite("initializing ")
