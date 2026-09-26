@@ -22,24 +22,21 @@ func preflight(home string, in []string) (out []string, err error) {
 	// handle shell expansion
 	var v bool
 	for _, inPath := range in {
-		if strings.HasPrefix(inPath, "~") {
-			inPath = strings.Replace(inPath, "~", home, 1)
-			if v, err = pathValid(inPath); !v {
-				return
-			}
-			out = append(out, inPath)
-			continue
+		// handle shell expansion and paths relative to home
+		switch {
+		case strings.HasPrefix(inPath, "~"):
+			inPath = filepath.Join(home, strings.TrimPrefix(inPath, "~"))
+		case !filepath.IsAbs(inPath):
+			inPath = filepath.Join(home, inPath)
 		}
-		if !strings.HasPrefix(inPath, "/") {
-			out = append(out, filepath.Join(home, inPath))
-			if v, err = pathValid(inPath); !v {
-				return
-			}
-			continue
-		}
+
+		// validate the resolved path rather than the one supplied: a relative
+		// path was being checked against the working directory, so a file that
+		// existed under home was reported as missing
 		if v, err = pathValid(inPath); !v {
 			return
 		}
+
 		out = append(out, inPath)
 	}
 
