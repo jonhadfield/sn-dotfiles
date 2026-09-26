@@ -71,3 +71,31 @@ func TestPreflightResolvesBeforeValidating(t *testing.T) {
 	_, err := preflight(home, []string{".does-not-exist"})
 	require.Error(t, err)
 }
+
+// TestPreflightOverlapsAreSortedAndComplete checks every overlap is reported,
+// in a stable order. The previous implementation walked a set, so the order of
+// the message varied between runs for the same account.
+func TestPreflightOverlapsAreSortedAndComplete(t *testing.T) {
+	twn := tagsWithNotes{
+		// two tags that clash with notes under their parents
+		tagWithNotes{tag: mustCreateTag("dotfiles.zshrc")},
+		tagWithNotes{tag: mustCreateTag("dotfiles.config")},
+		tagWithNotes{
+			tag:   mustCreateTag("dotfiles"),
+			notes: gosn.Notes{createNote(".zshrc", "one"), createNote(".config", "two")},
+		},
+	}
+
+	err := checkNoteTagConflicts(twn, "")
+	require.Error(t, err)
+
+	// both clashes reported, in sorted order, on their own lines
+	assert.Equal(t,
+		"the following notes and tags are overlapping:\n- dotfiles.config\n- dotfiles.zshrc",
+		err.Error())
+
+	// and running it again gives exactly the same message
+	second := checkNoteTagConflicts(twn, "")
+	require.Error(t, second)
+	assert.Equal(t, err.Error(), second.Error())
+}

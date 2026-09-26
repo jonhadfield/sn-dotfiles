@@ -6,7 +6,6 @@ require (
 	github.com/asdine/storm/v3 v3.2.1
 	github.com/briandowns/spinner v1.23.2
 	github.com/fatih/color v1.19.0
-	github.com/fatih/set v0.2.1
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
 	github.com/jonhadfield/gosn-v2 v0.0.0-20260919164852-88d667c2cfe7
 	github.com/lithammer/shortuuid v3.0.0+incompatible

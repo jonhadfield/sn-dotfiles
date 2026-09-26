@@ -3,8 +3,8 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/fatih/set"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -47,12 +47,12 @@ func checkNoteTagConflicts(twn tagsWithNotes, rootTag string) error {
 	rootTag = normalizeRootTag(rootTag)
 
 	// check for path conflict where tag and note overlap
-	tagPaths := set.New(set.NonThreadSafe)
-	notePaths := set.New(set.NonThreadSafe)
+	tagPaths := make(map[string]struct{}, len(twn))
+	notePaths := make(map[string]struct{})
 
 	for _, t := range twn {
 		tagPath := t.tag.Content.GetTitle()
-		tagPaths.Add(tagPath)
+		tagPaths[tagPath] = struct{}{}
 		// loop through tag related notes and generate a list
 		// of all combinations to check for duplicates
 		for _, n := range t.notes {
@@ -66,20 +66,25 @@ func checkNoteTagConflicts(twn tagsWithNotes, rootTag string) error {
 				notePath = tagPath + n.Content.GetTitle()
 			}
 
-			notePaths.Add(notePath)
+			notePaths[notePath] = struct{}{}
 		}
 	}
 
-	inter := set.Intersection(tagPaths, notePaths)
-	overlaps := make([]string, len(inter.List()))
+	var overlaps []string
 
-	for c, i := range inter.List() {
-		overlaps[c] = "- " + i.(string)
+	for notePath := range notePaths {
+		if _, clash := tagPaths[notePath]; clash {
+			overlaps = append(overlaps, "- "+notePath)
+		}
 	}
 
-	if inter.IsEmpty() {
+	if len(overlaps) == 0 {
 		return nil
 	}
+
+	// sorted so that the same account always produces the same message; map
+	// iteration order would otherwise vary between runs
+	sort.Strings(overlaps)
 
 	return fmt.Errorf("the following notes and tags are overlapping:\n%s", strings.Join(overlaps, "\n"))
 }
