@@ -94,6 +94,10 @@ func main() {
 func startCLI(args []string) (msg string, display bool, err error) {
 	const funcName = "startCLI"
 
+	// Keep sn-dotfiles sessions out of the shared StandardNotesCLI keyring
+	// slot that sn-cli historically used.
+	session.SetKeyringIdentity(sndotfiles.SNAppName, "Session")
+
 	viper.SetEnvPrefix("sn")
 
 	err = viper.BindEnv("email")

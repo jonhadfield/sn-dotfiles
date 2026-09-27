@@ -95,6 +95,8 @@ sn-dotfiles sync              # does it
 
 By default, your credentials will be requested every time, but you can store them using either environment variables or, on MacOS and Linux, store your session using the native Keychain application.
 
+`sn-dotfiles` stores its session under its own keyring identity (`sn-dotfiles`), separate from `sn-cli`. If you previously shared a session with `sn-cli`, the first successful `--use-session` (or `session --add`) copies that legacy entry into the `sn-dotfiles` slot; after that each tool manages its own session.
+
 ### Session (macOS Keychain / Gnome Keyring)
 
 Using a session is different from storing credentials as you no longer need to authenticate. As a result, if using 2FA (Two Factor Authentication), you won't need to enter your token value each time.
