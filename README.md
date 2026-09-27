@@ -128,9 +128,11 @@ it in plain text on disk; prefer a session for interactive use.
 export SN_EMAIL=<email address>
 export SN_PASSWORD=<password>
 export SN_SERVER=<https://myserver.example.com>   # optional, if running personal server
-export SN_USE_SESSION=true                        # same as passing --use-session
+export SN_DOTFILES_USE_SESSION=true               # same as passing --use-session
 export SN_DEBUG=true                              # same as passing --debug
 ```
+
+`SN_DOTFILES_USE_SESSION` is separate from sn-cli’s `SN_USE_SESSION`, so enabling a session for one tool does not enable it for the other. The stored keyring sessions are separate too (see above).
 
 ## Configuration
 

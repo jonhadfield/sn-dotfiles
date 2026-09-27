@@ -120,7 +120,8 @@ func startCLI(args []string) (msg string, display bool, err error) {
 		return "", false, err
 	}
 
-	err = viper.BindEnv("use_session")
+	// Dedicated name so sn-cli's SN_USE_SESSION does not affect this tool.
+	err = viper.BindEnv("use_session", "SN_DOTFILES_USE_SESSION")
 	if err != nil {
 		return "", false, err
 	}

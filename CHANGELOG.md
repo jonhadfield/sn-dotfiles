@@ -6,12 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-27
+
 ### Added
 
 - `sync --interactive` (`-i`): when local and remote content differ, show a
   diff and choose push (local), pull (remote), or skip, instead of always
   keeping the newer side. Enter accepts the newer side; `q` aborts without
   writing. Cannot be combined with `--dry-run`
+- `SN_DOTFILES_USE_SESSION` enables `--use-session` by default, separate from
+  sn-cli’s `SN_USE_SESSION`
 
 ### Fixed
 
