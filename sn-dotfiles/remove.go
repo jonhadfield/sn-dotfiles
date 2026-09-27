@@ -3,12 +3,10 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/briandowns/spinner"
+
 	"github.com/jonhadfield/gosn-v2/cache"
 	gosn "github.com/jonhadfield/gosn-v2/items"
 	"github.com/ryanuber/columnize"
-	"os"
-	"time"
 )
 
 type RemoveInput struct {
@@ -57,19 +55,8 @@ func Remove(ri RemoveInput, useStdErr bool) (ro RemoveOutput, err error) {
 	ri.Paths, err = preflight(ri.Home, ri.Paths)
 
 	if !ri.Debug {
-		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(ri.Session.CacheDBPath); os.IsNotExist(err) {
-			prefix = HiWhite("initializing ")
-		}
-
-		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
-		if useStdErr {
-			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
-		}
-
-		s.Prefix = prefix
-		s.Start()
-		defer s.Stop()
+		stop := startBusySpinner(ri.Session.CacheDBPath)
+		defer stop()
 	}
 
 	// get populated db

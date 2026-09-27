@@ -3,15 +3,14 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/findexec"
-	"github.com/jonhadfield/gosn-v2/cache"
-	gosn "github.com/jonhadfield/gosn-v2/items"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
+
+	"github.com/jonhadfield/findexec"
+	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
 )
 
 const (
@@ -30,19 +29,8 @@ func Diff(session *cache.Session, home string, paths []string, filter *PathFilte
 	debugPrint(session.Debug, fmt.Sprintf("Diff | %d paths", len(paths)))
 
 	if !session.Debug {
-		prefix := HiWhite("syncing ")
-		if _, sErr := os.Stat(session.CacheDBPath); os.IsNotExist(sErr) {
-			prefix = HiWhite("initializing ")
-		}
-
-		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
-		if useStdErr {
-			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
-		}
-
-		s.Prefix = prefix
-		s.Start()
-		defer s.Stop()
+		stop := startBusySpinner(session.CacheDBPath)
+		defer stop()
 	}
 
 	// get populated db

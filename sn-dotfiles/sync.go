@@ -3,14 +3,12 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/asdine/storm/v3"
-	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
-	"github.com/jonhadfield/gosn-v2/cache"
 	"os"
 	"strings"
-	"time"
 
+	"github.com/asdine/storm/v3"
+	"github.com/fatih/color"
+	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
 )
 
@@ -38,19 +36,8 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 
 	// Skip the spinner in interactive mode so prompts are not overwritten.
 	if !si.Debug && !si.Interactive {
-		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(si.Session.CacheDBPath); os.IsNotExist(err) {
-			prefix = HiWhite("initializing ")
-		}
-
-		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
-		if useStdErr {
-			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
-		}
-
-		s.Prefix = prefix
-		s.Start()
-		defer s.Stop()
+		stop := startBusySpinner(si.Session.CacheDBPath)
+		defer stop()
 	}
 
 	chooser := si.ChooseConflict

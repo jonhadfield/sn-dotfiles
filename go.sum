@@ -45,8 +45,8 @@ github.com/hashicorp/go-retryablehttp v0.7.8 h1:ylXZWnqa7Lhqpk0L1P1LzDtGcCR0rPVU
 github.com/hashicorp/go-retryablehttp v0.7.8/go.mod h1:rjiScheydd+CxvumBsIrFKlx3iS0jrZ7LvzFGFmuKbw=
 github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77 h1:U1mtIepXhvIq0cLDLO6z1hZYS80lDXzmsZJwMgzwaf8=
 github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77/go.mod h1:9Q9pFtVLzvgKEi8++fNhmSR7HpD9+9+dPy/SECsNB6k=
-github.com/jonhadfield/gosn-v2 v0.0.0-20260927092733-d8be686e94c3 h1:YSQEOYuoA5tUPIRGEr6utX75H5BE7+8bDGU+9B6qWJo=
-github.com/jonhadfield/gosn-v2 v0.0.0-20260927092733-d8be686e94c3/go.mod h1:bn4adQA7PgZGUlQwnWdfesjodyoOeVm6OonkWn17dZA=
+github.com/jonhadfield/gosn-v2 v0.0.0-20260927094236-b2a9605b6363 h1:buKwsf/SOXX+5G1OY+BLTVJwCKSjSGtzS+L1k2V09Fg=
+github.com/jonhadfield/gosn-v2 v0.0.0-20260927094236-b2a9605b6363/go.mod h1:bn4adQA7PgZGUlQwnWdfesjodyoOeVm6OonkWn17dZA=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=

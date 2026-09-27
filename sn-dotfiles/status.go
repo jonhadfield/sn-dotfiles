@@ -2,11 +2,9 @@ package sndotfiles
 
 import (
 	"fmt"
-	"github.com/briandowns/spinner"
+
 	"github.com/jonhadfield/gosn-v2/cache"
 	"github.com/ryanuber/columnize"
-	"os"
-	"time"
 )
 
 // Status compares and then outputs status of all items (or a subset defined by Paths param):
@@ -27,19 +25,8 @@ func Status(session *cache.Session, home string, paths []string, filter *PathFil
 	}
 
 	if !debug {
-		prefix := HiWhite("syncing ")
-		if _, sErr := os.Stat(session.CacheDBPath); os.IsNotExist(sErr) {
-			prefix = HiWhite("initializing ")
-		}
-
-		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
-		if useStdErr {
-			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
-		}
-
-		s.Prefix = prefix
-		s.Start()
-		defer s.Stop()
+		stop := startBusySpinner(session.CacheDBPath)
+		defer stop()
 	}
 
 	// get populated db

@@ -3,11 +3,9 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/briandowns/spinner"
+
 	"github.com/jonhadfield/gosn-v2/cache"
 	gosn "github.com/jonhadfield/gosn-v2/items"
-	"os"
-	"time"
 )
 
 func WipeDotfileTagsAndNotes(session *cache.Session, rootTag string, pageSize int, useStdErr bool) (int, error) {
@@ -21,19 +19,8 @@ func WipeDotfileTagsAndNotes(session *cache.Session, rootTag string, pageSize in
 	}
 
 	if !session.Debug {
-		prefix := HiWhite("syncing ")
-		if _, err := os.Stat(session.CacheDBPath); os.IsNotExist(err) {
-			prefix = HiWhite("initializing ")
-		}
-
-		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
-		if useStdErr {
-			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
-		}
-
-		s.Prefix = prefix
-		s.Start()
-		defer s.Stop()
+		stop := startBusySpinner(session.CacheDBPath)
+		defer stop()
 	}
 
 	// get populated db

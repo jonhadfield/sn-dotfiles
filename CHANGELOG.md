@@ -13,6 +13,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   keeping the newer side. Enter accepts the newer side; `q` aborts without
   writing. Cannot be combined with `--dry-run`
 
+### Fixed
+
+- The busy spinner always clears: it writes to stderr and is stopped before
+  result text is printed, so `initializing` / `syncing` no longer sticks to
+  the following line
+- Bump gosn-v2 so the sync-token-reset notice is debug-only and no longer
+  prints to the terminal during normal use
+
 ### Changed
 
 - Stored sessions use a dedicated keyring identity (`sn-dotfiles`) instead of

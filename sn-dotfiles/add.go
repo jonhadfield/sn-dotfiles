@@ -3,16 +3,15 @@ package sndotfiles
 import (
 	"errors"
 	"fmt"
-	"github.com/asdine/storm/v3"
-	"github.com/briandowns/spinner"
-	"github.com/jonhadfield/gosn-v2/cache"
-	gosn "github.com/jonhadfield/gosn-v2/items"
-	"github.com/ryanuber/columnize"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
+
+	"github.com/asdine/storm/v3"
+	"github.com/jonhadfield/gosn-v2/cache"
+	gosn "github.com/jonhadfield/gosn-v2/items"
+	"github.com/ryanuber/columnize"
 )
 
 // Add tracks local Paths by pushing the local dir as a tag representation and the filename as a note title
@@ -55,19 +54,8 @@ func Add(ai AddInput, useStdErr bool) (ao AddOutput, err error) {
 	debugPrint(ai.Session.Debug, fmt.Sprintf("Add | paths after dedupe: %d", len(ai.Paths)))
 
 	if !ai.Session.Debug {
-		prefix := HiWhite("syncing ")
-		if _, err = os.Stat(ai.Session.CacheDBPath); os.IsNotExist(err) {
-			prefix = HiWhite("initializing ")
-		}
-
-		s := spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stdout))
-		if useStdErr {
-			s = spinner.New(spinner.CharSets[SpinnerCharSet], SpinnerDelay*time.Millisecond, spinner.WithWriter(os.Stderr))
-		}
-
-		s.Prefix = prefix
-		s.Start()
-		defer s.Stop()
+		stop := startBusySpinner(ai.Session.CacheDBPath)
+		defer stop()
 	}
 
 	// get populated db
