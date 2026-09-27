@@ -7,13 +7,14 @@ require (
 	github.com/briandowns/spinner v1.23.2
 	github.com/fatih/color v1.19.0
 	github.com/jonhadfield/findexec v0.0.0-20190902195615-78db24cd4e77
-	github.com/jonhadfield/gosn-v2 v0.0.0-20260919164852-88d667c2cfe7
+	github.com/jonhadfield/gosn-v2 v0.0.0-20260927092733-d8be686e94c3
 	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli v1.22.17
+	golang.org/x/term v0.46.0
 )
 
 require (
@@ -44,10 +45,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
-
-replace github.com/jonhadfield/gosn-v2 => ../gosn-v2
