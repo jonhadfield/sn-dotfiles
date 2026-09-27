@@ -193,8 +193,8 @@ Status compares each tracked dotfile with its remote note and reports one of fiv
 | State | Meaning | What `sync` does |
 |---|---|---|
 | `identical` | Local file and note match | Nothing |
-| `local newer` | The local file changed most recently | Pushes the local file |
-| `remote newer` | The note changed most recently | Overwrites the local file |
+| `local newer` | The local file changed most recently | Pushes the local file (unless `--interactive`) |
+| `remote newer` | The note changed most recently | Overwrites the local file (unless `--interactive`) |
 | `local missing` | Tracked remotely, absent locally | Creates the local file |
 | `untracked` | Present locally, not in Standard Notes | Nothing, until you `add` it |
 
@@ -245,6 +245,30 @@ dry run: nothing was written (1 to push, 1 to pull)
 
 It compares exactly as a real sync does, honouring `--exclude`, any paths you
 name and the configuration patterns, then stops before writing anything.
+
+To choose local or remote yourself when content differs, instead of always
+keeping the newer side:
+
+```bash
+sn-dotfiles sync --interactive
+# or: sn-dotfiles sync -i
+```
+
+For each differing file it shows a diff and prompts:
+
+```
+.gitconfig differs (local newer)
+--- local
++++ remote
+@@ -1 +1 @@
+-user.name=Old
++user.name=New
+
+Keep [L]ocal (push), [R]emote (pull), [S]kip, [D]iff, or [Q]uit? [l / local (push)]
+```
+
+Enter accepts the newer side (shown in brackets). `q` aborts without writing
+anything. `--interactive` cannot be combined with `--dry-run`.
 
 ### remove
 

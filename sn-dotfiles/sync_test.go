@@ -253,6 +253,144 @@ func TestSyncDryRunWritesNothing(t *testing.T) {
 	require.Contains(t, wet.Msg, "pushed")
 }
 
+// TestSyncInteractiveOverridePullsWhenLocalNewer checks that an interactive
+// chooser can pull the remote even when the local file would win by mtime.
+func TestSyncInteractiveOverridePullsWhenLocalNewer(t *testing.T) {
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NotEmpty(t, testCacheSession.AccessToken)
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.apple", home)
+	fwc[applePath] = "apple content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	ao, err := Add(ai, true)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(ao.PathsAdded))
+
+	assert.NoError(t, createPathWithContent(applePath, "apple content updated"))
+	updateTime := time.Now().Add(time.Minute * 10)
+	assert.NoError(t, os.Chtimes(applePath, updateTime, updateTime))
+
+	var prompted bool
+	so, err := Sync(SNDotfilesSyncInput{
+		Session:     testCacheSession,
+		Home:        home,
+		Paths:       []string{applePath},
+		Debug:       true,
+		Interactive: true,
+		ChooseConflict: func(diff ItemDiff, defaultAction SyncChoice) (SyncChoice, error) {
+			prompted = true
+			assert.Equal(t, SyncChoiceLocal, defaultAction)
+			assert.Equal(t, localNewer, diff.diff)
+
+			return SyncChoiceRemote, nil
+		},
+	}, true)
+
+	require.NoError(t, err)
+	assert.True(t, prompted)
+	assert.Equal(t, 0, so.NoPushed)
+	assert.Equal(t, 1, so.NoPulled)
+
+	content, err := os.ReadFile(applePath)
+	require.NoError(t, err)
+	assert.Equal(t, "apple content", string(content))
+}
+
+// TestSyncInteractiveSkipLeavesBothSidesAlone checks that choosing skip
+// writes nothing for a differing file.
+func TestSyncInteractiveSkipLeavesBothSidesAlone(t *testing.T) {
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NotEmpty(t, testCacheSession.AccessToken)
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.apple", home)
+	fwc[applePath] = "apple content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	_, err := Add(ai, true)
+	require.NoError(t, err)
+
+	assert.NoError(t, createPathWithContent(applePath, "apple content updated"))
+	updateTime := time.Now().Add(time.Minute * 10)
+	assert.NoError(t, os.Chtimes(applePath, updateTime, updateTime))
+
+	so, err := Sync(SNDotfilesSyncInput{
+		Session:     testCacheSession,
+		Home:        home,
+		Paths:       []string{applePath},
+		Debug:       true,
+		Interactive: true,
+		ChooseConflict: func(diff ItemDiff, defaultAction SyncChoice) (SyncChoice, error) {
+			return SyncChoiceSkip, nil
+		},
+	}, true)
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, so.NoPushed)
+	assert.Equal(t, 0, so.NoPulled)
+	assert.Contains(t, so.Msg, "skipped")
+
+	content, err := os.ReadFile(applePath)
+	require.NoError(t, err)
+	assert.Equal(t, "apple content updated", string(content))
+}
+
+// TestSyncInteractiveAbortWritesNothing checks that quitting mid-prompt
+// leaves local and remote unchanged.
+func TestSyncInteractiveAbortWritesNothing(t *testing.T) {
+	defer func() {
+		if err := CleanUp(*testCacheSession); err != nil {
+			fmt.Println("failed to wipe")
+		}
+	}()
+	assert.NotEmpty(t, testCacheSession.AccessToken)
+	home := getTemporaryHome()
+
+	fwc := make(map[string]string)
+	applePath := fmt.Sprintf("%s/.apple", home)
+	fwc[applePath] = "apple content"
+
+	assert.NoError(t, createTemporaryFiles(fwc))
+	ai := AddInput{Session: testCacheSession, Home: home, Paths: []string{applePath}}
+	_, err := Add(ai, true)
+	require.NoError(t, err)
+
+	assert.NoError(t, createPathWithContent(applePath, "apple content updated"))
+	updateTime := time.Now().Add(time.Minute * 10)
+	assert.NoError(t, os.Chtimes(applePath, updateTime, updateTime))
+
+	_, err = Sync(SNDotfilesSyncInput{
+		Session:     testCacheSession,
+		Home:        home,
+		Paths:       []string{applePath},
+		Debug:       true,
+		Interactive: true,
+		ChooseConflict: func(diff ItemDiff, defaultAction SyncChoice) (SyncChoice, error) {
+			return SyncChoiceSkip, ErrSyncAborted
+		},
+	}, true)
+
+	require.ErrorIs(t, err, ErrSyncAborted)
+
+	content, err := os.ReadFile(applePath)
+	require.NoError(t, err)
+	assert.Equal(t, "apple content updated", string(content))
+}
+
 // TestSync creates local dotfiles
 func TestSync(t *testing.T) {
 

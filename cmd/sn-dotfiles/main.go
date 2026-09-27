@@ -217,9 +217,13 @@ func startCLI(args []string) (msg string, display bool, err error) {
 				Name:  "dry-run",
 				Usage: "show what sync would do, without changing anything",
 			},
+			cli.BoolFlag{
+				Name:  "interactive, i",
+				Usage: "for each differing file, show a diff and choose local, remote, or skip",
+			},
 		},
 		BashComplete: func(c *cli.Context) {
-			syncTasks := []string{"--exclude", "--dry-run"}
+			syncTasks := []string{"--exclude", "--dry-run", "--interactive"}
 			for _, t := range syncTasks {
 				fmt.Println(t)
 			}
@@ -254,15 +258,16 @@ func startCLI(args []string) (msg string, display bool, err error) {
 
 			var so sndotfiles.SyncOutput
 			so, err = sndotfiles.Sync(sndotfiles.SNDotfilesSyncInput{
-				Session:  &sess,
-				Home:     opts.home,
-				Paths:    c.Args(),
-				Exclude:  c.StringSlice("exclude"),
-				Filter:   cfg.filter,
-				RootTag:  cfg.rootTag,
-				PageSize: opts.pageSize,
-				Debug:    opts.debug,
-				DryRun:   c.Bool("dry-run"),
+				Session:     &sess,
+				Home:        opts.home,
+				Paths:       c.Args(),
+				Exclude:     c.StringSlice("exclude"),
+				Filter:      cfg.filter,
+				RootTag:     cfg.rootTag,
+				PageSize:    opts.pageSize,
+				Debug:       opts.debug,
+				DryRun:      c.Bool("dry-run"),
+				Interactive: c.Bool("interactive"),
 			}, c.GlobalBool("no-stdout"))
 
 			if err != nil {

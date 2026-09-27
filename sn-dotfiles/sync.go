@@ -21,7 +21,13 @@ var (
 // Sync compares local and remote items and then:
 // - pulls remotes if locals are older or missing
 // - pushes locals if locals are newer
+// With Interactive set, differing files are prompted for local/remote/skip
+// instead of applying last-write-wins automatically.
 func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
+	if si.DryRun && si.Interactive {
+		return so, errors.New("--interactive cannot be used with --dry-run")
+	}
+
 	if si.RootTag, err = ResolveRootTag(si.RootTag); err != nil {
 		return
 	}
@@ -30,7 +36,8 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 		return
 	}
 
-	if !si.Debug {
+	// Skip the spinner in interactive mode so prompts are not overwritten.
+	if !si.Debug && !si.Interactive {
 		prefix := HiWhite("syncing ")
 		if _, err = os.Stat(si.Session.CacheDBPath); os.IsNotExist(err) {
 			prefix = HiWhite("initializing ")
@@ -46,16 +53,23 @@ func Sync(si SNDotfilesSyncInput, useStdErr bool) (so SyncOutput, err error) {
 		defer s.Stop()
 	}
 
+	chooser := si.ChooseConflict
+	if si.Interactive && chooser == nil {
+		chooser = defaultConflictChooser
+	}
+
 	output, err := sync(syncInput{
-		session: si.Session,
-		home:    si.Home,
-		paths:   si.Paths,
-		exclude: si.Exclude,
-		filter:  si.Filter,
-		rootTag: si.RootTag,
-		debug:   si.Debug,
-		close:   false,
-		dryRun:  si.DryRun,
+		session:        si.Session,
+		home:           si.Home,
+		paths:          si.Paths,
+		exclude:        si.Exclude,
+		filter:         si.Filter,
+		rootTag:        si.RootTag,
+		debug:          si.Debug,
+		close:          false,
+		dryRun:         si.DryRun,
+		interactive:    si.Interactive,
+		chooseConflict: chooser,
 	})
 
 	return SyncOutput{
@@ -92,16 +106,19 @@ func sync(input syncInput) (output syncOutput, err error) {
 	}
 
 	output, err = syncDBwithFS(syncInput{
-		db:      cso.DB,
-		session: input.session,
-		twn:     remote,
-		home:    input.home,
-		paths:   input.paths,
-		exclude: input.exclude,
-		filter:  input.filter,
-		rootTag: input.rootTag,
-		debug:   input.debug,
-		dryRun:  input.dryRun})
+		db:             cso.DB,
+		session:        input.session,
+		twn:            remote,
+		home:           input.home,
+		paths:          input.paths,
+		exclude:        input.exclude,
+		filter:         input.filter,
+		rootTag:        input.rootTag,
+		debug:          input.debug,
+		dryRun:         input.dryRun,
+		interactive:    input.interactive,
+		chooseConflict: input.chooseConflict,
+	})
 	if err != nil {
 
 		return
@@ -139,6 +156,11 @@ type SNDotfilesSyncInput struct {
 	Debug    bool
 	// DryRun reports what a sync would do without writing anything
 	DryRun bool
+	// Interactive prompts for each differing file instead of last-write-wins
+	Interactive bool
+	// ChooseConflict overrides the default stdin prompt when Interactive is set.
+	// Tests inject a chooser; CLI usage leaves it nil.
+	ChooseConflict ConflictChooser
 }
 type SyncOutput struct {
 	NoPushed, NoPulled int
@@ -160,7 +182,7 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 		return
 	}
 
-	var itemsToPush, itemsToPull, itemsUnchanged, itemsBinary []ItemDiff
+	var itemsToPush, itemsToPull, itemsUnchanged, itemsBinary, itemsSkipped []ItemDiff
 
 	var itemsToSync bool
 	for _, itemDiff := range itemDiffs {
@@ -171,36 +193,62 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 		}
 
 		switch itemDiff.diff {
-		case localNewer:
-			// A tracked file can become binary after it was added, and note
-			// content is text, so pushing it would store corrupted content.
-			var binary bool
+		case localNewer, remoteNewer:
+			// A tracked file can become binary after it was added. Note content
+			// is text, so never prompt to push something that cannot be stored.
+			if itemDiff.diff == localNewer {
+				var binary bool
 
-			binary, err = isBinaryFile(itemDiff.path)
+				binary, err = isBinaryFile(itemDiff.path)
+				if err != nil {
+					return so, err
+				}
+
+				if binary {
+					debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | skipping binary: %s", itemDiff.homeRelPath))
+					itemsBinary = append(itemsBinary, itemDiff)
+
+					continue
+				}
+			}
+
+			var action SyncChoice
+			action, err = resolveSyncAction(si, itemDiff)
 			if err != nil {
 				return so, err
 			}
 
-			if binary {
-				debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | skipping binary: %s", itemDiff.homeRelPath))
-				itemsBinary = append(itemsBinary, itemDiff)
+			switch action {
+			case SyncChoiceLocal:
+				var binary bool
 
-				continue
+				binary, err = isBinaryFile(itemDiff.path)
+				if err != nil {
+					return so, err
+				}
+
+				if binary {
+					debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | skipping binary: %s", itemDiff.homeRelPath))
+					itemsBinary = append(itemsBinary, itemDiff)
+
+					continue
+				}
+
+				debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | pushing %s", itemDiff.homeRelPath))
+				itemDiff.remote.Content.SetText(itemDiff.local)
+				itemsToPush = append(itemsToPush, itemDiff)
+				itemsToSync = true
+			case SyncChoiceRemote:
+				debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | pulling %s", itemDiff.homeRelPath))
+				itemsToPull = append(itemsToPull, itemDiff)
+				itemsToSync = true
+			case SyncChoiceSkip:
+				debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | skipping %s", itemDiff.homeRelPath))
+				itemsSkipped = append(itemsSkipped, itemDiff)
 			}
-
-			//addToDB
-			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | local %s is newer", itemDiff.homeRelPath))
-			itemDiff.remote.Content.SetText(itemDiff.local)
-			itemsToPush = append(itemsToPush, itemDiff)
-			itemsToSync = true
 		case localMissing:
 			// createLocal
 			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | %s is missing", itemDiff.homeRelPath))
-			itemsToPull = append(itemsToPull, itemDiff)
-			itemsToSync = true
-		case remoteNewer:
-			// createLocal
-			debugPrint(si.debug, fmt.Sprintf("syncDBwithFS | remote %s is newer", itemDiff.homeRelPath))
 			itemsToPull = append(itemsToPull, itemDiff)
 			itemsToSync = true
 		case identical:
@@ -221,8 +269,9 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 
 	// check items to sync
 	if !itemsToSync {
-		if len(itemsBinary) > 0 {
-			so.msg = fmt.Sprint(columnize.SimpleFormat(binaryLines(itemsBinary)))
+		lines := append(binaryLines(itemsBinary), skippedLines(itemsSkipped)...)
+		if len(lines) > 0 {
+			so.msg = fmt.Sprint(columnize.SimpleFormat(lines))
 
 			return
 		}
@@ -263,10 +312,39 @@ func syncDBwithFS(si syncInput) (so syncOutput, err error) {
 	}
 
 	res = append(res, binaryLines(itemsBinary)...)
+	res = append(res, skippedLines(itemsSkipped)...)
 
 	so.msg = fmt.Sprint(columnize.SimpleFormat(res))
 
 	return so, err
+}
+
+// resolveSyncAction returns last-write-wins, or asks the chooser when interactive.
+func resolveSyncAction(si syncInput, itemDiff ItemDiff) (SyncChoice, error) {
+	defaultAction := SyncChoiceLocal
+	if itemDiff.diff == remoteNewer {
+		defaultAction = SyncChoiceRemote
+	}
+
+	if !si.interactive {
+		return defaultAction, nil
+	}
+
+	if si.chooseConflict == nil {
+		return SyncChoiceSkip, errors.New("interactive sync requires a conflict chooser")
+	}
+
+	return si.chooseConflict(itemDiff, defaultAction)
+}
+
+func skippedLines(items []ItemDiff) []string {
+	lines := make([]string, 0, len(items))
+
+	for _, item := range items {
+		lines = append(lines, fmt.Sprintf("%s | %s\n", bold(addDot(item.homeRelPath)), yellow("skipped")))
+	}
+
+	return lines
 }
 
 // binaryLines renders the paths a sync left alone because their content is not
@@ -323,6 +401,8 @@ type syncInput struct {
 	debug          bool
 	close          bool
 	dryRun         bool
+	interactive    bool
+	chooseConflict ConflictChooser
 }
 
 type syncOutput struct {
